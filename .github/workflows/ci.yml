@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-interaction
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Audit PHP dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Prepare ephemeral test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force --no-interaction
+
+      - name: Verify complete source contract
+        run: sh scripts/verify-source-contract --tracked
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      - name: Run PHP tests
+        run: php artisan test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Node.js dependencies from lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Audit Node.js dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build frontend assets
+        run: npm run build
+
+  container-images:
+    needs: application
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Build container targets serially
+        run: |
+          docker build --pull --build-arg SOURCE_SHA="${GITHUB_SHA}" --target fpm --tag "music-map-fpm:${GITHUB_SHA}" .
+          docker build --build-arg SOURCE_SHA="${GITHUB_SHA}" --target queue --tag "music-map-queue:${GITHUB_SHA}" .
+          docker build --build-arg SOURCE_SHA="${GITHUB_SHA}" --target scheduler --tag "music-map-scheduler:${GITHUB_SHA}" .
+          docker build --build-arg SOURCE_SHA="${GITHUB_SHA}" --target nginx --tag "music-map-nginx:${GITHUB_SHA}" .
+
+      - name: Verify non-root users and health checks
+        run: |
+          test "$(docker image inspect --format '{{.Config.User}}' "music-map-fpm:${GITHUB_SHA}")" = "82:82"
+          test "$(docker image inspect --format '{{.Config.User}}' "music-map-queue:${GITHUB_SHA}")" = "82:82"
+          test "$(docker image inspect --format '{{.Config.User}}' "music-map-scheduler:${GITHUB_SHA}")" = "82:82"
+          test "$(docker image inspect --format '{{.Config.User}}' "music-map-nginx:${GITHUB_SHA}")" = "101:101"
+          for image in "music-map-fpm:${GITHUB_SHA}" "music-map-queue:${GITHUB_SHA}" "music-map-scheduler:${GITHUB_SHA}" "music-map-nginx:${GITHUB_SHA}"; do
+            test "$(docker image inspect --format '{{if .Config.Healthcheck}}present{{end}}' "$image")" = "present"
+            test "$(docker image inspect --format '{{index .Config.Labels \"org.opencontainers.image.revision\"}}' "$image")" = "${GITHUB_SHA}"
+          done

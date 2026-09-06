@@ -1,0 +1,154 @@
+#!/bin/sh
+set -eu
+
+mode=${1:---worktree}
+
+case "$mode" in
+    --worktree|--tracked) ;;
+    *)
+        echo "usage: $0 [--worktree|--tracked]" >&2
+        exit 2
+        ;;
+esac
+
+required_paths='AGENTS.md
+.dockerignore
+.editorconfig
+.env.example
+.gitattributes
+.github/workflows/ci.yml
+.gitignore
+.npmrc
+Dockerfile
+README.md
+README.md.scaffold
+app/Http/Controllers/Controller.php
+app/Models/User.php
+app/Providers/AppServiceProvider.php
+artisan
+bootstrap/app.php
+bootstrap/cache/.gitignore
+bootstrap/providers.php
+composer.json
+composer.lock
+config/app.php
+config/auth.php
+config/cache.php
+config/database.php
+config/filesystems.php
+config/logging.php
+config/mail.php
+config/queue.php
+config/services.php
+config/session.php
+context/archive/README.md
+context/changes/README.md
+context/changes/bootstrap-verification/verification.md
+context/changes/f-03-startup-backoff/implementation.md
+context/changes/h06-h09-source-candidate/implementation.md
+context/foundation/README.md
+context/foundation/lessons.md
+context/foundation/prd.md
+context/foundation/shape-notes.md
+context/foundation/tech-stack.md
+database/.gitignore
+database/factories/UserFactory.php
+database/migrations/0001_01_01_000000_create_users_table.php
+database/migrations/0001_01_01_000001_create_cache_table.php
+database/migrations/0001_01_01_000002_create_jobs_table.php
+database/seeders/DatabaseSeeder.php
+docker/entrypoints/fpm.sh
+docker/entrypoints/bootstrap-runtime.sh
+docker/entrypoints/nginx.sh
+docker/entrypoints/queue.sh
+docker/entrypoints/scheduler.sh
+docker/entrypoints/wait-for-postgres.php
+docker/nginx/default.conf
+docker/php/production.ini
+package.json
+package-lock.json
+phpunit.xml
+public/.htaccess
+public/favicon.ico
+public/index.php
+public/robots.txt
+resources/css/app.css
+resources/js/app.js
+resources/views/welcome.blade.php
+routes/console.php
+routes/web.php
+scripts/verify-source-contract
+storage/app/.gitignore
+storage/app/private/.gitignore
+storage/app/public/.gitignore
+storage/framework/.gitignore
+storage/framework/cache/.gitignore
+storage/framework/cache/data/.gitignore
+storage/framework/sessions/.gitignore
+storage/framework/testing/.gitignore
+storage/framework/views/.gitignore
+storage/logs/.gitignore
+tests/Feature/ExampleTest.php
+tests/TestCase.php
+tests/Unit/ExampleTest.php
+tests/Unit/ProductionInfrastructureTest.php
+tests/Unit/RuntimeFilesystemContractTest.php
+vite.config.js'
+
+printf '%s\n' "$required_paths" | while IFS= read -r path; do
+    if [ ! -e "$path" ]; then
+        echo "required source path is missing: $path" >&2
+        exit 1
+    fi
+
+    if [ "$mode" = "--tracked" ] && ! git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+        echo "required source path is not tracked: $path" >&2
+        exit 1
+    fi
+done
+
+if [ "$mode" = "--tracked" ]; then
+    untracked_paths=$(git ls-files --others --exclude-standard)
+
+    if [ -n "$untracked_paths" ]; then
+        echo "non-ignored paths remain untracked:" >&2
+        printf '%s\n' "$untracked_paths" >&2
+        exit 1
+    fi
+fi
+
+git ls-files | while IFS= read -r path; do
+    case "$path" in
+        .env.example|*/.gitignore)
+            ;;
+        .env|.env.*|*.key|*.log|*.pem|*.p12|*.pfx|auth.json|coverage/*|database/*.sqlite*|node_modules/*|public/build/*|public/hot|public/storage|storage/*|vendor/*)
+            echo "forbidden generated or sensitive path is tracked: $path" >&2
+            exit 1
+            ;;
+        bootstrap/cache/*)
+            echo "forbidden Laravel cache path is tracked: $path" >&2
+            exit 1
+            ;;
+    esac
+done
+
+for path in .env .env.production auth.json database/database.sqlite public/hot storage/logs/laravel.log; do
+    if ! git check-ignore --no-index -q -- "$path"; then
+        echo "sensitive or generated path is not ignored: $path" >&2
+        exit 1
+    fi
+done
+
+for path in app/Providers/AppServiceProvider.php config/app.php resources/js/app.js routes/web.php; do
+    if git check-ignore --no-index -q -- "$path"; then
+        echo "application source path is unexpectedly ignored: $path" >&2
+        exit 1
+    fi
+done
+
+if [ "$(sed -n '1p' .dockerignore)" != '**' ]; then
+    echo ".dockerignore must begin by excluding the entire build context" >&2
+    exit 1
+fi
+
+echo "source contract: PASS ($mode)"
