@@ -20,13 +20,13 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/^(APP_KEY|DB_PASSWORD|MAIL_PASSWORD)=$/m', $environment);
     }
 
-    public function test_ci_actions_are_commit_pinned_and_permissions_are_read_only(): void
+    public function test_ci_actions_are_commit_pinned_and_permissions_are_least_privilege(): void
     {
-        $workflow = $this->projectFile('.github/workflows/ci.yml')
-            .$this->projectFile('.github/workflows/security.yml');
+        $workflow = $this->projectFile('.github/workflows/ci.yml');
 
         $this->assertStringContainsString("permissions:\n  contents: read\n", $workflow);
-        $this->assertStringNotContainsString('secrets.', $workflow);
+        $this->assertSame(1, substr_count($workflow, 'packages: write'));
+        $this->assertSame(1, substr_count($workflow, 'secrets.GITHUB_TOKEN'));
         $this->assertStringContainsString('gitleaks git --redact --no-banner --log-opts="--all" .', $workflow);
         $this->assertGreaterThan(0, preg_match_all('/^\s*uses:\s*\S+@([0-9a-f]{40})(?:\s|$)/m', $workflow, $matches));
 
@@ -36,12 +36,14 @@ class ProductionInfrastructureTest extends TestCase
 
     public function test_e11_security_gates_are_exact_read_only_and_blocking(): void
     {
-        $workflow = $this->projectFile('.github/workflows/security.yml');
+        $workflow = $this->projectFile('.github/workflows/ci.yml');
 
         $this->assertStringContainsString("permissions:\n  contents: read\n", $workflow);
+        $this->assertFileDoesNotExist(dirname(__DIR__, 2).'/.github/workflows/security.yml');
         $this->assertStringContainsString('runs-on: ubuntu-24.04', $workflow);
         $this->assertStringNotContainsString('self-hosted', $workflow);
-        $this->assertStringNotContainsString('secrets.', $workflow);
+        preg_match_all('/secrets\.([A-Z0-9_]+)/', $workflow, $workflowSecrets);
+        $this->assertSame(['GITHUB_TOKEN'], array_values(array_unique($workflowSecrets[1])));
         $this->assertStringContainsString('fetch-depth: 0', $workflow);
         $this->assertStringContainsString('hadolint Dockerfile', $workflow);
         $this->assertStringContainsString('trivy filesystem --scanners vuln --severity CRITICAL --exit-code 1', $workflow);
@@ -120,6 +122,38 @@ class ProductionInfrastructureTest extends TestCase
             'COPY docker/entrypoints/wait-for-postgres.php /usr/local/libexec/music-map-wait-for-postgres',
             $dockerfile,
         );
+    }
+
+    public function test_release_workflow_builds_prs_and_publishes_only_main_pushes(): void
+    {
+        $workflow = $this->projectFile('.github/workflows/ci.yml');
+        $validator = $this->projectFile('scripts/validate-release-manifest');
+        $mainPushCondition = "if: github.event_name == 'push' && github.ref == 'refs/heads/main'";
+
+        $this->assertStringContainsString("on:\n  pull_request:\n  push:\n    branches:\n      - main", $workflow);
+        $this->assertStringContainsString('needs: [application, source-security]', $workflow);
+        $this->assertSame(4, substr_count($workflow, $mainPushCondition));
+        $this->assertStringContainsString(
+            'uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3',
+            $workflow,
+        );
+        $this->assertStringContainsString('username: ${{ github.actor }}', $workflow);
+        $this->assertStringContainsString('password: ${{ secrets.GITHUB_TOKEN }}', $workflow);
+
+        foreach (['fpm', 'nginx', 'queue', 'scheduler'] as $role) {
+            $repository = "ghcr.io/polkiujhy/music-map-{$role}";
+            $validatorRepository = str_replace('ghcr.io', 'ghcr[.]io', $repository);
+
+            $this->assertStringContainsString("docker push \"{$repository}:\${GITHUB_SHA}\"", $workflow);
+            $this->assertStringContainsString("{$validatorRepository}@sha256:", $validator);
+        }
+
+        $this->assertStringContainsString('sh scripts/validate-release-manifest', $workflow);
+        $this->assertStringContainsString('name: music-map-release', $workflow);
+        $this->assertStringContainsString('path: ${{ runner.temp }}/music-map-release/release.json', $workflow);
+        $this->assertStringContainsString('retention-days: 30', $workflow);
+        $this->assertStringNotContainsString('attest', strtolower($workflow));
+        $this->assertStringNotContainsString('trivy image', strtolower($workflow));
     }
 
     private function projectFile(string $path): string

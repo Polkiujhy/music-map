@@ -18,7 +18,6 @@ required_paths='AGENTS.md
 .gitattributes
 .github/dependabot.yml
 .github/workflows/ci.yml
-.github/workflows/security.yml
 .gitignore
 .npmrc
 Dockerfile
@@ -77,6 +76,7 @@ resources/views/welcome.blade.php
 routes/console.php
 routes/web.php
 scripts/verify-source-contract
+scripts/validate-release-manifest
 storage/app/.gitignore
 storage/app/private/.gitignore
 storage/app/public/.gitignore
@@ -93,6 +93,7 @@ tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
 tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
+tests/Unit/ReleaseManifestContractTest.php
 tests/Unit/RuntimeFilesystemContractTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'

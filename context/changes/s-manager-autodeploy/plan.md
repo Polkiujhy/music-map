@@ -182,19 +182,19 @@ Bramka: kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `
 
 #### Automated
 
-- [x] 1.1 Zaktualizować kontrakt infrastruktury i naprawić source contract
+- [x] 1.1 Zaktualizować kontrakt infrastruktury i naprawić source contract — 3ed35b0
 
 #### Manual
 
-- [x] 1.2 Włączyć i zweryfikować reguły PR-only dla main
+- [x] 1.2 Włączyć i zweryfikować reguły PR-only dla main — 3ed35b0
 
 ### Phase 2: CI i publikacja kandydatów
 
 #### Automated
 
-- [ ] 2.1 Zbudować wspólną bramkę CI dla PR i main
-- [ ] 2.2 Publikować prywatne obrazy i ścisły manifest wydania
-- [ ] 2.3 Przetestować integralność i odmowy kontraktu artefaktu
+- [x] 2.1 Zbudować wspólną bramkę CI dla PR i main
+- [x] 2.2 Publikować prywatne obrazy i ścisły manifest wydania
+- [x] 2.3 Przetestować integralność i odmowy kontraktu artefaktu
 
 ### Phase 3: Niezależny control plane s-manager
 
