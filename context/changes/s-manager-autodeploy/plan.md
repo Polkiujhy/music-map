@@ -2,15 +2,15 @@
 
 ## Podsumowanie
 
-Po aktywacji produkcji każdy commit w `main` pochodzący ze scalonego PR-a przejdzie pełny CI, zbuduje cztery prywatne obrazy GHCR i zostanie automatycznie wdrożony przez niezależny reconciler na hoście.
+Po aktywacji pierwszego wydania każdy commit w `main` pochodzący ze scalonego PR-a przejdzie pełny CI, zbuduje cztery prywatne obrazy GHCR i — jeżeli nie zmienia schematu — zostanie automatycznie wdrożony przez niezależny reconciler na hoście. Pierwszym wydaniem jest działający szkielet aplikacji, a nie dopiero kompletne MVP.
 
 Rozwiązanie:
 
 - nie korzysta z systemu zatwierdzania, tokenów, raportów ani deployera StorageApp;
 - zachowuje dokładne wdrażanie obrazów po digestach i rollback zapewniany przez s-manager;
 - blokuje bezpośrednie pushe oraz kandydatów bez powiązanego, scalonego PR-a;
-- nie uruchamia migracji podczas zwykłego deployu;
-- włącza autodeploy dopiero po ręcznym wdrożeniu i zaakceptowaniu kompletnego MVP;
+- nie uruchamia migracji podczas zwykłego deployu; wydania zmieniające schemat przechodzą osobną, jawną operację s-manager z backupem, weryfikacją ledgeru i ręczną akceptacją kompatybilności;
+- włącza autodeploy po ręcznym wdrożeniu szkieletu i bezpiecznym canary, aby kolejne etapy MVP żyły na hoście;
 - pozostawia publiczne `503` podczas pierwszej walidacji i przy braku zdrowego upstreamu.
 
 Zmiany kodu i konfiguracji w `music-map` oraz `/srv/manager` trafiają wyłącznie przez osobne PR-y. Sekrety i stan operacyjny pozostają poza Git.
@@ -103,9 +103,10 @@ Bramka: testy z fałszywym GitHub API dowodzą odrzucenia direct push, starego S
 
 Bramka: odtworzenie potwierdza bazę, storage, manifesty wydań, konfigurację Managera i stan reconciliatora bez odczytywania sekretów do logów.
 
-## Phase 5: Pierwszy baseline i wdrożenie MVP
+## Phase 5: Pierwszy baseline i wdrożenie szkieletu
 
-- Faza rozpoczyna się dopiero po ukończeniu wszystkich funkcji MVP i merge finalnego PR-a aplikacji.
+- Faza rozpoczyna się po scaleniu PR-a z control plane i workflow publikującym. Nie czeka na ukończenie funkcji MVP.
+- Wystawić obecny szkielet Laravel jako pierwszy rzeczywisty kandydat z czterema obrazami i ścisłym manifestem. Zmiana musi trafić na `main` przez PR i zielony zaufany workflow.
 - Wykonać ostatni backup bazy i restore test, po czym uruchomić `initialize-schema` dla dokładnego manifestu kandydata.
 - Inicjalizator musi:
   - wymagać pustej, zweryfikowanej bazy i braku aktywnego wydania;
@@ -113,31 +114,36 @@ Bramka: odtworzenie potwierdza bazę, storage, manifesty wydań, konfigurację M
   - uruchomić `php artisan migrate --force --no-interaction` tylko z dokładnego obrazu FPM;
   - niezależnie od Artisan odczytać ledger migracji przez ograniczony helper PostgreSQL;
   - zapisać baseline tylko przy zgodnym fingerprint, zbiorze migracji i tożsamości bazy.
-- Po baseline wykonać `s-manager deploy ... --expected-current none` i potwierdzić cztery zdrowe role, wewnętrzne `/up`, worker oraz scheduler.
+- Po baseline wykonać `s-manager deploy ... --expected-current none` i potwierdzić cztery zdrowe role, wewnętrzne `/up`, worker oraz scheduler. Pierwszy release staje się rollback targetem dla kolejnych zmian.
 - Przełączyć routing na `validation`, ograniczony do CIDR operatora. Pozostali odbiorcy nadal otrzymują puste `503` z `Retry-After`.
-- Na dedykowanych kontach i playlistach testowych sprawdzić: logowanie, pocztę, połączenie/odłączenie obu platform, callback OAuth, import publiczny i odmowę prywatnego, dopasowanie do 50 utworów, eksport użytkownika i konta technicznego, ponowienie bez duplikatu, synchronizację kolejki i schedulera, wygaśnięty token, rate limit oraz redakcję logów.
-- Po teście usunąć utworzone artefakty zewnętrzne i potwierdzić działanie unieważnienia tokenów.
+- Dla szkieletu sprawdzić wyłącznie publiczną odpowiedź aplikacji, `/up`, trwałość sesji, kolejkę, scheduler, logi i zachowanie po restarcie. Akceptacja integracji i playlist pozostaje bramką końcową MVP w fazie 7.
 
 Obsługa awarii:
 
 - Nieudana inicjalizacja pozostawia blokadę; nie jest automatycznie ponawiana. Operator przywraca bazę z backupu, potwierdza `not_initialized`, używa `recover-schema-initialization`, a następnie rozpoczyna nowe jawne podejście.
 - Pierwsze wydanie nie ma poprzednika do rollbacku. Przy błędzie pozostaje `maintenance/validation`, a wdrażany jest poprawiony kandydat z identycznym fingerprintem migracji.
-- Zmiana migracji po zapisaniu baseline zostaje odrzucona i wymaga osobnego przyszłego planu schema-release.
+- Zmiana migracji po zapisaniu baseline jest odrzucana przez zwykły deploy i reconciler. Przed pierwszym takim PR-em musi być gotowa operacja schema-release z fazy 6.
 
-## Phase 6: Cutover publiczny i włączenie autodeploy
+## Phase 6: Wczesny cutover i wdrożenia pośrednie
 
 - Tryb `live` proxy’uje do `music-map-nginx:8080` z prawidłowymi `Host`, `X-Forwarded-*`, limitami i timeoutami.
 - Błędy upstreamu `502/503/504` są mapowane na kontrolowane, puste `503` z `Retry-After`; brak kontenerów nie może ujawnić domyślnego błędu nginx.
-- Przed przełączeniem zweryfikować DNS, SAN certyfikatu, odnowienie TLS oraz callbacki z finalnym `https://music.adamis.me`.
-- Po przełączeniu wykonać zewnętrzne testy HTTPS, sesji/cookies, OAuth i podstawowego przepływu playlisty.
+- Przed przełączeniem zweryfikować DNS, SAN certyfikatu, odnowienie TLS oraz bezpieczną odpowiedź szkieletu pod `https://music.adamis.me`.
+- Po przełączeniu wykonać zewnętrzne testy HTTPS, sesji/cookies i fallbacku `503`; niedostępne jeszcze funkcje nie mogą udawać gotowych.
 - Dopiero wtedy włączyć timer reconciliatora. Jego warunkiem startowym jest istniejące, zdrowe wydanie, dzięki czemu pierwszy automatyczny deploy ma rollback target.
 - Scalić bezpieczny PR canary, np. zmianę dokumentacji aplikacji. Oczekiwany wynik: publikacja nowego manifestu, automatyczny deploy w ciągu 10 minut i zachowanie pierwszego wydania jako `previous`.
 - Przy nieudanym canary s-manager przywraca i weryfikuje poprzednie wydanie; timer zostaje wyłączony do czasu diagnozy.
+- Przed pierwszą pośrednią zmianą schematu dodać jawną operację `s-manager schema-release music-map --release-file FILE --expected-current ID`. Operacja wymaga świeżego backupu PostgreSQL i pozytywnego isolated restore, uruchamia wyłącznie oczekujące migracje z dokładnego obrazu FPM, niezależnie weryfikuje ledger i aktualizuje fingerprint baseline dopiero po sukcesie.
+- Reconciler nigdy sam nie uruchamia migracji. Kandydat ze zmienionym fingerprintem pozostaje zablokowany, dopóki operator nie zaakceptuje kompatybilności expand/contract i nie wykona schema-release; potem ten sam dokładny kandydat może zostać wdrożony przez s-manager bez ponownego wykonania migracji.
+- Rollback aplikacji po schema-release jest dozwolony tylko po potwierdzeniu kompatybilności poprzedniego obrazu z rozszerzonym schematem. Operacja nie wykonuje automatycznych migracji `down`.
 
-Bramka: kolejne prawidłowe PR-y wdrażają się bez ręcznej promocji, a GitHub Deployment i lokalny receipt wskazują ten sam SHA, manifest i wynik.
+Bramka: szkielet jest dostępny publicznie; migracyjny canary przechodzi przez schema-release, a kolejne prawidłowe PR-y bez zmiany schematu wdrażają się bez ręcznej promocji. GitHub Deployment i lokalny receipt wskazują ten sam SHA, manifest i wynik.
 
-## Phase 7: Odporność i przekazanie operacyjne
+## Phase 7: Przyrostowe MVP, odporność i przekazanie operacyjne
 
+- Dostarczać funkcje MVP małymi PR-ami. Każdy zielony release bez zmiany migracji wdraża reconciler; każdy release zmieniający migracje przechodzi wcześniej ręczną bramkę schema-release.
+- Na dedykowanych kontach i playlistach testowych sprawdzić finalne MVP: logowanie, pocztę, połączenie/odłączenie obu platform, callback OAuth, import publiczny i odmowę prywatnego, dopasowanie do 50 utworów, eksport użytkownika i konta technicznego, ponowienie bez duplikatu, synchronizację kolejki i schedulera, wygaśnięty token, rate limit oraz redakcję logów.
+- Po teście usunąć utworzone artefakty zewnętrzne i potwierdzić działanie unieważnienia tokenów.
 - Dodać runbook obejmujący status, logi, zatrzymany journal, terminalnie odrzuconego kandydata, wygasły artefakt/PAT, brak GHCR, awarię GitHub, zmianę migracji, rollback oraz powrót trasy do maintenance.
 - Kandydat po błędzie deployu nie jest ponawiany automatycznie. Nowy merge albo jawny rerun workflow tworzy nowy `run_attempt` i nową tożsamość wydania.
 - Błędy sieciowe przed mutacją mogą być sprawdzane ponownie w następnym cyklu; po rozpoczęciu deployu wynik jest terminalny dla danego kandydata.
@@ -145,7 +151,7 @@ Bramka: kolejne prawidłowe PR-y wdrażają się bez ręcznej promocji, a GitHub
 - Zweryfikować alerty dla: braku świeżego backupu, nieudanego deployu/recovery, zablokowanej migracji, wygasających credentials, permanentnej niespójności GitHub audit oraz braku zdrowego upstreamu.
 - Udokumentować awaryjne odtworzenie hosta: Manager, sekrety, release state i storage z Restic, baza z logicznego backupu, obrazy po digestach z GHCR, następnie route `maintenance → validation → live`.
 
-Bramka: kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `503`, braku wycieku sekretów i braku ślepych retry.
+Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `503`, braku wycieku sekretów i braku ślepych retry.
 
 ## Testy akceptacyjne
 
@@ -158,10 +164,10 @@ Bramka: kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `
 
 ## Założenia
 
-- Implementacja funkcji obu platform streamingowych jest osobnym warunkiem wejściowym; ten plan obejmuje ich konfigurację i akceptację produkcyjną.
-- Po aktywacji reconciliatora każdy kwalifikujący się merge do `main` jest wdrażany automatycznie.
+- Implementacja funkcji obu platform streamingowych przebiega po uruchomieniu szkieletu; ten plan obejmuje ich przyrostowe wdrażanie oraz końcową akceptację produkcyjną.
+- Po aktywacji reconciliatora każdy kwalifikujący się merge do `main` bez zmiany fingerprintu migracji jest wdrażany automatycznie; zmiana schematu zatrzymuje się na ręcznej bramce schema-release.
 - Review jest procesem GitHub zakończonym decyzją o merge; reconciler nie analizuje approvals.
-- Automatyczne migracje po uruchomieniu MVP są poza zakresem i pozostają fail-closed.
+- Migracje po baseline są jawne i nadzorowane przez schema-release; nigdy nie są automatycznie wykonywane przez reconciler.
 - GHCR pozostaje prywatny, a obrazy bieżącego i poprzedniego wydania nie są usuwane przez politykę retencji.
 - Operacyjne sekrety, callback credentials, CIDR walidacyjny i enablement timerów nie trafiają do Git.
 - Manager może korzystać ze wspólnych alertów, PostgreSQL, public-edge i s-manager, ale nie z żadnej wewnętrznej ścieżki zatwierdzania StorageApp.
@@ -217,36 +223,40 @@ Bramka: kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `
 - [x] 4.3 Zainstalować dedykowane credentials i zweryfikować provisioning — 2dcbb20
 - [x] 4.4 Wykonać backupy, isolated restore i test alertów — 2dcbb20
 
-### Phase 5: Pierwszy baseline i wdrożenie MVP
+### Phase 5: Pierwszy baseline i wdrożenie szkieletu
 
 #### Automated
 
-- [ ] 5.1 Opublikować finalnego kandydata MVP
+- [ ] 5.1 Opublikować pierwszego kandydata ze szkieletem
 
 #### Manual
 
-- [ ] 5.2 Skonfigurować integracje i callback URLs
+- [ ] 5.2 Uzupełnić minimalną konfigurację runtime szkieletu
 - [ ] 5.3 Utworzyć zweryfikowany baseline schematu
-- [ ] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację MVP
+- [ ] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację szkieletu
 
-### Phase 6: Cutover publiczny i włączenie autodeploy
+### Phase 6: Wczesny cutover i wdrożenia pośrednie
 
 #### Automated
 
 - [ ] 6.1 Zapewnić proxy z bezpiecznym fallbackiem 503
+- [ ] 6.2 Dodać kontrolowany schema-release dla migracji po baseline
 
 #### Manual
 
-- [ ] 6.2 Przełączyć validation na live po testach zewnętrznych
-- [ ] 6.3 Włączyć reconciler i zaliczyć automatyczny PR canary
+- [ ] 6.3 Przełączyć validation na live dla szkieletu
+- [ ] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary
+- [ ] 6.5 Zaliczyć canary zmieniający schemat przez schema-release
 
-### Phase 7: Odporność i przekazanie operacyjne
+### Phase 7: Przyrostowe MVP, odporność i przekazanie operacyjne
 
 #### Automated
 
-- [ ] 7.1 Ukończyć testy awarii i runbook operacyjny
+- [ ] 7.1 Dostarczyć kompletne MVP przez przyrostowe wydania
+- [ ] 7.2 Ukończyć testy awarii i runbook operacyjny
 
 #### Manual
 
-- [ ] 7.2 Przeprowadzić rollback, recovery i testy alertów
-- [ ] 7.3 Zatwierdzić gotowość autodeploy i disaster recovery
+- [ ] 7.3 Zaliczyć końcową walidację integracji i playlist
+- [ ] 7.4 Przeprowadzić rollback, recovery i testy alertów
+- [ ] 7.5 Zatwierdzić gotowość MVP i disaster recovery
