@@ -101,6 +101,14 @@ YAML,
 
         $this->assertSame(4, preg_match_all('/^ARG \w+_IMAGE=\S+@sha256:[0-9a-f]{64}$/m', $dockerfile));
         $this->assertSame(4, substr_count($dockerfile, 'HEALTHCHECK '));
+        $this->assertSame(2, substr_count($dockerfile, 'SHELL ["/bin/ash", "-eo", "pipefail", "-c"]'));
+        $this->assertStringNotContainsString('$PHPIZE_DEPS', $dockerfile);
+        $this->assertStringContainsString('libpq=18.6-r0 unzip=6.0-r16', $dockerfile);
+        $this->assertStringContainsString('postgresql18-dev=18.6-r0', $dockerfile);
+        $this->assertMatchesRegularExpression(
+            '/rm -f bootstrap\/cache\/\*\.php \\\\\n\s+&& composer dump-autoload/',
+            $dockerfile,
+        );
         $this->assertGreaterThanOrEqual(1, substr_count($dockerfile, 'USER 82:82'));
         $this->assertStringContainsString("USER 101:101\n", $dockerfile);
         $this->assertStringContainsString('test "$(id -u www-data)" = 82', $dockerfile);
