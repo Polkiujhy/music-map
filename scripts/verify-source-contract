@@ -16,7 +16,9 @@ required_paths='AGENTS.md
 .editorconfig
 .env.example
 .gitattributes
+.github/dependabot.yml
 .github/workflows/ci.yml
+.github/workflows/security.yml
 .gitignore
 .npmrc
 Dockerfile
@@ -43,9 +45,6 @@ config/services.php
 config/session.php
 context/archive/README.md
 context/changes/README.md
-context/changes/bootstrap-verification/verification.md
-context/changes/f-03-startup-backoff/implementation.md
-context/changes/h06-h09-source-candidate/implementation.md
 context/foundation/README.md
 context/foundation/lessons.md
 context/foundation/prd.md
@@ -90,9 +89,12 @@ storage/framework/views/.gitignore
 storage/logs/.gitignore
 tests/Feature/ExampleTest.php
 tests/TestCase.php
+tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
+tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/RuntimeFilesystemContractTest.php
+tests/Unit/SourceContractTest.php
 vite.config.js'
 
 printf '%s\n' "$required_paths" | while IFS= read -r path; do
