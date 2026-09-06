@@ -49,7 +49,16 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertStringContainsString('trivy filesystem --scanners vuln --severity CRITICAL --exit-code 1', $workflow);
         $this->assertStringContainsString('syft "dir:${GITHUB_WORKSPACE}" --output "spdx-json=${SBOM_PATH}"', $workflow);
         $this->assertStringContainsString('uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2', $workflow);
-        $this->assertStringContainsString('retention-days: 14', $workflow);
+        $this->assertStringContainsString(
+            <<<'YAML'
+name: music-map-source-sbom
+          path: ${{ runner.temp }}/music-map-source.spdx.json
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+YAML,
+            $workflow,
+        );
         $this->assertStringContainsString('grype "sbom:${SBOM_PATH}" --fail-on critical --output table', $workflow);
         $this->assertStringContainsString('GITLEAKS_VERSION: 8.30.1', $workflow);
         $this->assertStringContainsString('HADOLINT_VERSION: 2.13.1', $workflow);
@@ -181,9 +190,16 @@ YAML,
         }
 
         $this->assertStringContainsString('sh scripts/validate-release-manifest', $workflow);
-        $this->assertStringContainsString('name: music-map-release', $workflow);
-        $this->assertStringContainsString('path: ${{ runner.temp }}/music-map-release/release.json', $workflow);
-        $this->assertStringContainsString('retention-days: 30', $workflow);
+        $this->assertStringContainsString(
+            <<<'YAML'
+name: music-map-release
+          path: ${{ runner.temp }}/music-map-release/release.json
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
+YAML,
+            $workflow,
+        );
         $this->assertStringNotContainsString('attest', strtolower($workflow));
         $this->assertStringNotContainsString('trivy image', strtolower($workflow));
     }

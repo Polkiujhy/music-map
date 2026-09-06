@@ -183,6 +183,7 @@ jobs:
           path: ${{ runner.temp }}/music-map-source.spdx.json
           if-no-files-found: error
           retention-days: 14
+          overwrite: true
 
       - name: Reject critical SBOM vulnerabilities with Grype
         env:
@@ -313,3 +314,4 @@ jobs:
           path: ${{ runner.temp }}/music-map-release/release.json
           if-no-files-found: error
           retention-days: 30
+          overwrite: true
