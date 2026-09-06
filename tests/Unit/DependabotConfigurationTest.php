@@ -66,6 +66,17 @@ class DependabotConfigurationTest extends TestCase
         $this->assertStringNotContainsString('automerge', strtolower($source));
     }
 
+    public function test_composer_uses_the_php_platform_required_by_the_locked_dependencies(): void
+    {
+        $composer = json_decode($this->projectFile('composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        $lock = json_decode($this->projectFile('composer.lock'), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('^8.4.1', $composer['require']['php']);
+        $this->assertSame('8.4.1', $composer['config']['platform']['php']);
+        $this->assertSame($composer['require']['php'], $lock['platform']['php']);
+        $this->assertSame($composer['config']['platform']['php'], $lock['platform-overrides']['php']);
+    }
+
     /**
      * @return list<array{ecosystem: string, directory: string, interval: string, day: string, time: string, timezone: string, limit: int}>
      */

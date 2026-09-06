@@ -19,12 +19,24 @@ RUN npm run build
 
 FROM ${PHP_IMAGE} AS php-base
 ARG SOURCE_SHA
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 RUN printf '%s\n' "$SOURCE_SHA" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision=$SOURCE_SHA
 
-RUN apk add --no-cache libpq unzip \
-    && apk add --no-cache --virtual .php-build-deps $PHPIZE_DEPS postgresql-dev \
+RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
+    && apk add --no-cache --virtual .php-build-deps \
+        autoconf=2.73-r0 \
+        dpkg-dev=1.23.7-r0 \
+        dpkg=1.23.7-r0 \
+        file=5.47-r2 \
+        g++=15.2.0-r5 \
+        gcc=15.2.0-r5 \
+        musl-dev=1.2.6-r2 \
+        make=4.4.1-r4 \
+        pkgconf=2.5.1-r0 \
+        re2c=4.5.1-r0 \
+        postgresql18-dev=18.6-r0 \
     && docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" opcache pcntl pdo_pgsql \
     && apk del .php-build-deps
 
@@ -60,7 +72,8 @@ COPY docker/entrypoints/scheduler.sh /usr/local/bin/music-map-scheduler
 COPY docker/entrypoints/wait-for-postgres.php /usr/local/libexec/music-map-wait-for-postgres
 COPY docker/entrypoints/bootstrap-runtime.sh /usr/local/libexec/music-map-bootstrap-runtime
 
-RUN composer dump-autoload --classmap-authoritative --no-dev --no-interaction --no-scripts \
+RUN rm -f bootstrap/cache/*.php \
+    && composer dump-autoload --classmap-authoritative --no-dev --no-interaction --no-scripts \
     && php artisan package:discover --ansi \
     && install -d -m 0555 /usr/local/share/music-map \
     && chown www-data:www-data bootstrap/cache/packages.php bootstrap/cache/services.php \
@@ -104,6 +117,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 FROM ${NGINX_IMAGE} AS nginx
 ARG SOURCE_SHA
 USER root
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/entrypoints/nginx.sh /usr/local/bin/music-map-nginx
 COPY --from=php-base --chown=101:101 /var/www/html/public /usr/share/nginx/html

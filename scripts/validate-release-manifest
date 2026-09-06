@@ -1,0 +1,52 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -ne 2 ]; then
+    echo "usage: $0 RELEASE_FILE EXPECTED_SOURCE_SHA" >&2
+    exit 2
+fi
+
+release_file=$1
+expected_source_sha=$2
+
+if [ ! -f "$release_file" ] || [ -L "$release_file" ]; then
+    echo "release manifest must be a regular file" >&2
+    exit 1
+fi
+
+case "$expected_source_sha" in
+    *[!0-9a-f]*|'')
+        echo "expected source SHA must be 40 lowercase hexadecimal characters" >&2
+        exit 2
+        ;;
+esac
+
+if [ "${#expected_source_sha}" -ne 40 ]; then
+    echo "expected source SHA must be 40 lowercase hexadecimal characters" >&2
+    exit 2
+fi
+
+expected_short_sha=$(printf '%s' "$expected_source_sha" | cut -c 1-12)
+
+if ! jq -e \
+    --arg expected_source_sha "$expected_source_sha" \
+    --arg expected_short_sha "$expected_short_sha" '
+        type == "object"
+        and (keys == ["images", "release_id", "schema_version", "source_sha"])
+        and .schema_version == 1
+        and (.release_id | type == "string")
+        and (.release_id | test("^mm-[0-9a-f]{12}-[1-9][0-9]*-[1-9][0-9]*$"))
+        and (.release_id | startswith("mm-" + $expected_short_sha + "-"))
+        and .source_sha == $expected_source_sha
+        and (.images | type == "object")
+        and (.images | keys == ["fpm", "nginx", "queue", "scheduler"])
+        and (.images.fpm | test("^ghcr[.]io/polkiujhy/music-map-fpm@sha256:[0-9a-f]{64}$"))
+        and (.images.nginx | test("^ghcr[.]io/polkiujhy/music-map-nginx@sha256:[0-9a-f]{64}$"))
+        and (.images.queue | test("^ghcr[.]io/polkiujhy/music-map-queue@sha256:[0-9a-f]{64}$"))
+        and (.images.scheduler | test("^ghcr[.]io/polkiujhy/music-map-scheduler@sha256:[0-9a-f]{64}$"))
+    ' "$release_file" >/dev/null; then
+    echo "release manifest violates the schema or provenance contract" >&2
+    exit 1
+fi
+
+echo "release manifest: PASS"
