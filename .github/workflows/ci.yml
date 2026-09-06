@@ -146,8 +146,8 @@ jobs:
 
           test "$("${tools}/gitleaks" version)" = "${GITLEAKS_VERSION}"
           "${tools}/hadolint" --version | grep -F "${HADOLINT_VERSION}" >/dev/null
-          "${tools}/syft" version | grep -F "Version: ${SYFT_VERSION}" >/dev/null
-          "${tools}/grype" version | grep -F "Version: ${GRYPE_VERSION}" >/dev/null
+          test "$("${tools}/syft" version | awk '$1 == "Version:" { print $2 }')" = "${SYFT_VERSION}"
+          test "$("${tools}/grype" version | awk '$1 == "Version:" { print $2 }')" = "${GRYPE_VERSION}"
           "${tools}/trivy" --version | grep -F "Version: ${TRIVY_VERSION}" >/dev/null
           printf '%s\n' "${tools}" >> "${GITHUB_PATH}"
 

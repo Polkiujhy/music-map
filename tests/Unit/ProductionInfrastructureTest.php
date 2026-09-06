@@ -56,6 +56,18 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertStringContainsString('SYFT_VERSION: 1.40.0', $workflow);
         $this->assertStringContainsString('GRYPE_VERSION: 0.115.0', $workflow);
         $this->assertStringContainsString('TRIVY_VERSION: 0.70.0', $workflow);
+        $this->assertStringContainsString(
+            <<<'YAML'
+test "$("${tools}/syft" version | awk '$1 == "Version:" { print $2 }')" = "${SYFT_VERSION}"
+YAML,
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            <<<'YAML'
+test "$("${tools}/grype" version | awk '$1 == "Version:" { print $2 }')" = "${GRYPE_VERSION}"
+YAML,
+            $workflow,
+        );
         $this->assertSame(5, preg_match_all('/^  \w+_SHA256: [0-9a-f]{64}$/m', $workflow));
         $this->assertSame(2, substr_count($workflow, 'sha256sum --check --strict'));
 
