@@ -192,30 +192,30 @@ Bramka: kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `
 
 #### Automated
 
-- [x] 2.1 Zbudować wspólną bramkę CI dla PR i main
-- [x] 2.2 Publikować prywatne obrazy i ścisły manifest wydania
-- [x] 2.3 Przetestować integralność i odmowy kontraktu artefaktu
+- [x] 2.1 Zbudować wspólną bramkę CI dla PR i main — 28e62ec
+- [x] 2.2 Publikować prywatne obrazy i ścisły manifest wydania — 28e62ec
+- [x] 2.3 Przetestować integralność i odmowy kontraktu artefaktu — 28e62ec
 
 ### Phase 3: Niezależny control plane s-manager
 
 #### Automated
 
-- [ ] 3.1 Dodać bezpieczną inicjalizację i recovery schematu
-- [ ] 3.2 Dodać reconciler GitHub i lokalny audit
-- [ ] 3.3 Dodać kontrolę trasy, zasobów i retencji obrazów
-- [ ] 3.4 Zweryfikować CLI, systemd i macierz awarii
+- [x] 3.1 Dodać bezpieczną inicjalizację i recovery schematu — 2dcbb20
+- [x] 3.2 Dodać reconciler GitHub i lokalny audit — 2dcbb20
+- [x] 3.3 Dodać kontrolę trasy, zasobów i retencji obrazów — 2dcbb20
+- [x] 3.4 Zweryfikować CLI, systemd i macierz awarii — 2dcbb20
 
 ### Phase 4: Gotowość hosta i kopii zapasowych
 
 #### Automated
 
-- [ ] 4.1 Poprawić produkcyjny zakres backupu Music Map
+- [x] 4.1 Poprawić produkcyjny zakres backupu Music Map — 2dcbb20
 
 #### Manual
 
-- [ ] 4.2 Zainstalować zatwierdzone wydanie Managera i naprawić helper
-- [ ] 4.3 Zainstalować dedykowane credentials i zweryfikować provisioning
-- [ ] 4.4 Wykonać backupy, isolated restore i test alertów
+- [x] 4.2 Zainstalować zatwierdzone wydanie Managera i naprawić helper — 2dcbb20
+- [x] 4.3 Zainstalować dedykowane credentials i zweryfikować provisioning — 2dcbb20
+- [x] 4.4 Wykonać backupy, isolated restore i test alertów — 2dcbb20
 
 ### Phase 5: Pierwszy baseline i wdrożenie MVP
 
