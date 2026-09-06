@@ -118,6 +118,18 @@ YAML,
         $workflow = $this->projectFile('.github/workflows/ci.yml');
         $this->assertSame(4, substr_count($workflow, '--build-arg SOURCE_SHA="${GITHUB_SHA}"'));
         $this->assertStringNotContainsString('music-map-fpm:ci', $workflow);
+        $this->assertStringContainsString(
+            <<<'YAML'
+docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image"
+YAML,
+            $workflow,
+        );
+        $this->assertStringNotContainsString(
+            <<<'YAML'
+{{index .Config.Labels \"org.opencontainers.image.revision\"}}
+YAML,
+            $workflow,
+        );
 
         foreach (['fpm', 'queue', 'scheduler', 'nginx'] as $role) {
             $entrypoint = $this->projectFile("docker/entrypoints/{$role}.sh");

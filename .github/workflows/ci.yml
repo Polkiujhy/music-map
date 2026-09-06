@@ -219,7 +219,7 @@ jobs:
           test "$(docker image inspect --format '{{.Config.User}}' "music-map-nginx:${GITHUB_SHA}")" = "101:101"
           for image in "music-map-fpm:${GITHUB_SHA}" "music-map-queue:${GITHUB_SHA}" "music-map-scheduler:${GITHUB_SHA}" "music-map-nginx:${GITHUB_SHA}"; do
             test "$(docker image inspect --format '{{if .Config.Healthcheck}}present{{end}}' "$image")" = "present"
-            test "$(docker image inspect --format '{{index .Config.Labels \"org.opencontainers.image.revision\"}}' "$image")" = "${GITHUB_SHA}"
+            test "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")" = "${GITHUB_SHA}"
           done
 
       - name: Log in to GHCR for main releases
