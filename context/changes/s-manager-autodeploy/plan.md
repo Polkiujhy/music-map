@@ -227,13 +227,13 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 
 #### Automated
 
-- [ ] 5.1 Opublikować pierwszego kandydata ze szkieletem
+- [x] 5.1 Opublikować pierwszego kandydata ze szkieletem
 
 #### Manual
 
-- [ ] 5.2 Uzupełnić minimalną konfigurację runtime szkieletu
-- [ ] 5.3 Utworzyć zweryfikowany baseline schematu
-- [ ] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację szkieletu
+- [x] 5.2 Uzupełnić minimalną konfigurację runtime szkieletu
+- [x] 5.3 Utworzyć zweryfikowany baseline schematu
+- [x] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację szkieletu
 
 ### Phase 6: Wczesny cutover i wdrożenia pośrednie
 
@@ -244,7 +244,7 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 
 #### Manual
 
-- [ ] 6.3 Przełączyć validation na live dla szkieletu
+- [x] 6.3 Przełączyć validation na live dla szkieletu
 - [ ] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary
 - [ ] 6.5 Zaliczyć canary zmieniający schemat przez schema-release
 
