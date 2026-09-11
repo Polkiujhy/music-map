@@ -10,7 +10,7 @@ Rozwiązanie:
 - zachowuje dokładne wdrażanie obrazów po digestach i rollback zapewniany przez s-manager;
 - blokuje bezpośrednie pushe oraz kandydatów bez powiązanego, scalonego PR-a;
 - nie uruchamia migracji podczas zwykłego deployu; wydania zmieniające schemat przechodzą osobną, jawną operację s-manager z backupem, weryfikacją ledgeru i ręczną akceptacją kompatybilności;
-- włącza autodeploy po ręcznym wdrożeniu szkieletu i bezpiecznym canary, aby kolejne etapy MVP żyły na hoście;
+- włącza autodeploy po ręcznym wdrożeniu szkieletu i bezpiecznym canary, aby kolejne zmiany produktu mogły być wydawane przyrostowo;
 - pozostawia publiczne `503` podczas pierwszej walidacji i przy braku zdrowego upstreamu.
 
 Zmiany kodu i konfiguracji w `music-map` oraz `/srv/manager` trafiają wyłącznie przez osobne PR-y. Sekrety i stan operacyjny pozostają poza Git.
@@ -116,7 +116,7 @@ Bramka: odtworzenie potwierdza bazę, storage, manifesty wydań, konfigurację M
   - zapisać baseline tylko przy zgodnym fingerprint, zbiorze migracji i tożsamości bazy.
 - Po baseline wykonać `s-manager deploy ... --expected-current none` i potwierdzić cztery zdrowe role, wewnętrzne `/up`, worker oraz scheduler. Pierwszy release staje się rollback targetem dla kolejnych zmian.
 - Przełączyć routing na `validation`, ograniczony do CIDR operatora. Pozostali odbiorcy nadal otrzymują puste `503` z `Retry-After`.
-- Dla szkieletu sprawdzić wyłącznie publiczną odpowiedź aplikacji, `/up`, trwałość sesji, kolejkę, scheduler, logi i zachowanie po restarcie. Akceptacja integracji i playlist pozostaje bramką końcową MVP w fazie 7.
+- Dla szkieletu sprawdzić wyłącznie publiczną odpowiedź aplikacji, `/up`, trwałość sesji, kolejkę, scheduler, logi i zachowanie po restarcie. Akceptacja funkcji produktowych pozostaje poza zakresem tej zmiany.
 
 Obsługa awarii:
 
@@ -139,20 +139,6 @@ Obsługa awarii:
 
 Bramka: szkielet jest dostępny publicznie; migracyjny canary przechodzi przez schema-release, a kolejne prawidłowe PR-y bez zmiany schematu wdrażają się bez ręcznej promocji. GitHub Deployment i lokalny receipt wskazują ten sam SHA, manifest i wynik.
 
-## Phase 7: Przyrostowe MVP, odporność i przekazanie operacyjne
-
-- Dostarczać funkcje MVP małymi PR-ami. Każdy zielony release bez zmiany migracji wdraża reconciler; każdy release zmieniający migracje przechodzi wcześniej ręczną bramkę schema-release.
-- Na dedykowanych kontach i playlistach testowych sprawdzić finalne MVP: logowanie, pocztę, połączenie/odłączenie obu platform, callback OAuth, import publiczny i odmowę prywatnego, dopasowanie do 50 utworów, eksport użytkownika i konta technicznego, ponowienie bez duplikatu, synchronizację kolejki i schedulera, wygaśnięty token, rate limit oraz redakcję logów.
-- Po teście usunąć utworzone artefakty zewnętrzne i potwierdzić działanie unieważnienia tokenów.
-- Dodać runbook obejmujący status, logi, zatrzymany journal, terminalnie odrzuconego kandydata, wygasły artefakt/PAT, brak GHCR, awarię GitHub, zmianę migracji, rollback oraz powrót trasy do maintenance.
-- Kandydat po błędzie deployu nie jest ponawiany automatycznie. Nowy merge albo jawny rerun workflow tworzy nowy `run_attempt` i nową tożsamość wydania.
-- Błędy sieciowe przed mutacją mogą być sprawdzane ponownie w następnym cyklu; po rozpoczęciu deployu wynik jest terminalny dla danego kandydata.
-- Pending journal lub nieudane recovery blokuje wszystkie kolejne wdrożenia. Operator korzysta z bieżącego `s-manager status` i jawnego `s-manager rollback --expected-current ...`; journalu nie wolno usuwać ręcznie.
-- Zweryfikować alerty dla: braku świeżego backupu, nieudanego deployu/recovery, zablokowanej migracji, wygasających credentials, permanentnej niespójności GitHub audit oraz braku zdrowego upstreamu.
-- Udokumentować awaryjne odtworzenie hosta: Manager, sekrety, release state i storage z Restic, baza z logicznego backupu, obrazy po digestach z GHCR, następnie route `maintenance → validation → live`.
-
-Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy awarii dowodzą zachowania poprzedniego wydania lub `503`, braku wycieku sekretów i braku ślepych retry.
-
 ## Testy akceptacyjne
 
 - `music-map`: `composer test`, `vendor/bin/pint --test`, `npm run build`, source contract oraz PR/main workflow contract.
@@ -160,11 +146,10 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 - Docker: syntetyczne A → B, rollback B → A, niezdrowe B z automatycznym recovery, brak poprzednika i zmieniony fingerprint.
 - GitHub: merged PR, direct push, anulowany/niedokończony workflow, nieudany rerun, wygasły artefakt, zmieniony head podczas pobierania i ponowne przetworzenie tego samego runu.
 - Public edge: maintenance, validation z dozwolonym i niedozwolonym CIDR, live, niedostępny upstream, forwarded headers, TLS i OAuth callback.
-- Produkcja: kompletna checklista obu integracji oraz potwierdzenie backup/restore przed aktywacją autodeploy.
 
 ## Założenia
 
-- Implementacja funkcji obu platform streamingowych przebiega po uruchomieniu szkieletu; ten plan obejmuje ich przyrostowe wdrażanie oraz końcową akceptację produkcyjną.
+- Implementacja funkcji obu platform streamingowych przebiega po uruchomieniu szkieletu i jest poza zakresem tej zmiany.
 - Po aktywacji reconciliatora każdy kwalifikujący się merge do `main` bez zmiany fingerprintu migracji jest wdrażany automatycznie; zmiana schematu zatrzymuje się na ręcznej bramce schema-release.
 - Review jest procesem GitHub zakończonym decyzją o merge; reconciler nie analizuje approvals.
 - Migracje po baseline są jawne i nadzorowane przez schema-release; nigdy nie są automatycznie wykonywane przez reconciler.
@@ -227,13 +212,13 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 
 #### Automated
 
-- [x] 5.1 Opublikować pierwszego kandydata ze szkieletem
+- [x] 5.1 Opublikować pierwszego kandydata ze szkieletem — 1f439a2
 
 #### Manual
 
-- [x] 5.2 Uzupełnić minimalną konfigurację runtime szkieletu
-- [x] 5.3 Utworzyć zweryfikowany baseline schematu
-- [x] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację szkieletu
+- [x] 5.2 Uzupełnić minimalną konfigurację runtime szkieletu — 1f439a2
+- [x] 5.3 Utworzyć zweryfikowany baseline schematu — 1f439a2
+- [x] 5.4 Wdrożyć dokładne obrazy i zaliczyć walidację szkieletu — 1f439a2
 
 ### Phase 6: Wczesny cutover i wdrożenia pośrednie
 
@@ -244,19 +229,6 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 
 #### Manual
 
-- [x] 6.3 Przełączyć validation na live dla szkieletu
-- [x] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary
-- [x] 6.5 Zaliczyć canary zmieniający schemat przez schema-release
-
-### Phase 7: Przyrostowe MVP, odporność i przekazanie operacyjne
-
-#### Automated
-
-- [ ] 7.1 Dostarczyć kompletne MVP przez przyrostowe wydania
-- [ ] 7.2 Ukończyć testy awarii i runbook operacyjny
-
-#### Manual
-
-- [ ] 7.3 Zaliczyć końcową walidację integracji i playlist
-- [ ] 7.4 Przeprowadzić rollback, recovery i testy alertów
-- [ ] 7.5 Zatwierdzić gotowość MVP i disaster recovery
+- [x] 6.3 Przełączyć validation na live dla szkieletu — 1f439a2
+- [x] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary — 5b26ec0
+- [x] 6.5 Zaliczyć canary zmieniający schemat przez schema-release — 5b26ec0
