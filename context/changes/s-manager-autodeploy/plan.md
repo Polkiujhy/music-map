@@ -239,14 +239,14 @@ Bramka: kompletne MVP działa na publicznym środowisku, a kontrolowane testy aw
 
 #### Automated
 
-- [ ] 6.1 Zapewnić proxy z bezpiecznym fallbackiem 503
-- [ ] 6.2 Dodać kontrolowany schema-release dla migracji po baseline
+- [x] 6.1 Zapewnić proxy z bezpiecznym fallbackiem 503 — 340849c
+- [x] 6.2 Dodać kontrolowany schema-release dla migracji po baseline — 340849c
 
 #### Manual
 
 - [x] 6.3 Przełączyć validation na live dla szkieletu
-- [ ] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary
-- [ ] 6.5 Zaliczyć canary zmieniający schemat przez schema-release
+- [x] 6.4 Włączyć reconciler i zaliczyć automatyczny PR canary
+- [x] 6.5 Zaliczyć canary zmieniający schemat przez schema-release
 
 ### Phase 7: Przyrostowe MVP, odporność i przekazanie operacyjne
 
