@@ -172,7 +172,7 @@ YAML,
         $mainPushCondition = "if: github.event_name == 'push' && github.ref == 'refs/heads/main'";
 
         $this->assertStringContainsString("on:\n  pull_request:\n  push:\n    branches:\n      - main", $workflow);
-        $this->assertStringContainsString('needs: [application, source-security]', $workflow);
+        $this->assertStringContainsString('needs: [application, postgres-smoke, source-security]', $workflow);
         $this->assertSame(4, substr_count($workflow, $mainPushCondition));
         $this->assertStringContainsString(
             'uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3',
@@ -202,6 +202,33 @@ YAML,
         );
         $this->assertStringNotContainsString('attest', strtolower($workflow));
         $this->assertStringNotContainsString('trivy image', strtolower($workflow));
+    }
+
+    public function test_ci_runs_critical_authentication_against_isolated_postgresql(): void
+    {
+        $workflow = $this->projectFile('.github/workflows/ci.yml');
+
+        $this->assertStringContainsString("postgres-smoke:\n    needs: application", $workflow);
+        $this->assertMatchesRegularExpression(
+            '/image: postgres:18\.6-alpine@sha256:[0-9a-f]{64}/',
+            $workflow,
+        );
+        $this->assertStringContainsString('extensions: pdo_pgsql', $workflow);
+        $this->assertStringContainsString('DB_CONNECTION: pgsql', $workflow);
+        $this->assertStringContainsString('DB_DATABASE: music_map_ci', $workflow);
+        $this->assertStringContainsString('SESSION_DRIVER: array', $workflow);
+        $this->assertStringContainsString('CACHE_STORE: array', $workflow);
+        $this->assertStringContainsString('QUEUE_CONNECTION: sync', $workflow);
+        $this->assertStringContainsString('php artisan migrate:fresh --force --no-interaction', $workflow);
+        $this->assertStringContainsString('tests/Feature/Auth', $workflow);
+        $this->assertStringNotContainsString('schema-release music-map --release-file', $workflow);
+    }
+
+    public function test_music_map_nginx_does_not_log_credential_bearing_request_uris(): void
+    {
+        $nginx = $this->projectFile('docker/nginx/default.conf');
+
+        $this->assertStringContainsString('access_log off;', $nginx);
     }
 
     private function projectFile(string $path): string

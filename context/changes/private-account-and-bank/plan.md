@@ -478,32 +478,32 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [x] 4.1 Uruchomić testy landingu i dostępu do banku
-- [x] 4.2 Potwierdzić kontrakt nazwanych tras i brak dashboardu
-- [x] 4.3 Potwierdzić egzekwowanie auth i verified dla banku
-- [x] 4.4 Zbudować produkcyjny frontend
-- [x] 4.5 Sprawdzić formatowanie PHP
+- [x] 4.1 Uruchomić testy landingu i dostępu do banku — cccedad
+- [x] 4.2 Potwierdzić kontrakt nazwanych tras i brak dashboardu — cccedad
+- [x] 4.3 Potwierdzić egzekwowanie auth i verified dla banku — cccedad
+- [x] 4.4 Zbudować produkcyjny frontend — cccedad
+- [x] 4.5 Sprawdzić formatowanie PHP — cccedad
 
 #### Ręczne
 
-- [x] 4.6 Zweryfikować responsywność i dostępność landingu oraz banku
-- [x] 4.7 Potwierdzić informacyjny pusty stan bez martwych kontroli
-- [x] 4.8 Przejść pełną nawigację od gościa do wylogowania bez ślepych ekranów
+- [x] 4.6 Zweryfikować responsywność i dostępność landingu oraz banku — cccedad
+- [x] 4.7 Potwierdzić informacyjny pusty stan bez martwych kontroli — cccedad
+- [x] 4.8 Przejść pełną nawigację od gościa do wylogowania bez ślepych ekranów — cccedad
 
 ### Faza 5: Utwardzenie i gotowość wydania
 
 #### Automatyczne
 
-- [ ] 5.1 Uruchomić pełny zestaw PHPUnit na SQLite
-- [ ] 5.2 Uruchomić migracje i krytyczną macierz auth na jednorazowym PostgreSQL
-- [ ] 5.3 Sprawdzić formatowanie PHP
-- [ ] 5.4 Zbudować produkcyjny bundle frontendowy
-- [ ] 5.5 Zweryfikować kontrakt źródła w worktree i CI
-- [ ] 5.6 Uruchomić audyty zależności PHP i Node
+- [x] 5.1 Uruchomić pełny zestaw PHPUnit na SQLite
+- [x] 5.2 Uruchomić migracje i krytyczną macierz auth na jednorazowym PostgreSQL
+- [x] 5.3 Sprawdzić formatowanie PHP
+- [x] 5.4 Zbudować produkcyjny bundle frontendowy
+- [x] 5.5 Zweryfikować kontrakt źródła w worktree i CI
+- [x] 5.6 Uruchomić audyty zależności PHP i Node
 
 #### Ręczne
 
-- [ ] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map
+- [x] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map
 - [ ] 5.8 Wykonać świeży backup i isolated restore PostgreSQL
 - [ ] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger
 - [ ] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów

@@ -51,7 +51,7 @@ class AuthenticationTest extends TestCase
     {
         User::factory()->create(['email' => 'ada@example.com']);
 
-        foreach (range(1, 4) as $attempt) {
+        foreach (range(1, 5) as $attempt) {
             $this->from(route('login'))->post(route('login.store'), [
                 'email' => 'ada@example.com',
                 'password' => 'incorrect-password',
@@ -61,7 +61,6 @@ class AuthenticationTest extends TestCase
         $this->from(route('login'))->post(route('login.store'), [
             'email' => 'ada@example.com',
             'password' => 'incorrect-password',
-        ])->assertRedirect(route('login'))
-            ->assertSessionHasErrors('email');
+        ])->assertTooManyRequests();
     }
 }
