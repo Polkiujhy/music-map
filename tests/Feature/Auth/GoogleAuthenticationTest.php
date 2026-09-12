@@ -188,7 +188,7 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertDatabaseCount('auth_identities', 0);
     }
 
-    public function test_google_oauth_is_throttled_before_provider_and_resolver_work(): void
+    public function test_google_oauth_is_throttled_per_forwarded_client_before_provider_and_resolver_work(): void
     {
         config()->set('services.google', [
             'client_id' => 'test-client',
@@ -196,9 +196,16 @@ class GoogleAuthenticationTest extends TestCase
             'redirect' => 'https://music-map.test/auth/google/callback',
         ]);
 
+        $this->withServerVariables(['REMOTE_ADDR' => '172.23.0.8'])
+            ->withHeader('X-Forwarded-For', '198.51.100.10');
+
         for ($attempt = 0; $attempt < 10; $attempt++) {
             $this->get(route('auth.google.redirect'))->assertRedirect();
         }
+
+        $this->withHeader('X-Forwarded-For', '203.0.113.20')
+            ->get(route('auth.google.redirect'))
+            ->assertRedirect();
 
         $resolver = Mockery::mock(ResolveGoogleIdentity::class);
         $resolver->shouldNotReceive('resolve');
@@ -208,7 +215,8 @@ class GoogleAuthenticationTest extends TestCase
             throw new RuntimeException('Provider should not be called.');
         });
 
-        $this->withSession(['state' => 'valid-state'])
+        $this->withHeader('X-Forwarded-For', '192.0.2.250, 198.51.100.10')
+            ->withSession(['state' => 'valid-state'])
             ->get(route('auth.google.callback', ['state' => 'valid-state']))
             ->assertTooManyRequests();
 

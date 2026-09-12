@@ -32,7 +32,7 @@
   - Tradeoff: The key and threshold must balance abuse resistance against users behind shared IP addresses.
   - Confidence: HIGH — route middleware was verified with `php artisan route:list --path=auth/google -vv`.
   - Blind spot: Upstream rate limiting at the public edge was not measured; relying on it would still leave the application contract implicit.
-- **Decision**: FIXED — added a dedicated per-IP Google OAuth limiter to both routes and verified the provider/resolver boundary with a throttling feature test
+- **Decision**: FIXED — added a dedicated Google OAuth limiter to both routes, configured Laravel to resolve the forwarded client through only the direct trusted peer, and verified independent client buckets, spoof resistance, and the provider/resolver boundary
 
 ### F2 — Unexpected Google callback failures are silently discarded
 

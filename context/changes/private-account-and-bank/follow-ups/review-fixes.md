@@ -23,3 +23,11 @@
 - **Location**: `lang/pl/validation.php:3`
 - **Work**: Add every validation message reachable from the account forms, including `min.string`, and add a feature assertion for the rendered Polish short-password error.
 - **Verification**: `php artisan test tests/Feature/Auth` passed (35 tests, 204 assertions), including the rendered Polish validation message; targeted `vendor/bin/pint --test` passed.
+
+## F4 — Resolve Google OAuth throttle keys from the forwarded client
+
+- **Status**: DONE
+- **Source**: Pull request review follow-up.
+- **Location**: `bootstrap/app.php:15`
+- **Work**: Trust only the direct request peer, enable the forwarded-client and forwarded-proto headers, and retain the existing limiter key based on `Request::ip()`.
+- **Verification**: The Google auth feature test exhausts client A's shared redirect/callback bucket, confirms client B remains allowed through the same proxy peer, and proves a hostile leftmost XFF prefix cannot evade client A's limit.
