@@ -45,5 +45,9 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request): Limit {
             return Limit::perMinute(5)->by(strtolower(trim((string) $request->input('email'))).'|'.$request->ip());
         });
+
+        RateLimiter::for('google-oauth', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 }

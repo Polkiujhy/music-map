@@ -6,6 +6,8 @@ use App\Models\AuthIdentity;
 use App\Models\User;
 use App\Services\Auth\ResolveGoogleIdentity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery;
@@ -186,8 +188,38 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertDatabaseCount('auth_identities', 0);
     }
 
+    public function test_google_oauth_is_throttled_before_provider_and_resolver_work(): void
+    {
+        config()->set('services.google', [
+            'client_id' => 'test-client',
+            'client_secret' => 'test-secret',
+            'redirect' => 'https://music-map.test/auth/google/callback',
+        ]);
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->get(route('auth.google.redirect'))->assertRedirect();
+        }
+
+        $resolver = Mockery::mock(ResolveGoogleIdentity::class);
+        $resolver->shouldNotReceive('resolve');
+        $this->app->instance(ResolveGoogleIdentity::class, $resolver);
+
+        Socialite::fake('google', function (): never {
+            throw new RuntimeException('Provider should not be called.');
+        });
+
+        $this->withSession(['state' => 'valid-state'])
+            ->get(route('auth.google.callback', ['state' => 'valid-state']))
+            ->assertTooManyRequests();
+
+        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('auth_identities', 0);
+    }
+
     public function test_provider_failure_is_safe_and_does_not_write_data(): void
     {
+        Log::spy();
+
         Socialite::fake('google', function (): never {
             throw new RuntimeException('Provider failed with sensitive details.');
         });
@@ -199,6 +231,15 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertGuest();
         $this->assertDatabaseCount('users', 0);
         $this->assertDatabaseCount('auth_identities', 0);
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context): bool {
+                return $message === 'Google OAuth callback failed.'
+                    && array_keys($context) === ['exception_class', 'correlation_id']
+                    && $context['exception_class'] === RuntimeException::class
+                    && Str::isUuid($context['correlation_id'])
+                    && ! str_contains(json_encode($context, JSON_THROW_ON_ERROR), 'sensitive details');
+            });
     }
 
     public function test_unverified_missing_or_non_boolean_verification_is_refused(): void

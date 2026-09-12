@@ -9,8 +9,10 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])
+        ->middleware('throttle:google-oauth')
         ->name('auth.google.redirect');
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])
+        ->middleware('throttle:google-oauth')
         ->name('auth.google.callback');
 });
 

@@ -8,6 +8,8 @@ use App\Services\Auth\ResolveGoogleIdentity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Throwable;
 
@@ -51,7 +53,12 @@ class GoogleAuthController extends Controller
             return redirect()->route('bank.index');
         } catch (IdentityConflictException) {
             return $this->denied();
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('Google OAuth callback failed.', [
+                'exception_class' => $exception::class,
+                'correlation_id' => (string) Str::uuid(),
+            ]);
+
             return $this->denied();
         } finally {
             $request->session()->forget('state');
