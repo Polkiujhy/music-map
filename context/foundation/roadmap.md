@@ -87,7 +87,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** zatwierdzenie dostępu i ograniczenia narzucone przez Spotify oraz YouTube.
 - **Niewiadome:** czy projekty deweloperskie, wymagane poświadczenia i konta techniczne obu platform są już aktywne? — Właściciel: użytkownik. Blok: tak.
 - **Ryzyko:** brak choć jednego dostępu ujawniłby się dopiero podczas budowy importu lub eksportu i zatrzymał najkrótszą ścieżkę do działającego produktu.
-- **Status:** in-progress
+- **Status:** planning
 
 ## Wycinki
 
@@ -101,7 +101,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** połączenie metod logowania po adresie e-mail musi zapobiegać powieleniu kont, bo wszystkie kolejne wycinki opierają własność danych na jednej tożsamości.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-02: Import playlisty z linku do banku
 
