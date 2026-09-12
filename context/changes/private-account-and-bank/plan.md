@@ -494,16 +494,16 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [x] 5.1 Uruchomić pełny zestaw PHPUnit na SQLite
-- [x] 5.2 Uruchomić migracje i krytyczną macierz auth na jednorazowym PostgreSQL
-- [x] 5.3 Sprawdzić formatowanie PHP
-- [x] 5.4 Zbudować produkcyjny bundle frontendowy
-- [x] 5.5 Zweryfikować kontrakt źródła w worktree i CI
-- [x] 5.6 Uruchomić audyty zależności PHP i Node
+- [x] 5.1 Uruchomić pełny zestaw PHPUnit na SQLite — f85e667
+- [x] 5.2 Uruchomić migracje i krytyczną macierz auth na jednorazowym PostgreSQL — f85e667
+- [x] 5.3 Sprawdzić formatowanie PHP — f85e667
+- [x] 5.4 Zbudować produkcyjny bundle frontendowy — f85e667
+- [x] 5.5 Zweryfikować kontrakt źródła w worktree i CI — f85e667
+- [x] 5.6 Uruchomić audyty zależności PHP i Node — f85e667
 
 #### Ręczne
 
-- [x] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map
+- [x] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map — f85e667
 - [ ] 5.8 Wykonać świeży backup i isolated restore PostgreSQL
 - [ ] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger
 - [ ] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów
