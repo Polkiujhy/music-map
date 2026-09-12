@@ -446,17 +446,17 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [ ] 2.1 Uruchomić pełną macierz e-mailowego auth
-- [ ] 2.2 Potwierdzić jedno konto dla wariantów znormalizowanego e-maila
-- [ ] 2.3 Potwierdzić throttling i bezpieczeństwo cyklu sesji
-- [ ] 2.4 Zbudować widoki w produkcyjnym bundle
-- [ ] 2.5 Sprawdzić formatowanie PHP
+- [x] 2.1 Uruchomić pełną macierz e-mailowego auth — 12a4b61
+- [x] 2.2 Potwierdzić jedno konto dla wariantów znormalizowanego e-maila — 12a4b61
+- [x] 2.3 Potwierdzić throttling i bezpieczeństwo cyklu sesji — 12a4b61
+- [x] 2.4 Zbudować widoki w produkcyjnym bundle — 12a4b61
+- [x] 2.5 Sprawdzić formatowanie PHP — 12a4b61
 
 #### Ręczne
 
-- [ ] 2.6 Przejść rejestrację, weryfikację, logowanie, wylogowanie i reset z testową pocztą
-- [ ] 2.7 Zweryfikować klawiaturę, fokus, błędy oraz układ mobilny i desktopowy
-- [ ] 2.8 Potwierdzić zachowanie sesji bez opcji Zapamiętaj mnie
+- [x] 2.6 Przejść rejestrację, weryfikację, logowanie, wylogowanie i reset z testową pocztą — 12a4b61
+- [x] 2.7 Zweryfikować klawiaturę, fokus, błędy oraz układ mobilny i desktopowy — 12a4b61
+- [x] 2.8 Potwierdzić zachowanie sesji bez opcji Zapamiętaj mnie — 12a4b61
 
 ### Faza 3: Logowanie i łączenie przez Google
 

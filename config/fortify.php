@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Middleware\NormalizeAuthEmail;
 use Laravel\Fortify\Features;
 
 return [
     'guard' => 'web',
-    'middleware' => ['web'],
+    'middleware' => ['web', NormalizeAuthEmail::class],
     'auth_middleware' => 'auth',
     'passwords' => 'users',
     'username' => 'email',
