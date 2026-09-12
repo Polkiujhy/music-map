@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,4 +7,47 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-ash-grey-50: #eff5f1;
+    --color-ash-grey-100: #dfece3;
+    --color-ash-grey-200: #bfd9c6;
+    --color-ash-grey-300: #9fc6aa;
+    --color-ash-grey-400: #80b38e;
+    --color-ash-grey-500: #609f72;
+    --color-ash-grey-600: #4d805b;
+    --color-ash-grey-700: #396044;
+    --color-ash-grey-800: #26402d;
+    --color-ash-grey-900: #132017;
+    --color-ash-grey-950: #0d1610;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer components {
+    .skip-link {
+        @apply sr-only fixed left-4 top-4 z-50 rounded-md bg-ash-grey-100 px-4 py-2 font-medium text-ash-grey-950 shadow focus:not-sr-only focus:outline-2 focus:outline-offset-2 focus:outline-ash-grey-400;
+    }
+
+    .field-label {
+        @apply block text-sm font-medium text-ash-grey-100;
+    }
+
+    .field-input {
+        @apply mt-2 block w-full rounded-lg border-ash-grey-800 bg-[#171717] px-3 py-2 text-sm text-ash-grey-50 shadow-sm outline-none transition placeholder:text-ash-grey-700 focus:border-ash-grey-400 focus:ring-2 focus:ring-ash-grey-400/25;
+    }
+
+    .primary-button {
+        @apply rounded-lg bg-ash-grey-300 px-4 py-2.5 text-sm font-semibold text-ash-grey-950 shadow-sm outline-offset-2 transition hover:bg-ash-grey-200 focus-visible:outline-2 focus-visible:outline-ash-grey-300 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .secondary-button {
+        @apply rounded-lg border border-ash-grey-700 bg-ash-grey-950/40 px-4 py-2.5 text-sm font-semibold text-ash-grey-100 shadow-sm outline-offset-2 transition hover:border-ash-grey-500 hover:bg-ash-grey-900 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
+    }
+
+    .oauth-button {
+        @apply flex w-full items-center justify-center rounded-lg border border-ash-grey-700 bg-[#171717] px-4 py-2.5 text-sm font-semibold text-ash-grey-50 shadow-sm outline-offset-2 transition hover:border-ash-grey-500 hover:bg-ash-grey-950 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
+    }
+
+    .auth-link {
+        @apply font-medium text-ash-grey-300 underline underline-offset-4 outline-offset-4 transition hover:text-ash-grey-100 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
+    }
 }

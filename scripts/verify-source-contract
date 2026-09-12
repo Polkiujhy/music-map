@@ -23,9 +23,19 @@ required_paths='AGENTS.md
 Dockerfile
 README.md
 README.md.scaffold
+app/Actions/Fortify/CreateNewUser.php
+app/Actions/Fortify/PasswordValidationRules.php
+app/Actions/Fortify/ResetUserPassword.php
+app/Exceptions/Auth/IdentityConflictException.php
+app/Http/Controllers/Auth/GoogleAuthController.php
 app/Http/Controllers/Controller.php
+app/Http/Middleware/NormalizeAuthEmail.php
+app/Http/Responses/NeutralPasswordResetLinkResponse.php
+app/Models/AuthIdentity.php
 app/Models/User.php
 app/Providers/AppServiceProvider.php
+app/Providers/FortifyServiceProvider.php
+app/Services/Auth/ResolveGoogleIdentity.php
 artisan
 bootstrap/app.php
 bootstrap/cache/.gitignore
@@ -37,6 +47,7 @@ config/auth.php
 config/cache.php
 config/database.php
 config/filesystems.php
+config/fortify.php
 config/logging.php
 config/mail.php
 config/queue.php
@@ -54,6 +65,8 @@ database/factories/UserFactory.php
 database/migrations/0001_01_01_000000_create_users_table.php
 database/migrations/0001_01_01_000001_create_cache_table.php
 database/migrations/0001_01_01_000002_create_jobs_table.php
+database/migrations/2026_09_12_000000_make_users_password_nullable.php
+database/migrations/2026_09_12_000001_create_auth_identities_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -87,7 +100,15 @@ storage/framework/sessions/.gitignore
 storage/framework/testing/.gitignore
 storage/framework/views/.gitignore
 storage/logs/.gitignore
-tests/Feature/ExampleTest.php
+tests/Feature/BankAccessTest.php
+tests/Feature/LandingPageTest.php
+tests/Feature/Auth/AuthIdentityModelTest.php
+tests/Feature/Auth/AuthenticationTest.php
+tests/Feature/Auth/EmailVerificationTest.php
+tests/Feature/Auth/GoogleAuthenticationTest.php
+tests/Feature/Auth/PasswordResetTest.php
+tests/Feature/Auth/RegistrationTest.php
+tests/Feature/Auth/SessionSecurityTest.php
 tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
@@ -95,6 +116,7 @@ tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
 tests/Unit/RuntimeFilesystemContractTest.php
+tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'
 
