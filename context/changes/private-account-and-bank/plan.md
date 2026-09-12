@@ -432,15 +432,15 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [x] 1.1 Zainstalować zależności z lockfile i uruchomić aplikację bez błędów providerów
-- [x] 1.2 Zastosować i cofnąć migracje na jednorazowej bazie SQLite
-- [x] 1.3 Potwierdzić kontrakt modelu auth identities testami
-- [x] 1.4 Sprawdzić formatowanie PHP
+- [x] 1.1 Zainstalować zależności z lockfile i uruchomić aplikację bez błędów providerów — 081c42c
+- [x] 1.2 Zastosować i cofnąć migracje na jednorazowej bazie SQLite — 081c42c
+- [x] 1.3 Potwierdzić kontrakt modelu auth identities testami — 081c42c
+- [x] 1.4 Sprawdzić formatowanie PHP — 081c42c
 
 #### Ręczne
 
-- [x] 1.5 Potwierdzić zgodność migracji expand/contract z bieżącym obrazem
-- [x] 1.6 Potwierdzić brak sekretów i tokenów Google w repozytorium, logach i tabelach
+- [x] 1.5 Potwierdzić zgodność migracji expand/contract z bieżącym obrazem — 081c42c
+- [x] 1.6 Potwierdzić brak sekretów i tokenów Google w repozytorium, logach i tabelach — 081c42c
 
 ### Faza 2: Kompletny przepływ e-mailowy
 
