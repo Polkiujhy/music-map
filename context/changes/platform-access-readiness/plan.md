@@ -346,9 +346,9 @@ Zmiany PRD/roadmapy są trwałą korektą produktu, nie migracją danych. Wycofa
 
 #### Automated
 
-- [x] 1.1 Kontrakt konfiguracji platform przechodzi
-- [x] 1.2 Kontrakt źródła obejmuje nowe trwałe pliki
-- [x] 1.3 Dokumenty fundamentu nie obiecują niewykonalnego importu ani prywatności Spotify
+- [x] 1.1 Kontrakt konfiguracji platform przechodzi — d8e5adf
+- [x] 1.2 Kontrakt źródła obejmuje nowe trwałe pliki — d8e5adf
+- [x] 1.3 Dokumenty fundamentu nie obiecują niewykonalnego importu ani prywatności Spotify — d8e5adf
 
 #### Manual
 
@@ -359,13 +359,13 @@ Zmiany PRD/roadmapy są trwałą korektą produktu, nie migracją danych. Wycofa
 
 #### Automated
 
-- [x] 2.1 Pełny zestaw testów przechodzi po dodaniu runbooka i szablonu
-- [x] 2.2 Formatowanie i kontrakt źródła przechodzą
-- [x] 2.3 Skan repozytorium nie znajduje rzeczywistych poświadczeń ani tokenów
+- [x] 2.1 Pełny zestaw testów przechodzi po dodaniu runbooka i szablonu — d8e5adf
+- [x] 2.2 Formatowanie i kontrakt źródła przechodzą — d8e5adf
+- [x] 2.3 Skan repozytorium nie znajduje rzeczywistych poświadczeń ani tokenów — d8e5adf
 
 #### Manual
 
-- [x] 2.4 Operator zatwierdza kompletny runbook w trybie tabletop
+- [x] 2.4 Operator zatwierdza kompletny runbook w trybie tabletop — d8e5adf
 - [ ] 2.5 Właściciel produktu potwierdza pokrycie potrzeb zależnych wycinków
 
 ### Phase 3: Walidacja live i przekazanie wyników
