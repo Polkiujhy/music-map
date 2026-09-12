@@ -5,7 +5,7 @@
 - **Scope**: Phase 5 of 5, pre-release candidate
 - **Date**: 2026-09-12
 - **Verdict**: APPROVED after fixes; production checks 5.8-5.10 remain pending
-- **Findings**: 1 critical, 3 warnings, all fixed before merge
+- **Findings**: 1 critical, 4 warnings, all fixed before merge
 
 ## Verdicts
 
@@ -58,6 +58,16 @@
 - **Location**: `tests/TestCase.php`
 - **Detail**: Feature tests passed locally only because `public/build/manifest.json` already existed; a clean CI checkout ran PHPUnit before the frontend build and failed ten rendered-view tests.
 - **Fix**: Call Laravel's `withoutVite()` from the shared test setup. The independent `npm run build` gate continues to verify production assets.
+- **Decision**: FIXED
+
+### F5 — Container frontend omitted the Composer-provided Flux stylesheet
+
+- **Severity**: ⚠️ WARNING
+- **Impact**: 🔎 MEDIUM — the image build needed a lockfile-derived cross-stage dependency
+- **Dimension**: Architecture
+- **Location**: `Dockerfile`
+- **Detail**: The Vite build imports `vendor/livewire/flux/dist/flux.css`, but the Node stage had neither Composer dependencies nor that file, so clean container builds failed.
+- **Fix**: Install locked production Composer dependencies in a cacheable stage and copy the pinned Flux package into the frontend stage so Vite can resolve its stylesheet and Tailwind can scan its component templates.
 - **Decision**: FIXED
 
 ## Verification

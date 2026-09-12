@@ -8,6 +8,17 @@ ARG SOURCE_SHA
 
 FROM ${COMPOSER_IMAGE} AS composer-bin
 
+FROM composer-bin AS frontend-vendor
+WORKDIR /build
+COPY composer.json composer.lock ./
+RUN composer install \
+        --classmap-authoritative \
+        --no-dev \
+        --no-interaction \
+        --no-progress \
+        --no-scripts \
+        --prefer-dist
+
 FROM ${NODE_IMAGE} AS frontend
 WORKDIR /build
 COPY package.json package-lock.json ./
@@ -15,6 +26,7 @@ RUN npm ci --ignore-scripts --no-audit
 COPY public ./public
 COPY resources ./resources
 COPY vite.config.js ./
+COPY --from=frontend-vendor /build/vendor/livewire/flux ./vendor/livewire/flux
 RUN npm run build
 
 FROM ${PHP_IMAGE} AS php-base

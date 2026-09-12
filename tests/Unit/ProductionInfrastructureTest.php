@@ -231,6 +231,17 @@ YAML,
         $this->assertStringContainsString('access_log off;', $nginx);
     }
 
+    public function test_container_frontend_uses_locked_flux_assets(): void
+    {
+        $dockerfile = $this->projectFile('Dockerfile');
+
+        $this->assertStringContainsString('FROM composer-bin AS frontend-vendor', $dockerfile);
+        $this->assertStringContainsString(
+            'COPY --from=frontend-vendor /build/vendor/livewire/flux ./vendor/livewire/flux',
+            $dockerfile,
+        );
+    }
+
     private function projectFile(string $path): string
     {
         $contents = file_get_contents(dirname(__DIR__, 2).'/'.$path);
