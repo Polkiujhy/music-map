@@ -52,4 +52,23 @@ class RegistrationTest extends TestCase
 
         $this->assertDatabaseCount('users', 1);
     }
+
+    public function test_registration_shows_a_polish_error_for_a_short_password(): void
+    {
+        config()->set('app.locale', 'pl');
+
+        $this->followingRedirects()
+            ->from(route('register'))
+            ->post(route('register.store'), [
+                'name' => 'Ada Lovelace',
+                'email' => 'ada@example.com',
+                'password' => 'short',
+                'password_confirmation' => 'short',
+            ])
+            ->assertOk()
+            ->assertSeeText('Pole hasło musi mieć co najmniej 8 znaków.');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+    }
 }

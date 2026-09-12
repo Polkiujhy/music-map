@@ -343,6 +343,16 @@ Faza uruchamia pełną regresję, dokłada izolowany PostgreSQL smoke do CI i pr
 
 **Kontrakt**: Kanoniczne komendy pozostają `composer test`, `vendor/bin/pint --test` i `npm run build`; CI nadal wykonuje audyty, source security i budowę czterech obrazów. Zmiana nie automatyzuje produkcyjnego `schema-release`.
 
+### Addendum implementacyjny — zależności obrazu i bezpieczne logowanie
+
+**Pliki**: `Dockerfile`, `docker/nginx/default.conf`, `tests/Unit/ProductionInfrastructureTest.php`
+
+Podczas weryfikacji czystego obrazu wykryto, że Vite importuje arkusz Flux dostarczany przez Composer. Obraz otrzymał osobny, oparty na lockfile etap instalujący produkcyjne zależności Composer i kopiujący wyłącznie pakiet Flux do etapu frontendowego.
+
+Dedykowany nginx aplikacji wyłącza access log, ponieważ callback OAuth oraz podpisane linki mogą zawierać jednorazowe dane uwierzytelniające w URI. Error log pozostaje aktywny. Decyzja chroni poufność kosztem ograniczonej obserwowalności żądań; nie wolno przywracać logowania pełnych URI bez uprzedniego wdrożenia bezpiecznego formatu logów.
+
+Test infrastrukturalny utrwala oba kontrakty.
+
 #### 4. Nadzorowane wydanie schematu
 
 **Pliki**: `context/changes/private-account-and-bank/plan.md` (kryteria ręczne), bez zmian w `/srv/manager`
@@ -504,6 +514,6 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 #### Ręczne
 
 - [x] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map — f85e667
-- [ ] 5.8 Wykonać świeży backup i isolated restore PostgreSQL
-- [ ] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger
-- [ ] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów
+- [x] 5.8 Wykonać świeży backup i isolated restore PostgreSQL — 60e8df9
+- [x] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger — 60e8df9
+- [x] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów — 60e8df9
