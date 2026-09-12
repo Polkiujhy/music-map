@@ -1,10 +1,10 @@
 ---
 change_id: private-account-and-bank
 title: Prywatne konto i wejście do banku playlist
-status: impl_reviewed
+status: archived
 created: 2026-09-12
 updated: 2026-09-12
-archived_at: null
+archived_at: 2026-09-12T11:56:00Z
 ---
 
 ## Notes

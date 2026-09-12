@@ -42,7 +42,7 @@ milestone_status: open
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
 | F-01 | `platform-access-readiness` | (fundament) zweryfikowano minimalny dostęp aplikacji i kont technicznych do Spotify i YouTube oraz bezpieczną obsługę poświadczeń | aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003 | planning |
-| S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | in-progress |
+| S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | proposed |
@@ -101,7 +101,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** połączenie metod logowania po adresie e-mail musi zapobiegać powieleniu kont, bo wszystkie kolejne wycinki opierają własność danych na jednej tożsamości.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Import playlisty z linku do banku
 
@@ -246,3 +246,5 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 
 ## Zrobione
+
+- **S-01: użytkownik może utworzyć konto, zalogować się e-mailem lub przez Google i wejść do własnego pustego banku playlist bez dostępu do danych innych osób.** — Zarchiwizowano 2026-09-12 → `context/archive/2026-09-12-private-account-and-bank/`. Lekcja: —.
