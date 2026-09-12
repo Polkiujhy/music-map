@@ -504,6 +504,6 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 #### Ręczne
 
 - [x] 5.7 Naprawić i zweryfikować root-owned helper provisioningu Music Map — f85e667
-- [x] 5.8 Wykonać świeży backup i isolated restore PostgreSQL
-- [x] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger
-- [x] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów
+- [x] 5.8 Wykonać świeży backup i isolated restore PostgreSQL — 60e8df9
+- [x] 5.9 Zastosować dwie migracje przez nadzorowany schema-release i potwierdzić ledger — 60e8df9
+- [x] 5.10 Wdrożyć dokładnego kandydata i zaliczyć produkcyjny smoke test bez wycieku sekretów — 60e8df9
