@@ -7,6 +7,13 @@ music-map is a Laravel 13/PHP 8.4 web application with a Vite 8 and Tailwind CSS
 - Keep durable product and stack decisions in `context/foundation/`; edit those documents in place. Put change-specific research and plans in `context/changes/<change-id>/`, and treat `context/archive/` as read-only.
 - Never commit `.env`, credentials, OAuth tokens, or generated runtime data. Add safe placeholders to `.env.example`, and keep integration secrets out of logs.
 
+## s-manager PaaS Boundary
+
+- For work involving s-manager commands, runtime delivery, deployment, probes, or other Manager-provided capabilities, use the global `s-manager-use` skill and treat s-manager as an external PaaS.
+- Keep only the public interoperability contract required by music-map in this repository: consumer-visible configuration names, required entrypoints or paths, data schemas, responses, exit codes, and semantic guarantees. Keep secret values confidential.
+- Do not copy Manager implementation details into music-map plans, code, or tests. This includes host file validation, transport-size limits, mount flags, UID/GID choices, container arguments, locks, rollback, OAuth orchestration, and cleanup mechanics unless a detail is explicitly part of the public consumer contract.
+- Do not route routine music-map integration work to `s-manager-ops`; that skill is reserved for implementing, operating, or investigating `/srv/manager` itself.
+
 ## Build, Test, and Development Commands
 
 - `composer setup` installs PHP and Node dependencies, creates `.env` when absent, generates the app key, migrates SQLite, and builds assets.
