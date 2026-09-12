@@ -42,4 +42,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Indicate that the user authenticates without a local password.
+     */
+    public function passwordless(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+        ]);
+    }
 }
