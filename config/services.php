@@ -41,4 +41,19 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'spotify' => [
+        'client_id' => env('SPOTIFY_CLIENT_ID'),
+        'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+        'redirect' => env('SPOTIFY_REDIRECT_URI'),
+        'technical_refresh_token' => env('SPOTIFY_TECHNICAL_REFRESH_TOKEN'),
+    ],
+
+    'youtube' => [
+        'api_key' => env('YOUTUBE_API_KEY'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('YOUTUBE_REDIRECT_URI'),
+        'technical_refresh_token' => env('YOUTUBE_TECHNICAL_REFRESH_TOKEN'),
+    ],
+
 ];

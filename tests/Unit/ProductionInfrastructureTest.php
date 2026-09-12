@@ -17,7 +17,19 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertStringContainsString("DB_SSLMODE=prefer\n", $environment);
         $this->assertStringContainsString('APP_KEY=__REQUIRED_RUNTIME_SECRET__', $environment);
         $this->assertStringContainsString('DB_PASSWORD=__REQUIRED_RUNTIME_SECRET__', $environment);
-        $this->assertDoesNotMatchRegularExpression('/^(APP_KEY|DB_PASSWORD|MAIL_PASSWORD)=$/m', $environment);
+        foreach ([
+            'SPOTIFY_CLIENT_ID',
+            'SPOTIFY_CLIENT_SECRET',
+            'SPOTIFY_TECHNICAL_REFRESH_TOKEN',
+            'YOUTUBE_API_KEY',
+            'YOUTUBE_TECHNICAL_REFRESH_TOKEN',
+        ] as $secretName) {
+            $this->assertStringContainsString("{$secretName}=__REQUIRED_RUNTIME_SECRET__", $environment);
+        }
+        $this->assertDoesNotMatchRegularExpression(
+            '/^(APP_KEY|DB_PASSWORD|MAIL_PASSWORD|SPOTIFY_[A-Z_]+|YOUTUBE_(?:API_KEY|CLIENT_ID|CLIENT_SECRET|TECHNICAL_REFRESH_TOKEN))=$/m',
+            $environment,
+        );
     }
 
     public function test_ci_actions_are_commit_pinned_and_permissions_are_least_privilege(): void

@@ -60,6 +60,7 @@ context/foundation/lessons.md
 context/foundation/prd.md
 context/foundation/shape-notes.md
 context/foundation/tech-stack.md
+docs/platform-access-readiness.md
 database/.gitignore
 database/factories/UserFactory.php
 database/migrations/0001_01_01_000000_create_users_table.php
@@ -113,6 +114,8 @@ tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
 tests/Unit/PostgresStartupWaiterTest.php
+tests/Unit/PlatformAccessConfigurationTest.php
+tests/Unit/PlatformAccessDocumentationTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
 tests/Unit/RuntimeFilesystemContractTest.php

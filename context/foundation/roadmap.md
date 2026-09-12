@@ -41,7 +41,7 @@ milestone_status: open
 
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
-| F-01 | `platform-access-readiness` | (fundament) zweryfikowano minimalny dostęp aplikacji i kont technicznych do Spotify i YouTube oraz bezpieczną obsługę poświadczeń | aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003 | planning |
+| F-01 | `platform-access-readiness` | (fundament) zweryfikowano minimalny dostęp aplikacji i kont technicznych do Spotify i YouTube oraz bezpieczną obsługę poświadczeń | aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003 | implementing |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
@@ -85,9 +85,9 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wymagania wstępne:** aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube.
 - **Równolegle z:** S-01.
 - **Blokery:** zatwierdzenie dostępu i ograniczenia narzucone przez Spotify oraz YouTube.
-- **Niewiadome:** czy projekty deweloperskie, wymagane poświadczenia i konta techniczne obu platform są już aktywne? — Właściciel: użytkownik. Blok: tak.
+- **Niewiadome:** czy każde konto i projekt przejdzie pełną macierz live na aktualnych ograniczeniach Development/Testing? — Właściciel: użytkownik/operator. Blok: tak.
 - **Ryzyko:** brak choć jednego dostępu ujawniłby się dopiero podczas budowy importu lub eksportu i zatrzymał najkrótszą ścieżkę do działającego produktu.
-- **Status:** planning
+- **Status:** implementing
 
 ## Wycinki
 
@@ -105,7 +105,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ### S-02: Import playlisty z linku do banku
 
-- **Wynik:** zalogowany użytkownik może zaimportować dostępną playlistę z linku Spotify lub YouTube do prywatnego banku, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.
+- **Wynik:** zalogowany użytkownik może po OAuth zaimportować własną lub współdzieloną playlistę Spotify albo przez API key publiczną/`unlisted` playlistę YouTube (prywatną po OAuth właściciela), a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.
 - **Change ID:** `playlist-link-import`
 - **Odniesienia do PRD:** FR-002, FR-004, NFR-001, NFR-005.
 - **Wymagania wstępne:** F-01, S-01.
@@ -215,7 +215,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 | ID mapy drogowej | Change ID | Sugerowany tytuł zadania | Gotowe do `/10x-plan` | Uwagi |
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
-| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Najpierw potwierdź dostęp i poświadczenia obu platform. |
+| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | yes | Implementacja repozytoryjna trwa; domknięcie wymaga macierzy live. |
 | S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | yes | Uruchom `/10x-plan private-account-and-bank`. |
 | S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Czeka na F-01 i S-01. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Czeka na S-02. |
@@ -229,7 +229,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Otwarte pytania dotyczące mapy drogowej
 
-1. **Czy projekty deweloperskie, wymagane poświadczenia i konta techniczne Spotify oraz YouTube są już aktywne?** — Właściciel: użytkownik. Blok: F-01, S-02, S-04, S-05, S-06, S-07.
+1. **Czy aktywne projekty, poświadczenia i konta techniczne Spotify oraz YouTube przechodzą pełną macierz live w trybach Development/Testing?** — Właściciel: użytkownik/operator. Blok: F-01, S-02, S-04, S-05, S-06, S-07.
 
 ## Zaparkowane
 

@@ -53,8 +53,39 @@ MAIL_PASSWORD=local-smtp-password
 MAIL_FROM_ADDRESS=no-reply@example.invalid
 ```
 
-Provider secrets and OAuth tokens must not be written to source files, database
-tables, command output, or application logs.
+Google-login provider secrets and OAuth tokens must not be written to source
+files, database tables, command output, or application logs.
+
+## Streaming platform configuration
+
+Spotify and YouTube integration work uses separate credentials from Google
+login. Configure the following symbolic inputs only in a local `.env` or the
+deployment secret store:
+
+```dotenv
+SPOTIFY_CLIENT_ID=local-spotify-client-id
+SPOTIFY_CLIENT_SECRET=local-spotify-client-secret
+SPOTIFY_REDIRECT_URI=https://music-map.example.invalid/integrations/spotify/callback
+SPOTIFY_TECHNICAL_REFRESH_TOKEN=local-spotify-technical-refresh-token
+
+YOUTUBE_API_KEY=local-youtube-api-key
+YOUTUBE_REDIRECT_URI=https://music-map.example.invalid/integrations/youtube/callback
+YOUTUBE_TECHNICAL_REFRESH_TOKEN=local-youtube-technical-refresh-token
+```
+
+Client secrets, API keys, refresh tokens, access tokens and authorization codes
+are sensitive. Do not log them or store them in source, CI configuration, test
+fixtures or durable verification notes. YouTube explicitly reuses the configured
+Google OAuth client, while keeping its redirect, scopes and refresh token
+separate from Google login. Technical-account credentials are never a fallback
+for a user's grant. Future user grants belong in dedicated encrypted integration
+storage, never in `auth_identities`.
+
+In production, Manager supplies and rotates technical-account credentials as an
+external platform capability. This repository depends only on the environment
+names and their semantics; it does not depend on Manager's storage or delivery
+implementation. Before changing platform access, follow
+[`docs/platform-access-readiness.md`](docs/platform-access-readiness.md).
 
 ## Disposable PostgreSQL smoke test
 
