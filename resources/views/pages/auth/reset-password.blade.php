@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight">Ustaw nowe hasło</h1>
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Wybierz nowe, bezpieczne hasło do konta.</p>
+            <p class="mt-2 text-sm text-ash-grey-300">Wybierz nowe, bezpieczne hasło do konta.</p>
         </div>
 
         <form method="POST" action="{{ route('password.update') }}" class="space-y-5">

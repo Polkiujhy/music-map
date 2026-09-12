@@ -87,7 +87,8 @@ storage/framework/sessions/.gitignore
 storage/framework/testing/.gitignore
 storage/framework/views/.gitignore
 storage/logs/.gitignore
-tests/Feature/ExampleTest.php
+tests/Feature/BankAccessTest.php
+tests/Feature/LandingPageTest.php
 tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php

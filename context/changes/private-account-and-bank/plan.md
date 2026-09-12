@@ -462,33 +462,33 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [x] 3.1 Uruchomić testy serwisu i callbacku Google bez sieci
-- [x] 3.2 Potwierdzić idempotencję powtórzonego callbacku Google
-- [x] 3.3 Potwierdzić scalenie zweryfikowanego e-maila do jednego konta
-- [x] 3.4 Potwierdzić atomową odmowę dla wszystkich konfliktów identity
-- [x] 3.5 Sprawdzić formatowanie PHP
+- [x] 3.1 Uruchomić testy serwisu i callbacku Google bez sieci — 05f617c
+- [x] 3.2 Potwierdzić idempotencję powtórzonego callbacku Google — 05f617c
+- [x] 3.3 Potwierdzić scalenie zweryfikowanego e-maila do jednego konta — 05f617c
+- [x] 3.4 Potwierdzić atomową odmowę dla wszystkich konfliktów identity — 05f617c
+- [x] 3.5 Sprawdzić formatowanie PHP — 05f617c
 
 #### Ręczne
 
-- [x] 3.6 Przejść redirect i callback prawdziwego testowego klienta Google
-- [x] 3.7 Zweryfikować bezpieczne anulowanie i obsługę błędu Google
-- [x] 3.8 Potwierdzić brak poświadczeń i pełnych danych Google w logach
+- [x] 3.6 Przejść redirect i callback prawdziwego testowego klienta Google — 05f617c
+- [x] 3.7 Zweryfikować bezpieczne anulowanie i obsługę błędu Google — 05f617c
+- [x] 3.8 Potwierdzić brak poświadczeń i pełnych danych Google w logach — 05f617c
 
 ### Faza 4: Publiczne wejście i prywatny bank
 
 #### Automatyczne
 
-- [ ] 4.1 Uruchomić testy landingu i dostępu do banku
-- [ ] 4.2 Potwierdzić kontrakt nazwanych tras i brak dashboardu
-- [ ] 4.3 Potwierdzić egzekwowanie auth i verified dla banku
-- [ ] 4.4 Zbudować produkcyjny frontend
-- [ ] 4.5 Sprawdzić formatowanie PHP
+- [x] 4.1 Uruchomić testy landingu i dostępu do banku
+- [x] 4.2 Potwierdzić kontrakt nazwanych tras i brak dashboardu
+- [x] 4.3 Potwierdzić egzekwowanie auth i verified dla banku
+- [x] 4.4 Zbudować produkcyjny frontend
+- [x] 4.5 Sprawdzić formatowanie PHP
 
 #### Ręczne
 
-- [ ] 4.6 Zweryfikować responsywność i dostępność landingu oraz banku
-- [ ] 4.7 Potwierdzić informacyjny pusty stan bez martwych kontroli
-- [ ] 4.8 Przejść pełną nawigację od gościa do wylogowania bez ślepych ekranów
+- [x] 4.6 Zweryfikować responsywność i dostępność landingu oraz banku
+- [x] 4.7 Potwierdzić informacyjny pusty stan bez martwych kontroli
+- [x] 4.8 Przejść pełną nawigację od gościa do wylogowania bez ślepych ekranów
 
 ### Faza 5: Utwardzenie i gotowość wydania
 

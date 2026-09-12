@@ -3,19 +3,17 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ config('app.name') }}</title>
+        <meta name="description" content="Twój prywatny bank playlist w Music Map.">
+        <title>@yield('title', 'Twój bank') — Music Map</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>
     <body class="min-h-screen bg-[#171717] text-ash-grey-50 antialiased selection:bg-ash-grey-300 selection:text-ash-grey-950">
         <a href="#main-content" class="skip-link">Przejdź do treści</a>
+        <x-app-navigation />
 
-        <main id="main-content" class="mx-auto flex min-h-screen w-full max-w-md items-center px-5 py-10">
-            <section class="w-full rounded-2xl border border-ash-grey-900 bg-[#1d211e] p-7 shadow-2xl shadow-black/20 sm:p-9">
-                <x-auth-header />
-
-                {{ $slot }}
-            </section>
+        <main id="main-content" class="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+            @yield('content')
         </main>
 
         @fluxScripts

@@ -2,22 +2,22 @@
     <div class="space-y-6">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight">Zaloguj się</h1>
-            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Wejdź do swojego prywatnego banku playlist.</p>
+            <p class="mt-2 text-sm text-ash-grey-300">Wejdź do swojego prywatnego banku playlist.</p>
         </div>
 
         @if (session('status'))
-            <p class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" role="status">{{ session('status') }}</p>
+            <p class="rounded-lg bg-ash-grey-900 p-3 text-sm text-ash-grey-200" role="status">{{ session('status') }}</p>
         @endif
 
-        <a href="{{ route('auth.google.redirect') }}" class="flex w-full items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-offset-2 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">Kontynuuj przez Google</a>
-        <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">Jeśli masz już konto z tym samym zweryfikowanym adresem e-mail, połączymy metody logowania.</p>
+        <a href="{{ route('auth.google.redirect') }}" class="oauth-button">Kontynuuj przez Google</a>
+        <p class="text-center text-xs text-ash-grey-400">Jeśli masz już konto z tym samym zweryfikowanym adresem e-mail, połączymy metody logowania.</p>
 
         <x-input-error id="google-error" :messages="$errors->get('google')" />
 
         <div class="flex items-center gap-3" aria-hidden="true">
-            <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-700"></span>
-            <span class="text-xs uppercase tracking-wider text-zinc-500">lub e-mail</span>
-            <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-700"></span>
+            <span class="h-px flex-1 bg-ash-grey-800"></span>
+            <span class="text-xs uppercase tracking-wider text-ash-grey-500">lub e-mail</span>
+            <span class="h-px flex-1 bg-ash-grey-800"></span>
         </div>
 
         <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
@@ -30,18 +30,18 @@
             <div>
                 <div class="flex items-center justify-between gap-4">
                     <label for="password" class="field-label">Hasło</label>
-                    <a href="{{ route('password.request') }}" class="text-sm font-medium text-indigo-700 underline underline-offset-4 outline-offset-4 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:text-indigo-300">Nie pamiętasz hasła?</a>
+                    <a href="{{ route('password.request') }}" class="auth-link text-sm">Nie pamiętasz hasła?</a>
                 </div>
                 <input id="password" name="password" type="password" required autocomplete="current-password" aria-describedby="password-error" class="field-input" />
                 <x-input-error id="password-error" :messages="$errors->get('password')" />
             </div>
-            <label class="flex items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-                <input name="remember" type="checkbox" value="1" class="size-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-600" />
+            <label class="flex items-center gap-3 text-sm text-ash-grey-200">
+                <input name="remember" type="checkbox" value="1" class="size-4 rounded border-ash-grey-700 bg-[#171717] text-ash-grey-400 focus:ring-ash-grey-400" />
                 Zapamiętaj mnie na tym urządzeniu
             </label>
             <button type="submit" class="primary-button w-full">Zaloguj się</button>
         </form>
 
-        <p class="text-center text-sm text-zinc-600 dark:text-zinc-400">Nie masz konta? <a href="{{ route('register') }}" class="font-medium text-indigo-700 underline underline-offset-4 outline-offset-4 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:text-indigo-300">Zarejestruj się</a>.</p>
+        <p class="text-center text-sm text-ash-grey-300">Nie masz konta? <a href="{{ route('register') }}" class="auth-link">Zarejestruj się</a>.</p>
     </div>
 </x-layouts.auth>
