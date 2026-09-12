@@ -9,6 +9,17 @@
             <p class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" role="status">{{ session('status') }}</p>
         @endif
 
+        <a href="{{ route('auth.google.redirect') }}" class="flex w-full items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-offset-2 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">Kontynuuj przez Google</a>
+        <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">Jeśli masz już konto z tym samym zweryfikowanym adresem e-mail, połączymy metody logowania.</p>
+
+        <x-input-error id="google-error" :messages="$errors->get('google')" />
+
+        <div class="flex items-center gap-3" aria-hidden="true">
+            <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-700"></span>
+            <span class="text-xs uppercase tracking-wider text-zinc-500">lub e-mail</span>
+            <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-700"></span>
+        </div>
+
         <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
             @csrf
             <div>

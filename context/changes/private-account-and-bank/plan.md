@@ -462,17 +462,17 @@ Nie wykonywać ręcznego SQL. Przed produkcyjną zmianą należy naprawić wła�
 
 #### Automatyczne
 
-- [ ] 3.1 Uruchomić testy serwisu i callbacku Google bez sieci
-- [ ] 3.2 Potwierdzić idempotencję powtórzonego callbacku Google
-- [ ] 3.3 Potwierdzić scalenie zweryfikowanego e-maila do jednego konta
-- [ ] 3.4 Potwierdzić atomową odmowę dla wszystkich konfliktów identity
-- [ ] 3.5 Sprawdzić formatowanie PHP
+- [x] 3.1 Uruchomić testy serwisu i callbacku Google bez sieci
+- [x] 3.2 Potwierdzić idempotencję powtórzonego callbacku Google
+- [x] 3.3 Potwierdzić scalenie zweryfikowanego e-maila do jednego konta
+- [x] 3.4 Potwierdzić atomową odmowę dla wszystkich konfliktów identity
+- [x] 3.5 Sprawdzić formatowanie PHP
 
 #### Ręczne
 
-- [ ] 3.6 Przejść redirect i callback prawdziwego testowego klienta Google
-- [ ] 3.7 Zweryfikować bezpieczne anulowanie i obsługę błędu Google
-- [ ] 3.8 Potwierdzić brak poświadczeń i pełnych danych Google w logach
+- [x] 3.6 Przejść redirect i callback prawdziwego testowego klienta Google
+- [x] 3.7 Zweryfikować bezpieczne anulowanie i obsługę błędu Google
+- [x] 3.8 Potwierdzić brak poświadczeń i pełnych danych Google w logach
 
 ### Faza 4: Publiczne wejście i prywatny bank
 
