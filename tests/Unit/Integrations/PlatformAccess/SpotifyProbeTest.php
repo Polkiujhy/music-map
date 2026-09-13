@@ -106,7 +106,7 @@ class SpotifyProbeTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'PUT');
     }
 
-    public function test_cleanup_tolerates_eventually_consistent_playlist_reads(): void
+    public function test_cleanup_retries_the_empty_replacement_when_recent_items_remain_visible(): void
     {
         Sleep::fake();
 
@@ -122,12 +122,22 @@ class SpotifyProbeTest extends TestCase
                 'items' => [$this->spotifyItems()[0]],
                 'next' => 'https://api.spotify.com/v1/playlists/fixture-playlist-canary/items?offset=1&limit=1',
             ])
+            ->push(['snapshot_id' => 'cleared-again'])
             ->push(['items' => []]);
 
         $result = $this->probe()->probe($this->tester_session());
 
         $this->assertInstanceOf(ProbeResult::class, $result);
-        Http::assertSentCount(9);
+        Http::assertSentCount(10);
+        $cleanupReplacements = 0;
+        Http::assertSent(function (Request $request) use (&$cleanupReplacements): bool {
+            if ($request->method() === 'PUT' && $request->data() === ['uris' => []]) {
+                $cleanupReplacements++;
+            }
+
+            return true;
+        });
+        $this->assertSame(2, $cleanupReplacements);
         Sleep::assertSleptTimes(1);
     }
 
@@ -144,17 +154,22 @@ class SpotifyProbeTest extends TestCase
             ->push(['items' => $this->spotifyItems()])
             ->push(['snapshot_id' => 'cleared'])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared-again-1'])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared-again-2'])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared-again-3'])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared-again-4'])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared-again-5'])
             ->push(['items' => $this->spotifyItems()]);
 
         $result = $this->probe()->probe($this->tester_session());
 
         $this->assertInstanceOf(ProbeFailure::class, $result);
         $this->assertSame('cleanup-failed', $result->category);
-        Http::assertSentCount(13);
+        Http::assertSentCount(18);
         Sleep::assertSequence([
             Sleep::for(1)->second(),
             Sleep::for(2)->seconds(),

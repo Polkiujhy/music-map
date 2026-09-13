@@ -234,13 +234,13 @@ final readonly class SpotifyProbe implements PlatformProbe
     private function cleanup(PendingRequest $request, TesterSession $session): ?ProbeFailure
     {
         try {
-            $replace = $request->put($this->itemsUrl($session), ['uris' => []]);
-
-            if (! $replace->successful()) {
-                return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
-            }
-
             for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+                $replace = $request->put($this->itemsUrl($session), ['uris' => []]);
+
+                if (! $replace->successful()) {
+                    return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+                }
+
                 $verification = $request->get($this->itemsUrl($session), ['limit' => 1]);
 
                 if (! $verification->successful()) {
