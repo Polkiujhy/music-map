@@ -184,6 +184,177 @@ class YouTubeProbeTest extends TestCase
         $this->assertSame('cleanup-failed', $result->category);
     }
 
+    public function test_write_verification_waits_for_inserted_items_to_appear(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => array_slice($this->youtubeItems(), 0, 2)])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeResult::class, $result);
+        Http::assertSentCount(14);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+        ]);
+    }
+
+    public function test_write_verification_fails_when_inserted_items_never_all_appear(): void
+    {
+        Sleep::fake();
+        $partialItems = array_slice($this->youtubeItems(), 0, 2);
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => $partialItems])
+            ->push(['items' => $partialItems])
+            ->push(['items' => $partialItems])
+            ->push(['items' => $partialItems])
+            ->push(['items' => $partialItems])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('provider-response-invalid', $result->category);
+        Http::assertSentCount(17);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+            Sleep::for(2)->seconds(),
+            Sleep::for(4)->seconds(),
+            Sleep::for(8)->seconds(),
+        ]);
+    }
+
+    public function test_write_verification_does_not_accept_wrong_order(): void
+    {
+        Sleep::fake();
+        $reversedItems = array_reverse($this->youtubeItems());
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => $reversedItems])
+            ->push(['items' => $reversedItems])
+            ->push(['items' => $reversedItems])
+            ->push(['items' => $reversedItems])
+            ->push(['items' => $reversedItems])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('provider-response-invalid', $result->category);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+            Sleep::for(2)->seconds(),
+            Sleep::for(4)->seconds(),
+            Sleep::for(8)->seconds(),
+        ]);
+    }
+
+    public function test_write_verification_does_not_retry_a_malformed_response(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => 'malformed'])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('provider-response-invalid', $result->category);
+        Http::assertSentCount(13);
+        Sleep::assertNeverSlept();
+    }
+
+    public function test_write_verification_does_not_retry_a_failed_response(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push([], 500)
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('provider-unavailable', $result->category);
+        Http::assertSentCount(13);
+        Sleep::assertNeverSlept();
+    }
+
     public function test_cleanup_deletes_known_insert_ids_when_bounded_scans_are_temporarily_empty(): void
     {
         Http::fakeSequence()
