@@ -270,8 +270,8 @@ kategorii oba pola są niepuste i zgodne z wywołaniem.
 | 1 | `account-requirement-failed` | Warunek konta providera, np. Spotify Premium, nie jest spełniony. |
 | 1 | `resource-access-denied` | Autoryzowane konto nie może odczytać albo zmienić wymaganego zasobu probe. |
 | 1 | `fixture-invalid` | Stan początkowy fixture jest niezgodny z kontraktem albo syntaktycznie poprawny element testera został odrzucony przez providera jako nieużywalny. |
-| 1 | `rate-limited` | Provider zgłosił throttling albo HTTP 429. |
-| 1 | `quota-exceeded` | Spotify albo YouTube zgłosił strukturalnym kodem wyczerpanie kwoty aplikacji lub projektu. |
+| 1 | `rate-limited` | Provider zgłosił throttling albo HTTP 429 bez rozpoznanego powodu wyczerpania kwoty. |
+| 1 | `quota-exceeded` | Spotify albo YouTube zgłosił strukturalnym kodem wyczerpanie kwoty aplikacji lub projektu. Spotify wymaga dokładnego reason `QUOTA_EXCEEDED`; pozostałe odpowiedzi Spotify HTTP 429 pozostają `rate-limited`. |
 | 1 | `refresh-token-rotation-required` | Provider zwrócił replacement refresh token, ale probe nie mógł bezpiecznie zapisać go do prywatnego sinka Managera. |
 | 1 | `cleanup-failed` | Przywrócenie pustego stanu fixture Spotify albo YouTube było niekompletne lub którakolwiek mutacja YouTube miała niejednoznaczny wynik; ta kategoria ma pierwszeństwo przed wcześniejszą awarią. |
 
