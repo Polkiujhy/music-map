@@ -1,7 +1,7 @@
 ---
 change_id: streaming-account-linking
 title: Powiązanie kont streamingowych
-status: implementing
+status: implemented
 created: 2026-09-13
 updated: 2026-09-13
 archived_at: null

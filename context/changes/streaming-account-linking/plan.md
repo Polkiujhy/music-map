@@ -843,12 +843,12 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [x] 4.1 Pełny PHPUnit przechodzi
-- [x] 4.2 PHP formatting przechodzi
-- [x] 4.3 Produkcyjny frontend buduje się
-- [x] 4.4 Manifest źródła przechodzi
-- [x] 4.5 Audyty zależności przechodzą
-- [x] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04
+- [x] 4.1 Pełny PHPUnit przechodzi — 7ac0962
+- [x] 4.2 PHP formatting przechodzi — 7ac0962
+- [x] 4.3 Produkcyjny frontend buduje się — 7ac0962
+- [x] 4.4 Manifest źródła przechodzi — 7ac0962
+- [x] 4.5 Audyty zależności przechodzą — 7ac0962
+- [x] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04 — 7ac0962
 
 #### Manual
 
