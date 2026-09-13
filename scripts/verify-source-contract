@@ -32,6 +32,7 @@ app/Http/Controllers/Auth/GoogleAuthController.php
 app/Http/Controllers/Controller.php
 app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
+app/Enums/StreamingProvider.php
 app/Integrations/PlatformAccess/PlatformAccessProtocol.php
 app/Integrations/PlatformAccess/PlatformProbe.php
 app/Integrations/PlatformAccess/ProbeFailure.php
@@ -44,6 +45,7 @@ app/Integrations/PlatformAccess/TechnicalConfiguration.php
 app/Integrations/PlatformAccess/TesterSession.php
 app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Models/AuthIdentity.php
+app/Models/StreamingAccount.php
 app/Models/User.php
 app/Providers/AppServiceProvider.php
 app/Providers/FortifyServiceProvider.php
@@ -73,12 +75,14 @@ context/foundation/prd.md
 context/foundation/shape-notes.md
 context/foundation/tech-stack.md
 database/.gitignore
+database/factories/StreamingAccountFactory.php
 database/factories/UserFactory.php
 database/migrations/0001_01_01_000000_create_users_table.php
 database/migrations/0001_01_01_000001_create_cache_table.php
 database/migrations/0001_01_01_000002_create_jobs_table.php
 database/migrations/2026_09_12_000000_make_users_password_nullable.php
 database/migrations/2026_09_12_000001_create_auth_identities_table.php
+database/migrations/2026_09_13_000000_create_streaming_accounts_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -115,6 +119,8 @@ storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
+tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
+tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
 tests/Feature/Auth/AuthIdentityModelTest.php
 tests/Feature/Auth/AuthenticationTest.php
 tests/Feature/Auth/EmailVerificationTest.php

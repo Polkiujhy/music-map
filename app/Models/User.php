@@ -29,6 +29,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the streaming accounts connected by the user.
+     *
+     * @return HasMany<StreamingAccount, $this>
+     */
+    public function streamingAccounts(): HasMany
+    {
+        return $this->hasMany(StreamingAccount::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
