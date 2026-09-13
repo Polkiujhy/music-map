@@ -1,5 +1,7 @@
 # Gotowość dostępu do Spotify i YouTube — plan implementacji
 
+> **Status:** DONE — wszystkie kroki automatyczne i ręczne zostały potwierdzone, a zmiana jest zarchiwizowana.
+
 ## Przegląd
 
 Zmiana implementuje po stronie `music-map` publiczny kontrakt

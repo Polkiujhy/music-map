@@ -1,7 +1,9 @@
 # Gotowość dostępu do Spotify i YouTube — krótki plan
 
+> **Status:** DONE — pełny plan został wykonany i zarchiwizowany.
+
 > Pełny plan i normatywny kontrakt:
-> `context/changes/platform-access-readiness/plan.md`
+> `plan.md`
 
 ## Co i dlaczego
 
