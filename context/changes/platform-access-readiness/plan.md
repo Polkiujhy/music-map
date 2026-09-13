@@ -705,10 +705,10 @@ schematu lub semantyki wymaga v2 i migracji obu stron.
 
 #### Automated
 
-- [x] 3.1 Zweryfikować exact kontrakt komendy
-- [x] 3.2 Uruchomić pełne bramki repozytorium
-- [x] 3.3 Zweryfikować kompletny manifest źródła
+- [x] 3.1 Zweryfikować exact kontrakt komendy — 6abc6ff
+- [x] 3.2 Uruchomić pełne bramki repozytorium — 6abc6ff
+- [x] 3.3 Zweryfikować kompletny manifest źródła — 6abc6ff
 
 #### Manual
 
-- [x] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS
+- [x] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS — 6abc6ff
