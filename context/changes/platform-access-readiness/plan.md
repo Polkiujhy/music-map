@@ -40,8 +40,7 @@ ograniczyć emitowane pola.
 - YouTube współdzieli `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` z logowaniem,
   ale grant, refresh token, scope i dane konta platform-access pozostają osobne.
 - Exact Spotify scope set to `playlist-modify-private`,
-  `playlist-modify-public`, `playlist-read-private`, `user-read-private`;
-  exact YouTube scope set to
+  `playlist-read-private`, `user-read-private`; exact YouTube scope set to
   `https://www.googleapis.com/auth/youtube`.
 - `scripts/verify-source-contract` jest ręcznym manifestem, więc każdy nowy
   stabilny plik aplikacji i testów musi zostać dopisany.
@@ -157,7 +156,7 @@ dokładnie właściwy zbiór:
 
 | Provider | Exact scope set |
 | --- | --- |
-| Spotify | `playlist-modify-private`, `playlist-modify-public`, `playlist-read-private`, `user-read-private` |
+| Spotify | `playlist-modify-private`, `playlist-read-private`, `user-read-private` |
 | YouTube | `https://www.googleapis.com/auth/youtube` |
 
 Probe zawsze wykonuje refresh-token exchange i nie używa istniejącego access
@@ -271,8 +270,8 @@ kategorii oba pola są niepuste i zgodne z wywołaniem.
 | 1 | `account-requirement-failed` | Warunek konta providera, np. Spotify Premium, nie jest spełniony. |
 | 1 | `resource-access-denied` | Autoryzowane konto nie może odczytać albo zmienić wymaganego zasobu probe. |
 | 1 | `fixture-invalid` | Stan początkowy fixture jest niezgodny z kontraktem albo syntaktycznie poprawny element testera został odrzucony przez providera jako nieużywalny. |
-| 1 | `rate-limited` | Provider zgłosił throttling albo HTTP 429 bez rozpoznanego powodu wyczerpania kwoty. |
-| 1 | `quota-exceeded` | Spotify albo YouTube zgłosił strukturalnym kodem wyczerpanie kwoty aplikacji lub projektu. Spotify wymaga dokładnego reason `QUOTA_EXCEEDED`; pozostałe odpowiedzi Spotify HTTP 429 pozostają `rate-limited`. |
+| 1 | `rate-limited` | Provider zgłosił throttling albo HTTP 429. |
+| 1 | `quota-exceeded` | Spotify albo YouTube zgłosił strukturalnym kodem wyczerpanie kwoty aplikacji lub projektu. |
 | 1 | `refresh-token-rotation-required` | Provider zwrócił replacement refresh token, ale probe nie mógł bezpiecznie zapisać go do prywatnego sinka Managera. |
 | 1 | `cleanup-failed` | Przywrócenie pustego stanu fixture Spotify albo YouTube było niekompletne lub którakolwiek mutacja YouTube miała niejednoznaczny wynik; ta kategoria ma pierwszeństwo przed wcześniejszą awarią. |
 
@@ -680,36 +679,36 @@ schematu lub semantyki wymaga v2 i migracji obu stron.
 
 #### Automated
 
-- [x] 1.1 Zweryfikować zamknięty kontrakt wejścia i wywołania — 2931c26
-- [x] 1.2 Zweryfikować zamknięte odpowiedzi i kody wyjścia — 2931c26
-- [x] 1.3 Potwierdzić separację principal i brak sieci po błędzie wejścia — 2931c26
-- [x] 1.5 Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu — 2931c26
+- [x] 1.1 Zweryfikować zamknięty kontrakt wejścia i wywołania
+- [x] 1.2 Zweryfikować zamknięte odpowiedzi i kody wyjścia
+- [x] 1.3 Potwierdzić separację principal i brak sieci po błędzie wejścia
+- [x] 1.5 Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu
 
 #### Manual
 
-- [x] 1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS — 2931c26
+- [x] 1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS
 
 ### Phase 2: Probe'y providerów i macierze principal
 
 #### Automated
 
-- [x] 2.1 Zweryfikować macierze Spotify i exact restore — 8ca1ec7
-- [x] 2.2 Zweryfikować macierze YouTube i exact restore — 8ca1ec7
-- [x] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność — 8ca1ec7
-- [x] 2.4 Potwierdzić brak regresji logowania Google — 8ca1ec7
+- [ ] 2.1 Zweryfikować macierze Spotify i exact restore
+- [ ] 2.2 Zweryfikować macierze YouTube i exact restore
+- [ ] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
+- [ ] 2.4 Potwierdzić brak regresji logowania Google
 
 #### Manual
 
-- [x] 2.5 Potwierdzić granicę PaaS i semantykę cleanup — 8ca1ec7
+- [ ] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
 
 ### Phase 3: Komenda, źródło i akceptacja interoperacyjna
 
 #### Automated
 
-- [x] 3.1 Zweryfikować exact kontrakt komendy — 6abc6ff
-- [x] 3.2 Uruchomić pełne bramki repozytorium — 6abc6ff
-- [x] 3.3 Zweryfikować kompletny manifest źródła — 6abc6ff
+- [ ] 3.1 Zweryfikować exact kontrakt komendy
+- [ ] 3.2 Uruchomić pełne bramki repozytorium
+- [ ] 3.3 Zweryfikować kompletny manifest źródła
 
 #### Manual
 
-- [x] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS — 6abc6ff
+- [ ] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS
