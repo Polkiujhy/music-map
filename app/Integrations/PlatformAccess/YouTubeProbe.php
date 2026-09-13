@@ -10,7 +10,7 @@ use Throwable;
 
 final readonly class YouTubeProbe implements PlatformProbe
 {
-    private const CLEANUP_VERIFICATION_DELAYS_SECONDS = [1, 2, 4, 8];
+    private const CONSISTENCY_VERIFICATION_DELAYS_SECONDS = [1, 2, 4, 8];
 
     private const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
@@ -270,31 +270,7 @@ final readonly class YouTubeProbe implements PlatformProbe
         }
 
         if ($outcome === null) {
-            try {
-                $verification = $this->listItems($request, $session);
-
-                if (! $verification->successful()) {
-                    $outcome = ProviderFailureMapper::response(
-                        'youtube',
-                        'tester',
-                        ProviderFailureMapper::STAGE_FIXTURE,
-                        $verification,
-                    );
-                } else {
-                    $listed = $this->youtubeItems($verification);
-                    $actualVideoIds = $listed === null
-                        ? null
-                        : array_column($listed['items'], 'video_id');
-
-                    $outcome = $listed !== null
-                        && $listed['has_next_page'] === false
-                        && $actualVideoIds === $session->itemUris
-                        ? ProbeResult::success('youtube', 'tester')
-                        : ProviderFailureMapper::invalidResponse('youtube', 'tester');
-                }
-            } catch (Throwable) {
-                $outcome = ProviderFailureMapper::transport('youtube', 'tester');
-            }
+            $outcome = $this->verifyInsertedItems($request, $session);
         }
 
         $cleanupFailed = $this->cleanup($request, $session, $knownItemIds);
@@ -304,6 +280,44 @@ final readonly class YouTubeProbe implements PlatformProbe
         }
 
         return $outcome ?? ProviderFailureMapper::invalidResponse('youtube', 'tester');
+    }
+
+    private function verifyInsertedItems(
+        PendingRequest $request,
+        TesterSession $session,
+    ): ProbeResult|ProbeFailure {
+        try {
+            for ($attempt = 0; $attempt <= count(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+                $verification = $this->listItems($request, $session);
+
+                if (! $verification->successful()) {
+                    return ProviderFailureMapper::response(
+                        'youtube',
+                        'tester',
+                        ProviderFailureMapper::STAGE_FIXTURE,
+                        $verification,
+                    );
+                }
+
+                $listed = $this->youtubeItems($verification);
+
+                if ($listed === null || $listed['has_next_page']) {
+                    return ProviderFailureMapper::invalidResponse('youtube', 'tester');
+                }
+
+                if (array_column($listed['items'], 'video_id') === $session->itemUris) {
+                    return ProbeResult::success('youtube', 'tester');
+                }
+
+                if (array_key_exists($attempt, self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS)) {
+                    Sleep::sleep(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS[$attempt]);
+                }
+            }
+        } catch (Throwable) {
+            return ProviderFailureMapper::transport('youtube', 'tester');
+        }
+
+        return ProviderFailureMapper::invalidResponse('youtube', 'tester');
     }
 
     private function cleanup(
@@ -354,7 +368,7 @@ final readonly class YouTubeProbe implements PlatformProbe
         }
 
         try {
-            for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+            for ($attempt = 0; $attempt <= count(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS); $attempt++) {
                 $verification = $this->listItems($request, $session);
                 $listed = $verification->successful() ? $this->youtubeItems($verification) : null;
 
@@ -366,8 +380,8 @@ final readonly class YouTubeProbe implements PlatformProbe
                     return $failed;
                 }
 
-                if (array_key_exists($attempt, self::CLEANUP_VERIFICATION_DELAYS_SECONDS)) {
-                    Sleep::sleep(self::CLEANUP_VERIFICATION_DELAYS_SECONDS[$attempt]);
+                if (array_key_exists($attempt, self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS)) {
+                    Sleep::sleep(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS[$attempt]);
                 }
             }
         } catch (Throwable) {
