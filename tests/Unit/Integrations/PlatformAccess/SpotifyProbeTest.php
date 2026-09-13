@@ -12,6 +12,7 @@ use App\Integrations\PlatformAccess\TesterSession;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 class SpotifyProbeTest extends TestCase
@@ -20,6 +21,8 @@ class SpotifyProbeTest extends TestCase
 
     protected function tearDown(): void
     {
+        Sleep::fake(false);
+
         foreach ($this->temporaryPaths as $path) {
             if (is_file($path)) {
                 unlink($path);
@@ -101,6 +104,82 @@ class SpotifyProbeTest extends TestCase
         $this->assertInstanceOf(ProbeFailure::class, $result);
         $this->assertSame('fixture-invalid', $result->category);
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'PUT');
+    }
+
+    public function test_cleanup_tolerates_eventually_consistent_playlist_reads(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['account_id' => 'stable-account', 'id' => 'ephemeral-user'])
+            ->push(['public' => false, 'owner' => ['id' => 'ephemeral-user']])
+            ->push(['items' => []])
+            ->push(['snapshot_id' => 'inserted'])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared'])
+            ->push([
+                'items' => [$this->spotifyItems()[0]],
+                'next' => 'https://api.spotify.com/v1/playlists/fixture-playlist-canary/items?offset=1&limit=1',
+            ])
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeResult::class, $result);
+        Http::assertSentCount(9);
+        Sleep::assertSleptTimes(1);
+    }
+
+    public function test_cleanup_remains_failed_when_playlist_never_reads_empty(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['account_id' => 'stable-account', 'id' => 'ephemeral-user'])
+            ->push(['public' => false, 'owner' => ['id' => 'ephemeral-user']])
+            ->push(['items' => []])
+            ->push(['snapshot_id' => 'inserted'])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared'])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['items' => $this->spotifyItems()]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('cleanup-failed', $result->category);
+        Http::assertSentCount(12);
+        Sleep::assertSleptTimes(4);
+    }
+
+    public function test_cleanup_rejects_an_empty_page_that_advertises_more_items(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['account_id' => 'stable-account', 'id' => 'ephemeral-user'])
+            ->push(['public' => false, 'owner' => ['id' => 'ephemeral-user']])
+            ->push(['items' => []])
+            ->push(['snapshot_id' => 'inserted'])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared'])
+            ->push([
+                'items' => [],
+                'next' => 'https://api.spotify.com/v1/playlists/fixture-playlist-canary/items?offset=1&limit=1',
+            ]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('cleanup-failed', $result->category);
+        Http::assertSentCount(8);
+        Sleep::assertNeverSlept();
     }
 
     public function test_ephemeral_profile_id_is_not_an_account_identity_fallback(): void
