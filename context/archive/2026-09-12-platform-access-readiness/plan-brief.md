@@ -1,7 +1,9 @@
 # Gotowość dostępu do Spotify i YouTube — krótki plan
 
+> **Status:** DONE — pełny plan został wykonany i zarchiwizowany.
+
 > Pełny plan i normatywny kontrakt:
-> `context/changes/platform-access-readiness/plan.md`
+> `plan.md`
 
 ## Co i dlaczego
 
@@ -49,7 +51,7 @@ interoperacyjna została utrwalona w pełnym planie razem z exact scope.
 | Entrypoint | `php artisan platform-access:probe` |
 | Protokół | `music-map.platform-access.v1` |
 | Principals | Rozłączne `technical` i `tester`, bez fallbacku |
-| Spotify scope | `playlist-modify-private playlist-read-private user-read-private` |
+| Spotify scope | `playlist-modify-private playlist-modify-public playlist-read-private user-read-private` |
 | YouTube scope | `https://www.googleapis.com/auth/youtube` |
 | YouTube client | Istniejące `GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET` |
 | Technical | Refresh exchange + identity/read, bez mutacji |
@@ -58,7 +60,7 @@ interoperacyjna została utrwalona w pełnym planie razem z exact scope.
 | Spotify owner | `/me.account_id` wiąże principal; efemeryczne `/me.id` jest porównywane wyłącznie z `playlist.owner.id` |
 | Rotacja | Efemeryczny prywatny sink Managera; błąd zapisu daje `refresh-token-rotation-required` |
 | Wyjście | Zamknięty JSON, exact capabilities i exit `0/1/2` |
-| Provider API | Jawne endpointy, bounded pagination i deterministyczne mapowanie błędów |
+| Provider API | Jawne endpointy, bounded pagination, ograniczone odczyty spójności i deterministyczne mapowanie błędów |
 
 ## Fazy
 

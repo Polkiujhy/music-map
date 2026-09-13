@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Implementation Review: Gotowość dostępu do Spotify i YouTube
 
-- **Plan**: context/changes/platform-access-readiness/plan.md
+- **Plan**: ../plan.md
 - **Scope**: Phases 1–3 of 3
 - **Date**: 2026-09-13
 - **Verdict**: APPROVED after triage

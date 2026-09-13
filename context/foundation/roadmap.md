@@ -41,7 +41,7 @@ milestone_status: open
 
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
-| F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | in-progress |
+| F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
@@ -82,12 +82,12 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Change ID:** `platform-access-readiness`
 - **Odniesienia do PRD:** FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006.
 - **Odblokowuje:** S-02, S-04, S-05, S-06 i S-07 oraz weryfikację importu i eksportu na obu platformach.
-- **Wymagania wstępne:** publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube; wartości pozostają poza repozytorium.
+- **Wymagania wstępne:** spełnione — kontrakt `music-map.platform-access.v1`, projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube zostały potwierdzone; wartości pozostają poza repozytorium.
 - **Równolegle z:** S-01.
-- **Blokery:** implementacja i akceptacja probe v1 oraz zatwierdzenie dostępu i ograniczeń narzuconych przez Spotify i YouTube.
-- **Niewiadome:** czy testowe projekty deweloperskie, wymagane poświadczenia i dedykowane konta techniczne obu platform są już aktywne? — Właściciel: użytkownik. Blok: tak.
-- **Ryzyko:** brak choć jednego dostępu ujawniłby się dopiero podczas budowy importu lub eksportu i zatrzymał najkrótszą ścieżkę do działającego produktu.
-- **Status:** in-progress
+- **Blokery:** —
+- **Niewiadome:** —
+- **Ryzyko:** ograniczone przez zaakceptowany kontrakt, probe obu providerów i potwierdzone konta techniczne oraz testowe; przyszłe zmiany API platform wymagają ponownej weryfikacji.
+- **Status:** done
 
 ## Wycinki
 
@@ -215,12 +215,12 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 | ID mapy drogowej | Change ID | Sugerowany tytuł zadania | Gotowe do `/10x-plan` | Uwagi |
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
-| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Najpierw potwierdź dostęp i poświadczenia obu platform. |
+| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | yes | Zakończono i zarchiwizowano. |
 | S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | yes | Uruchom `/10x-plan private-account-and-bank`. |
-| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Czeka na F-01 i S-01. |
+| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | yes | F-01 i S-01 zakończone. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Czeka na S-02. |
-| S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Czeka na F-01 i S-01. |
-| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Czeka na F-01 i S-02. |
+| S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | yes | F-01 i S-01 zakończone. |
+| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Czeka na S-02. |
 | S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Czeka na S-05. |
 | S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | Czeka na S-04 i S-05. |
 | S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | Czeka na S-03 i S-04. |
@@ -229,7 +229,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Otwarte pytania dotyczące mapy drogowej
 
-1. **Czy testowe projekty deweloperskie, wymagane poświadczenia i dedykowane konta techniczne Spotify oraz YouTube są już aktywne?** — Właściciel: użytkownik. Blok: F-01, S-02, S-04, S-05, S-06, S-07.
+—
 
 ## Zaparkowane
 
@@ -247,4 +247,5 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zrobione
 
+- **F-01: (fundament) aplikacja udostępnia `music-map.platform-access.v1`, przez który Manager weryfikuje minimalny dostęp technicznych i testowych kont Spotify oraz YouTube bez przenoszenia OAuth i cyklu poświadczeń do repozytorium.** — Zarchiwizowano 2026-09-13 → `context/archive/2026-09-12-platform-access-readiness/`. Lekcja: —.
 - **S-01: użytkownik może utworzyć konto, zalogować się e-mailem lub przez Google i wejść do własnego pustego banku playlist bez dostępu do danych innych osób.** — Zarchiwizowano 2026-09-12 → `context/archive/2026-09-12-private-account-and-bank/`. Lekcja: —.

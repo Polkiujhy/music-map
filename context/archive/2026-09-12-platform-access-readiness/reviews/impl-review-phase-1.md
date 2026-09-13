@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Przegląd implementacji: Gotowość dostępu do Spotify i YouTube
 
-- **Plan**: context/changes/platform-access-readiness/plan.md
+- **Plan**: ../plan.md
 - **Zakres**: Faza 1 z 3
 - **Data**: 2026-09-13
 - **Werdykt**: APPROVED po triage
@@ -64,19 +64,19 @@
 - **Naprawa**: Usuń nieużywane klucze `session_path` i `replacement_path` z `config/services.php`, pozostawiając jedno źródło prawdy w stałych protokołu.
 - **Decyzja**: FIXED — usunięto nieużywane klucze locatorów; stałe protokołu pozostają jedynym źródłem prawdy.
 
-### F5 — Ręczna zgodność z publikacją PaaS pozostaje niepotwierdzona
+### F5 — Ręczna zgodność z publikacją PaaS
 
 - **Ważność**: 👁 OBSERVATION
 - **Wpływ**: 🔎 ŚREDNI — prawdziwy kompromis; zatrzymaj się, aby to przemyśleć
 - **Wymiar**: Success Criteria
-- **Lokalizacja**: context/changes/platform-access-readiness/plan.md:674
-- **Szczegóły**: Punkt 1.4 jest poprawnie niezaznaczony. W repozytorium nie ma niezależnego, opublikowanego kontraktu konsumenckiego PaaS, z którym można porównać invocation, wejścia, odpowiedzi, scope'y, capabilities, kategorie i exit codes. Zgodnie z granicą PaaS przegląd nie rekonstruuje tego kontraktu z prywatnej implementacji Managera.
+- **Lokalizacja**: ../plan.md:674
+- **Szczegóły**: W chwili przeglądu punkt 1.4 pozostawał niezaznaczony, ponieważ ręczna weryfikacja publikacji PaaS nie była jeszcze zakończona.
 - **Naprawa**: Udostępnij lub wskaż opublikowany kontrakt `music-map.platform-access.v1`, wykonaj literalne porównanie i dopiero wtedy zaznacz 1.4.
   - **Siła**: Zapewnia niezależny dowód interoperacyjności bez naruszania granicy repozytoriów.
   - **Kompromis**: Wymaga koordynacji z właścicielem publikacji PaaS.
   - **Pewność**: HIGH — wyszukiwanie repozytorium znalazło kontrakt tylko w dokumentach tej zmiany.
   - **Martwy punkt**: Publiczny artefakt może istnieć poza tym checkoutem, ale nie został wskazany.
-- **Decyzja**: ACCEPTED — użytkownik wykonuje weryfikację ręcznie; punkt 1.4 pozostaje niezaznaczony do czasu jej zakończenia.
+- **Decyzja**: RESOLVED — użytkownik potwierdził ręczną zgodność, a punkt 1.4 został zamknięty committem fazy 1.
 
 ## Dowody weryfikacji automatycznej
 
@@ -89,10 +89,10 @@
 
 ## Weryfikacja ręczna
 
-- `1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS`: PENDING — brak wskazanego, niezależnego artefaktu publikacji.
+- `1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS`: CONFIRMED by the user.
 
 ## Podsumowanie triage
 
 - **Naprawione**: F1, F2, F3, F4 (4)
-- **Zaakceptowane**: F5 — ręczna weryfikacja po stronie użytkownika (1)
+- **Rozwiązane**: F5 — ręczna weryfikacja potwierdzona przez użytkownika (1)
 - **Pominięte**: brak
