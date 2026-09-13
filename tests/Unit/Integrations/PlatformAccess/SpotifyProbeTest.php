@@ -157,6 +157,31 @@ class SpotifyProbeTest extends TestCase
         Sleep::assertSleptTimes(4);
     }
 
+    public function test_cleanup_rejects_an_empty_page_that_advertises_more_items(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['account_id' => 'stable-account', 'id' => 'ephemeral-user'])
+            ->push(['public' => false, 'owner' => ['id' => 'ephemeral-user']])
+            ->push(['items' => []])
+            ->push(['snapshot_id' => 'inserted'])
+            ->push(['items' => $this->spotifyItems()])
+            ->push(['snapshot_id' => 'cleared'])
+            ->push([
+                'items' => [],
+                'next' => 'https://api.spotify.com/v1/playlists/fixture-playlist-canary/items?offset=1&limit=1',
+            ]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('cleanup-failed', $result->category);
+        Http::assertSentCount(8);
+        Sleep::assertNeverSlept();
+    }
+
     public function test_ephemeral_profile_id_is_not_an_account_identity_fallback(): void
     {
         Http::fakeSequence()

@@ -249,7 +249,9 @@ final readonly class SpotifyProbe implements PlatformProbe
 
                 $itemUris = $this->spotifyItemUris($verification, allowNextPage: true);
                 if ($itemUris === []) {
-                    return null;
+                    return is_string($verification->json('next'))
+                        ? ProviderFailureMapper::cleanupFailed('spotify', 'tester')
+                        : null;
                 }
 
                 if ($itemUris === null) {
