@@ -853,11 +853,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 1.1 Parser i czyste kontrakty przechodzą macierz poprawnych i wrogich wejść
-- [x] 1.2 Migracje stosują się i cofają na izolowanym SQLite
-- [x] 1.3 Własność, kolejność i atomowy zapis przechodzą testy persistence
-- [x] 1.4 Regresja modeli auth i dostępu do banku przechodzi
-- [x] 1.5 Formatowanie PHP i manifest źródła fazy przechodzą
+- [x] 1.1 Parser i czyste kontrakty przechodzą macierz poprawnych i wrogich wejść — 2f3caa9
+- [x] 1.2 Migracje stosują się i cofają na izolowanym SQLite — 2f3caa9
+- [x] 1.3 Własność, kolejność i atomowy zapis przechodzą testy persistence — 2f3caa9
+- [x] 1.4 Regresja modeli auth i dostępu do banku przechodzi — 2f3caa9
+- [x] 1.5 Formatowanie PHP i manifest źródła fazy przechodzą — 2f3caa9
 
 #### Manual
 
@@ -868,12 +868,12 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [ ] 2.1 Reader YouTube przechodzi pełną macierz limitów, danych i odmów
-- [ ] 2.2 Import, prywatny bank, limiter per user i correlation ID przechodzą testy feature
-- [ ] 2.3 Niepoprawne wejścia wykonują zero requestów, a awarie wykonują zero zapisów
-- [ ] 2.4 Produkcyjny frontend buduje się
-- [ ] 2.5 Formatowanie PHP i manifest źródła fazy przechodzą
-- [ ] 2.8 Publiczne polityki i jawna zgoda importu przechodzą testy bez sieci
+- [x] 2.1 Reader YouTube przechodzi pełną macierz limitów, danych i odmów
+- [x] 2.2 Import, prywatny bank, limiter per user i correlation ID przechodzą testy feature
+- [x] 2.3 Niepoprawne wejścia wykonują zero requestów, a awarie wykonują zero zapisów
+- [x] 2.4 Produkcyjny frontend buduje się
+- [x] 2.5 Formatowanie PHP i manifest źródła fazy przechodzą
+- [x] 2.8 Publiczne polityki i jawna zgoda importu przechodzą testy bez sieci
 
 #### Manual
 

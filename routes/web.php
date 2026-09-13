@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\BankController;
+use App\Http\Controllers\PlaylistImportController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
 use Illuminate\Support\Facades\Route;
@@ -8,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])
@@ -36,5 +41,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/integrations/{streamingAccount}/verify', [StreamingAccountOAuthController::class, 'verify'])
         ->middleware('throttle:streaming-oauth')
         ->name('integrations.accounts.verify');
-    Route::get('/bank', fn () => view('bank.index'))->name('bank.index');
+    Route::get('/bank', [BankController::class, 'index'])->name('bank.index');
+    Route::post('/bank/import', [PlaylistImportController::class, 'store'])
+        ->middleware('throttle:playlist-import')
+        ->name('playlists.import');
 });
