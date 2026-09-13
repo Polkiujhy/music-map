@@ -41,4 +41,27 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'platform_access' => [
+        'spotify' => [
+            'technical' => [
+                'client_id' => env('SPOTIFY_CLIENT_ID'),
+                'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+                'refresh_token' => env('SPOTIFY_TECHNICAL_REFRESH_TOKEN'),
+                'expected_account_id' => env('SPOTIFY_TECHNICAL_EXPECTED_ACCOUNT_ID'),
+                'account_id' => env('SPOTIFY_TECHNICAL_ACCOUNT_ID'),
+                'scopes' => env('SPOTIFY_TECHNICAL_SCOPES'),
+            ],
+        ],
+        'youtube' => [
+            'technical' => [
+                'client_id' => env('GOOGLE_CLIENT_ID'),
+                'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+                'refresh_token' => env('YOUTUBE_TECHNICAL_REFRESH_TOKEN'),
+                'expected_account_id' => env('YOUTUBE_TECHNICAL_EXPECTED_ACCOUNT_ID'),
+                'account_id' => env('YOUTUBE_TECHNICAL_ACCOUNT_ID'),
+                'scopes' => env('YOUTUBE_TECHNICAL_SCOPES'),
+            ],
+        ],
+    ],
+
 ];

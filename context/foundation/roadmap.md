@@ -3,7 +3,7 @@ project: music-map
 version: 1
 status: draft
 created: 2026-09-11
-updated: 2026-09-12
+updated: 2026-09-13
 prd_version: 1
 main_goal: speed
 top_blocker: external
@@ -24,8 +24,8 @@ milestone_status: open
 
 - **Cel:** użytkownik zachowuje playlistę w prywatnym banku niezależnym od platformy, a następnie może bezpiecznie przenieść ją między Spotify i YouTube oraz utrzymywać powiązane kopie w zgodności.
 - **Materiały źródłowe:** `context/foundation/prd.md` (v1).
-- **Gotowe, gdy:** każdy F-NN i S-NN poniżej jest `done`, a przepływ dla playlisty do 50 utworów zachowuje świadome potwierdzenie, informację o właścicielu wyniku i możliwość bezpiecznego ponowienia operacji.
-- **Kotwice zakresu:** FR-001–FR-002, FR-004–FR-011, FR-014–FR-015, US-01–US-02, NFR-001–NFR-005.
+- **Gotowe, gdy:** każdy F-NN i S-NN poniżej jest `done`, a przepływ dla playlisty do 20 utworów zachowuje świadome potwierdzenie, informację o właścicielu wyniku i możliwość bezpiecznego ponowienia operacji; zapis do YouTube respektuje globalny limit pięciu rozpoczętych operacji na dzień kwoty API.
+- **Kotwice zakresu:** FR-001–FR-002, FR-004–FR-011, FR-014–FR-015, US-01–US-02, NFR-001–NFR-006.
 
 ## Podsumowanie wizji
 
@@ -41,15 +41,15 @@ milestone_status: open
 
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
-| F-01 | `platform-access-readiness` | (fundament) zweryfikowano minimalny dostęp aplikacji i kont technicznych do Spotify i YouTube oraz bezpieczną obsługę poświadczeń | aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003 | planning |
+| F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | in-progress |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | proposed |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | proposed |
-| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011 | proposed |
-| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011 | proposed |
-| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | S-03, S-04 | US-02, FR-005, NFR-004 | proposed |
+| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
+| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
+| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
 | S-09 | `playlist-drift-recovery` | zobaczyć rozbieżność powiązanych playlist i przywrócić zgodność bez tworzenia duplikatu | S-07, S-08 | US-02, FR-002, FR-014 | proposed |
 | S-10 | `safe-account-deletion` | usunąć konto po poznaniu skutków, zachowując playlisty należące do niego na platformach | S-04, S-06, S-07 | FR-015, NFR-003 | proposed |
 
@@ -78,16 +78,16 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ### F-01: Gotowość dostępu do platform
 
-- **Wynik:** (fundament) zweryfikowano minimalny dostęp aplikacji i kont technicznych do Spotify i YouTube, a poświadczenia mają bezpieczny cykl przechowywania i unieważniania.
+- **Wynik:** (fundament) aplikacja udostępnia `music-map.platform-access.v1`, przez który Manager weryfikuje minimalny dostęp technicznych i testowych kont Spotify oraz YouTube bez przenoszenia OAuth i cyklu poświadczeń do repozytorium.
 - **Change ID:** `platform-access-readiness`
-- **Odniesienia do PRD:** FR-004, FR-006, FR-009, FR-010, NFR-003.
+- **Odniesienia do PRD:** FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006.
 - **Odblokowuje:** S-02, S-04, S-05, S-06 i S-07 oraz weryfikację importu i eksportu na obu platformach.
-- **Wymagania wstępne:** aktywne projekty deweloperskie, poświadczenia aplikacji i konta techniczne Spotify oraz YouTube.
+- **Wymagania wstępne:** publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube; wartości pozostają poza repozytorium.
 - **Równolegle z:** S-01.
-- **Blokery:** zatwierdzenie dostępu i ograniczenia narzucone przez Spotify oraz YouTube.
-- **Niewiadome:** czy projekty deweloperskie, wymagane poświadczenia i konta techniczne obu platform są już aktywne? — Właściciel: użytkownik. Blok: tak.
+- **Blokery:** implementacja i akceptacja probe v1 oraz zatwierdzenie dostępu i ograniczeń narzuconych przez Spotify i YouTube.
+- **Niewiadome:** czy testowe projekty deweloperskie, wymagane poświadczenia i dedykowane konta techniczne obu platform są już aktywne? — Właściciel: użytkownik. Blok: tak.
 - **Ryzyko:** brak choć jednego dostępu ujawniłby się dopiero podczas budowy importu lub eksportu i zatrzymał najkrótszą ścieżkę do działającego produktu.
-- **Status:** planning
+- **Status:** in-progress
 
 ## Wycinki
 
@@ -105,7 +105,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ### S-02: Import playlisty z linku do banku
 
-- **Wynik:** zalogowany użytkownik może zaimportować dostępną playlistę z linku Spotify lub YouTube do prywatnego banku, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.
+- **Wynik:** zalogowany użytkownik może zaimportować publiczną playlistę YouTube z linku albo playlistę Spotify należącą do powiązanego konta lub z nim współdzieloną, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.
 - **Change ID:** `playlist-link-import`
 - **Odniesienia do PRD:** FR-002, FR-004, NFR-001, NFR-005.
 - **Wymagania wstępne:** F-01, S-01.
@@ -155,7 +155,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 - **Wynik:** użytkownik bez powiązanego konta może utworzyć lub zaktualizować playlistę na koncie technicznym `music-map`, otrzymać stały link i informację o właścicielu oraz bezpiecznie ponowić przerwaną operację.
 - **Change ID:** `managed-account-export`
-- **Odniesienia do PRD:** US-01, FR-010, FR-011.
+- **Odniesienia do PRD:** US-01, FR-010, FR-011, NFR-006.
 - **Wymagania wstępne:** S-05.
 - **Równolegle z:** S-07.
 - **Blokery:** prawo kont technicznych do tworzenia i aktualizowania playlist oraz ograniczenia widoczności narzucone przez platformy.
@@ -167,7 +167,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 - **Wynik:** użytkownik może utworzyć lub zaktualizować playlistę na własnym powiązanym koncie, z właściwą widocznością oraz jednoznacznym statusem i linkiem.
 - **Change ID:** `linked-account-export`
-- **Odniesienia do PRD:** US-01, FR-009, FR-011.
+- **Odniesienia do PRD:** US-01, FR-009, FR-011, NFR-006.
 - **Wymagania wstępne:** S-04, S-05.
 - **Równolegle z:** S-06.
 - **Blokery:** zakresy zapisu przyznane aplikacji przez użytkownika i ograniczenia widoczności playlist w API platform.
@@ -179,7 +179,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 - **Wynik:** użytkownik może ręcznie albo automatycznie synchronizować playlistę należącą do jego powiązanego konta, a w konflikcie bank przyjmuje wersję platformy źródłowej.
 - **Change ID:** `source-playlist-sync`
-- **Odniesienia do PRD:** US-02, FR-005, NFR-004.
+- **Odniesienia do PRD:** US-02, FR-005, NFR-004, NFR-006.
 - **Wymagania wstępne:** S-03, S-04.
 - **Równolegle z:** S-05.
 - **Blokery:** limity i dostępność cyklicznych odczytów oraz zapisów w API Spotify i YouTube.
@@ -229,7 +229,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Otwarte pytania dotyczące mapy drogowej
 
-1. **Czy projekty deweloperskie, wymagane poświadczenia i konta techniczne Spotify oraz YouTube są już aktywne?** — Właściciel: użytkownik. Blok: F-01, S-02, S-04, S-05, S-06, S-07.
+1. **Czy testowe projekty deweloperskie, wymagane poświadczenia i dedykowane konta techniczne Spotify oraz YouTube są już aktywne?** — Właściciel: użytkownik. Blok: F-01, S-02, S-04, S-05, S-06, S-07.
 
 ## Zaparkowane
 
@@ -237,7 +237,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wizualna mapa autorów i utworów** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-012 poza zakresem MVP.
 - **Ręczny wybór zamienników z zewnętrznego katalogu** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-013 poza zakresem MVP.
 - **Obsługa kolejnych platform muzycznych** — Dlaczego zaparkowane: PRD §Non-Goals ogranicza MVP do Spotify i YouTube.
-- **Gwarantowana obsługa playlist powyżej 50 utworów** — Dlaczego zaparkowane: PRD §Non-Goals oraz limit NFR-001.
+- **Gwarantowana obsługa playlist powyżej 20 utworów** — Dlaczego zaparkowane: PRD §Non-Goals oraz limit NFR-001.
 - **Udostępnianie banku i rozbudowane role** — Dlaczego zaparkowane: PRD §Non-Goals utrzymuje prywatny bank i płaski model uprawnień.
 - **Wzbogacanie danych o daty premier** — Dlaczego zaparkowane: PRD §Non-Goals pozostawia dane zewnętrzne tylko do odczytu.
 - **Paywall, subskrypcje i rozliczenia** — Dlaczego zaparkowane: PRD §Non-Goals wyłącza monetyzację z MVP.

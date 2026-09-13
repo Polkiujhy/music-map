@@ -56,6 +56,26 @@ MAIL_FROM_ADDRESS=no-reply@example.invalid
 Provider secrets and OAuth tokens must not be written to source files, database
 tables, command output, or application logs.
 
+## Platform-access probe
+
+Manager, treated by this repository as an external PaaS, may verify the public
+`music-map.platform-access.v1` contract through this application entrypoint:
+
+```bash
+php artisan platform-access:probe --provider=spotify --principal=technical --write --format=json --no-ansi --no-interaction
+```
+
+The supported providers are `spotify` and `youtube`; the supported principals
+are `technical` and `tester`. The command emits one closed JSON document to
+stdout on success or stderr on failure and exits with `0`, `1`, or `2` according
+to the public contract. Technical credentials come only from the documented
+runtime configuration. Tester sessions and optional replacement refresh tokens
+use the fixed private locators defined by `music-map.platform-access.v1`.
+
+OAuth, credential lifecycle, probe invocation, promotion, revoke, and recovery
+remain PaaS responsibilities. Never pass credentials on the command line or
+write their values to source, application storage, output, or logs.
+
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the

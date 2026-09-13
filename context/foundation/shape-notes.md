@@ -77,9 +77,11 @@ checkpoint:
     - topic: "aktualizacja powiązanej playlisty"
       decision: "z widoku różnic użytkownik ponawia eksport ze źródła do nieaktualnej playlisty; system aktualizuje ją po zapisanym ID, a po sukcesie obie strony relacji są aktualne"
     - topic: "maksymalny rozmiar playlisty w MVP"
-      decision: "import, sprawdzanie, synchronizacja i eksport niezawodnie obsługują playlisty do 50 utworów"
+      decision: "import, sprawdzanie, synchronizacja i eksport niezawodnie obsługują playlisty do 20 utworów"
     - topic: "czas sprawdzania playlisty"
-      decision: "dla 50 utworów celem jest wynik w około 30 sekund i najwyżej 60 sekund aktywnego oczekiwania; po minucie operacja działa dalej w tle, a użytkownik otrzymuje powiadomienie po zakończeniu"
+      decision: "dla 20 utworów celem jest wynik w około 30 sekund i najwyżej 60 sekund aktywnego oczekiwania; po minucie operacja działa dalej w tle, a użytkownik otrzymuje powiadomienie po zakończeniu"
+    - topic: "dzienny budżet zapisu YouTube w MVP"
+      decision: "wszyscy użytkownicy współdzielą limit najwyżej pięciu rozpoczętych operacji eksportu lub synchronizacji zapisujących dane w YouTube na jeden dzień kwoty API"
     - topic: "usunięcie konta music-map"
       decision: "po wyraźnym potwierdzeniu usuwane są dane banku, relacje, historia synchronizacji, integracje i playlisty na koncie technicznym music-map; playlisty utworzone na powiązanych kontach użytkownika pozostają na platformach"
     - topic: "bezpieczeństwo integracji platform"
@@ -166,7 +168,7 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
   > Sokrates: Rozważono niejasną widoczność playlist przechowywanych w banku. Rozwiązanie: playlistę widzi wyłącznie jej właściciel.
 - FR-003: Zalogowany użytkownik może utworzyć nową playlistę od zera w banku `music-map`. Priorytet: miło-mieć
   > Sokrates: Rozważono, że ręczne tworzenie i walidacja pustych playlist rozszerzają pierwszy przepływ ponad konieczny import i eksport. Rozwiązanie: tworzenie playlisty od zera przeniesiono do funkcji `miło-mieć`.
-- FR-004: Zalogowany użytkownik może zaimportować do banku `music-map` playlistę z linku udostępniania jednej z obsługiwanych platform streamingowych, jeżeli platforma pozwala odczytać jej zawartość; w przeciwnym razie otrzymuje przyczynę odmowy oraz wskazanie, aby zmienić widoczność playlisty albo powiązać konto źródłowe. Priorytet: musi-być
+- FR-004: Zalogowany użytkownik może zaimportować do banku `music-map` playlistę z linku udostępniania jednej z obsługiwanych platform streamingowych, jeżeli platforma pozwala odczytać jej zawartość. Publiczna playlista YouTube może być odczytana bez powiązania konta; zawartość playlisty Spotify wymaga powiązanego konta, które jest jej właścicielem lub współpracownikiem. W pozostałych przypadkach użytkownik otrzymuje przyczynę odmowy oraz wskazanie, aby zmienić widoczność playlisty albo powiązać właściwe konto źródłowe. Priorytet: musi-być
   > Sokrates: Rozważono, że share link nie omija ustawień prywatności platformy i może nie pozwolić na odczyt playlisty. Rozwiązanie: import jest wykonywany tylko dla dostępnej zawartości; przy odmowie użytkownik widzi przyczynę oraz wskazanie zmiany widoczności lub powiązania konta.
 - FR-005: Zalogowany użytkownik może edytować playlistę przechowywaną w banku `music-map`. Jeżeli importowana playlista źródłowa należy do jego powiązanego konta platformy, może włączyć dwukierunkową automatyczną synchronizację albo uruchomić ją ręcznie. Zmiany w banku aktualizują źródło po zapisanym ID, a zmiany wykryte na platformie aktualizują bank; przy wyłączonej synchronizacji automatycznej zmiany zewnętrzne są ignorowane do czasu użycia przycisku. W razie konfliktu wersja platformy zewnętrznej jest nadrzędna. Priorytet: musi-być
   > Sokrates: Rozważono, że edycja niezależnej kopii może rozminąć ją ze źródłem albo tworzyć zbędne kopie. Rozwiązanie: użytkownik wybiera synchronizację automatyczną lub ręczną, a aktualizacja używa zapisanego ID istniejącej playlisty.
@@ -202,11 +204,12 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 
 ## Wymagania Niefunkcjonalne
 
-- NFR-001 — Pojemność: MVP niezawodnie obsługuje playlisty zawierające do 50 utworów w całym przepływie importu, sprawdzania dostępności, synchronizacji i eksportu.
-- NFR-002 — Responsywność: dla playlisty do 50 utworów celem jest przygotowanie podglądu dostępności i dopasowania w około 30 sekund, a aktywne oczekiwanie użytkownika nie przekracza 60 sekund. Po przekroczeniu minuty użytkownik może opuścić ekran bez anulowania operacji i otrzymuje powiadomienie po jej zakończeniu.
+- NFR-001 — Pojemność: MVP niezawodnie obsługuje playlisty zawierające do 20 utworów w całym przepływie importu, sprawdzania dostępności, synchronizacji i eksportu.
+- NFR-002 — Responsywność: dla playlisty do 20 utworów celem jest przygotowanie podglądu dostępności i dopasowania w około 30 sekund, a aktywne oczekiwanie użytkownika nie przekracza 60 sekund. Po przekroczeniu minuty użytkownik może opuścić ekran bez anulowania operacji i otrzymuje powiadomienie po jej zakończeniu.
 - NFR-003 — Bezpieczeństwo integracji: dane uwierzytelniające powiązanych platform streamingowych pozostają poufne, nie pojawiają się w logach dostępnych operatorowi, nie przyznają aplikacji uprawnień wykraczających poza jej funkcje i przestają umożliwiać dostęp po odłączeniu integracji lub usunięciu konta.
 - NFR-004 — Świeżość synchronizacji: przy włączonej synchronizacji zmiana na platformie jest wykrywana najpóźniej w ciągu 4 godzin. Logowanie może uruchomić dodatkową kontrolę, jeżeli od poprzedniej minęło co najmniej 15 minut, a użytkownik może niezależnie zażądać synchronizacji ręcznej.
 - NFR-005 — Odtwarzalność danych: maksymalna dopuszczalna utrata zmian w banku playlist wynosi 24 godziny, a usługa i dane powinny zostać odtworzone w ciągu 24 godzin.
+- NFR-006 — Budżet YouTube: MVP pozwala globalnie rozpocząć najwyżej pięć operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia rozliczeniowego kwoty API. Limit jest wspólny dla wszystkich użytkowników; jego wyczerpanie nie rozpoczyna częściowej operacji i zwraca czytelną informację o czasowej niedostępności.
 
 ## Logika Biznesowa
 
@@ -228,7 +231,7 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 - Wizualna mapa autorów i ich utworów.
 - Zamienniki oparte na zewnętrznym katalogu relacji artystów i popularności utworów.
 - Obsługa innych platform muzycznych niż dwie objęte zakresem MVP.
-- Gwarantowana obsługa playlist zawierających więcej niż 50 utworów.
+- Gwarantowana obsługa playlist zawierających więcej niż 20 utworów.
 - Udostępnianie banku playlist innym użytkownikom i rozbudowane role.
 - Jednorazowe wzbogacenie zewnętrznych danych o daty premier.
 - Paywall, subskrypcje i rozliczenia.

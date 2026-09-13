@@ -26,11 +26,23 @@ README.md.scaffold
 app/Actions/Fortify/CreateNewUser.php
 app/Actions/Fortify/PasswordValidationRules.php
 app/Actions/Fortify/ResetUserPassword.php
+app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
 app/Http/Controllers/Auth/GoogleAuthController.php
 app/Http/Controllers/Controller.php
 app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
+app/Integrations/PlatformAccess/PlatformAccessProtocol.php
+app/Integrations/PlatformAccess/PlatformProbe.php
+app/Integrations/PlatformAccess/ProbeFailure.php
+app/Integrations/PlatformAccess/ProbeInvocation.php
+app/Integrations/PlatformAccess/ProbeResult.php
+app/Integrations/PlatformAccess/ProviderFailureMapper.php
+app/Integrations/PlatformAccess/RefreshTokenRotationSink.php
+app/Integrations/PlatformAccess/SpotifyProbe.php
+app/Integrations/PlatformAccess/TechnicalConfiguration.php
+app/Integrations/PlatformAccess/TesterSession.php
+app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Models/AuthIdentity.php
 app/Models/User.php
 app/Providers/AppServiceProvider.php
@@ -101,6 +113,7 @@ storage/framework/testing/.gitignore
 storage/framework/views/.gitignore
 storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
+tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/Auth/AuthIdentityModelTest.php
 tests/Feature/Auth/AuthenticationTest.php
@@ -112,6 +125,13 @@ tests/Feature/Auth/SessionSecurityTest.php
 tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
+tests/Unit/Integrations/PlatformAccess/PrincipalBoundaryTest.php
+tests/Unit/Integrations/PlatformAccess/ProbeInputTest.php
+tests/Unit/Integrations/PlatformAccess/ProbeOutputTest.php
+tests/Unit/Integrations/PlatformAccess/ProviderFailureMapperTest.php
+tests/Unit/Integrations/PlatformAccess/RefreshTokenRotationSinkTest.php
+tests/Unit/Integrations/PlatformAccess/SpotifyProbeTest.php
+tests/Unit/Integrations/PlatformAccess/YouTubeProbeTest.php
 tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
@@ -128,6 +148,13 @@ printf '%s\n' "$required_paths" | while IFS= read -r path; do
 
     if [ "$mode" = "--tracked" ] && ! git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
         echo "required source path is not tracked: $path" >&2
+        exit 1
+    fi
+done
+
+find app tests -type f -name '*.php' | sort | while IFS= read -r path; do
+    if ! printf '%s\n' "$required_paths" | grep -Fqx -- "$path"; then
+        echo "PHP source path is missing from required_paths: $path" >&2
         exit 1
     fi
 done
