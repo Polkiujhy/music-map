@@ -204,7 +204,7 @@ YAML,
         $this->assertStringNotContainsString('trivy image', strtolower($workflow));
     }
 
-    public function test_ci_runs_critical_authentication_against_isolated_postgresql(): void
+    public function test_ci_runs_critical_authentication_and_streaming_accounts_against_isolated_postgresql(): void
     {
         $workflow = $this->projectFile('.github/workflows/ci.yml');
 
@@ -221,6 +221,22 @@ YAML,
         $this->assertStringContainsString('QUEUE_CONNECTION: sync', $workflow);
         $this->assertStringContainsString('php artisan migrate:fresh --force --no-interaction', $workflow);
         $this->assertStringContainsString('tests/Feature/Auth', $workflow);
+        $this->assertStringContainsString(
+            'tests/Feature/StreamingAccounts/StreamingAccountModelTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php',
+            $workflow,
+        );
         $this->assertStringNotContainsString('schema-release music-map --release-file', $workflow);
     }
 

@@ -43,6 +43,18 @@
         @apply rounded-lg border border-ash-grey-700 bg-ash-grey-950/40 px-4 py-2.5 text-sm font-semibold text-ash-grey-100 shadow-sm outline-offset-2 transition hover:border-ash-grey-500 hover:bg-ash-grey-900 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
     }
 
+    .danger-button {
+        @apply rounded-lg border border-red-700 bg-red-950/40 px-4 py-2.5 text-sm font-semibold text-red-100 shadow-sm outline-offset-2 transition hover:border-red-500 hover:bg-red-950/70 focus-visible:outline-2 focus-visible:outline-red-300;
+    }
+
+    .navigation-link {
+        @apply rounded-md px-2 py-1 text-sm font-medium text-ash-grey-300 outline-offset-4 transition hover:text-ash-grey-50 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
+    }
+
+    .navigation-link-active {
+        @apply text-ash-grey-50 underline decoration-ash-grey-400 decoration-2 underline-offset-8;
+    }
+
     .oauth-button {
         @apply flex w-full items-center justify-center rounded-lg border border-ash-grey-700 bg-[#171717] px-4 py-2.5 text-sm font-semibold text-ash-grey-50 shadow-sm outline-offset-2 transition hover:border-ash-grey-500 hover:bg-ash-grey-950 focus-visible:outline-2 focus-visible:outline-ash-grey-300;
     }

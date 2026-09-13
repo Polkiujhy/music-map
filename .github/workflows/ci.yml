@@ -135,11 +135,15 @@ jobs:
       - name: Rebuild schema on PostgreSQL
         run: php artisan migrate:fresh --force --no-interaction
 
-      - name: Run critical authentication and identity tests
+      - name: Run critical authentication and streaming-account tests
         run: >-
           php artisan test
           tests/Feature/Auth
           tests/Feature/BankAccessTest.php
+          tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
+          tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
+          tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php
+          tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php
           tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
 
   source-security:

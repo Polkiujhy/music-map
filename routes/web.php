@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\StreamingAccountController;
+use App\Http\Controllers\StreamingAccountOAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,6 +18,23 @@ Route::middleware('guest')->group(function (): void {
         ->name('auth.google.callback');
 });
 
-Route::get('/bank', fn () => view('bank.index'))
-    ->middleware(['auth', 'verified'])
-    ->name('bank.index');
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/integrations', [StreamingAccountController::class, 'index'])
+        ->name('integrations.index');
+    Route::delete('/integrations/{streamingAccount}', [StreamingAccountController::class, 'destroy'])
+        ->name('integrations.destroy');
+    Route::post('/integrations/{provider}/connect', [StreamingAccountOAuthController::class, 'connect'])
+        ->whereIn('provider', ['spotify', 'youtube'])
+        ->middleware('throttle:streaming-oauth')
+        ->block(5, 5)
+        ->name('integrations.connect');
+    Route::get('/integrations/{provider}/callback', [StreamingAccountOAuthController::class, 'callback'])
+        ->whereIn('provider', ['spotify', 'youtube'])
+        ->middleware('throttle:streaming-oauth')
+        ->block(30, 30)
+        ->name('integrations.callback');
+    Route::post('/integrations/{streamingAccount}/verify', [StreamingAccountOAuthController::class, 'verify'])
+        ->middleware('throttle:streaming-oauth')
+        ->name('integrations.accounts.verify');
+    Route::get('/bank', fn () => view('bank.index'))->name('bank.index');
+});
