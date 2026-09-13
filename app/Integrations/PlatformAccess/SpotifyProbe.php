@@ -5,10 +5,13 @@ namespace App\Integrations\PlatformAccess;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Throwable;
 
 final readonly class SpotifyProbe implements PlatformProbe
 {
+    private const CLEANUP_VERIFICATION_ATTEMPTS = 5;
+
     private const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
     private const API_URL = 'https://api.spotify.com/v1';
@@ -237,13 +240,28 @@ final readonly class SpotifyProbe implements PlatformProbe
                 return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
             }
 
-            $verification = $request->get($this->itemsUrl($session), ['limit' => 1]);
+            for ($attempt = 1; $attempt <= self::CLEANUP_VERIFICATION_ATTEMPTS; $attempt++) {
+                $verification = $request->get($this->itemsUrl($session), ['limit' => 1]);
 
-            if (! $verification->successful() || $this->spotifyItemUris($verification) !== []) {
-                return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+                if (! $verification->successful()) {
+                    return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+                }
+
+                $itemUris = $this->spotifyItemUris($verification);
+                if ($itemUris === []) {
+                    return null;
+                }
+
+                if ($itemUris === null) {
+                    return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+                }
+
+                if ($attempt < self::CLEANUP_VERIFICATION_ATTEMPTS) {
+                    Sleep::sleep(1);
+                }
             }
 
-            return null;
+            return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
         } catch (Throwable) {
             return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
         }
