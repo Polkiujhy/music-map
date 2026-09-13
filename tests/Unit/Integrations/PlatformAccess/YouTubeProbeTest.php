@@ -12,6 +12,7 @@ use App\Integrations\PlatformAccess\YouTubeProbe;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 class YouTubeProbeTest extends TestCase
@@ -20,6 +21,8 @@ class YouTubeProbeTest extends TestCase
 
     protected function tearDown(): void
     {
+        Sleep::fake(false);
+
         foreach ($this->temporaryPaths as $path) {
             if (is_file($path)) {
                 unlink($path);
@@ -214,6 +217,77 @@ class YouTubeProbeTest extends TestCase
             'https://www.googleapis.com/youtube/v3/playlistItems?id=playlist-item-2',
             'https://www.googleapis.com/youtube/v3/playlistItems?id=playlist-item-3',
         ], $deleteUrls);
+    }
+
+    public function test_cleanup_waits_for_deleted_items_to_disappear(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeResult::class, $result);
+        Http::assertSentCount(14);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+        ]);
+    }
+
+    public function test_cleanup_fails_when_deleted_items_never_disappear(): void
+    {
+        Sleep::fake();
+
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => $this->youtubeItems()]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeFailure::class, $result);
+        $this->assertSame('cleanup-failed', $result->category);
+        Http::assertSentCount(17);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+            Sleep::for(2)->seconds(),
+            Sleep::for(4)->seconds(),
+            Sleep::for(8)->seconds(),
+        ]);
     }
 
     private function probe(): YouTubeProbe

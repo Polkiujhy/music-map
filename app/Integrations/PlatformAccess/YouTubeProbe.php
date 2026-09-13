@@ -5,10 +5,13 @@ namespace App\Integrations\PlatformAccess;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Throwable;
 
 final readonly class YouTubeProbe implements PlatformProbe
 {
+    private const CLEANUP_VERIFICATION_DELAYS_SECONDS = [1, 2, 4, 8];
+
     private const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
     private const API_URL = 'https://www.googleapis.com/youtube/v3';
@@ -351,17 +354,27 @@ final readonly class YouTubeProbe implements PlatformProbe
         }
 
         try {
-            $verification = $this->listItems($request, $session);
-            $listed = $verification->successful() ? $this->youtubeItems($verification) : null;
+            for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+                $verification = $this->listItems($request, $session);
+                $listed = $verification->successful() ? $this->youtubeItems($verification) : null;
 
-            if ($listed === null || $listed['has_next_page'] || $listed['items'] !== []) {
-                $failed = true;
+                if ($listed === null || $listed['has_next_page']) {
+                    return true;
+                }
+
+                if ($listed['items'] === []) {
+                    return $failed;
+                }
+
+                if (array_key_exists($attempt, self::CLEANUP_VERIFICATION_DELAYS_SECONDS)) {
+                    Sleep::sleep(self::CLEANUP_VERIFICATION_DELAYS_SECONDS[$attempt]);
+                }
             }
         } catch (Throwable) {
-            $failed = true;
+            return true;
         }
 
-        return $failed;
+        return true;
     }
 
     private function listItems(PendingRequest $request, TesterSession $session): Response
