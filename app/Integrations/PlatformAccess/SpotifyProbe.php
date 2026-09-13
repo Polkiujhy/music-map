@@ -240,21 +240,16 @@ final readonly class SpotifyProbe implements PlatformProbe
                 return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
             }
 
-            $cleanupSnapshot = $replace->json('snapshot_id');
-            if (! PlatformAccessProtocol::isBoundedString($cleanupSnapshot, 255)) {
-                return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
-            }
-
             for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
                 $verification = $request->get($this->playlistUrl($session), [
-                    'fields' => 'snapshot_id,items(total,items,next)',
+                    'fields' => 'items(total,items,next)',
                 ]);
 
                 if (! $verification->successful()) {
                     return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
                 }
 
-                $cleanupState = $this->spotifyCleanupState($verification, $cleanupSnapshot);
+                $cleanupState = $this->spotifyCleanupState($verification);
                 if ($cleanupState === true) {
                     return null;
                 }
@@ -274,13 +269,12 @@ final readonly class SpotifyProbe implements PlatformProbe
         }
     }
 
-    private function spotifyCleanupState(Response $response, string $expectedSnapshot): ?bool
+    private function spotifyCleanupState(Response $response): ?bool
     {
         $payload = $response->json();
         $items = is_array($payload) ? ($payload['items'] ?? null) : null;
 
         if (! is_array($payload)
-            || ! PlatformAccessProtocol::isBoundedString($payload['snapshot_id'] ?? null, 255)
             || ! is_array($items)
             || ! is_int($items['total'] ?? null)
             || $items['total'] < 0
@@ -290,10 +284,6 @@ final readonly class SpotifyProbe implements PlatformProbe
             || ! array_key_exists('next', $items)
             || ($items['next'] !== null && ! is_string($items['next']))) {
             return null;
-        }
-
-        if ($payload['snapshot_id'] !== $expectedSnapshot) {
-            return false;
         }
 
         if ($items['total'] === 0) {

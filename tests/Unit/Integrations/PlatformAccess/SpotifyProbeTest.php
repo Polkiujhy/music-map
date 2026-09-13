@@ -106,7 +106,7 @@ class SpotifyProbeTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'PUT');
     }
 
-    public function test_cleanup_waits_for_the_empty_replacement_snapshot(): void
+    public function test_cleanup_waits_for_playlist_metadata_to_report_empty(): void
     {
         Sleep::fake();
 
@@ -135,11 +135,11 @@ class SpotifyProbeTest extends TestCase
         });
         $this->assertSame(1, $cleanupReplacements);
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
-            && $request->url() === 'https://api.spotify.com/v1/playlists/fixture-playlist-canary?fields=snapshot_id%2Citems%28total%2Citems%2Cnext%29');
+            && $request->url() === 'https://api.spotify.com/v1/playlists/fixture-playlist-canary?fields=items%28total%2Citems%2Cnext%29');
         Sleep::assertSleptTimes(1);
     }
 
-    public function test_cleanup_requires_a_snapshot_from_the_empty_replacement(): void
+    public function test_cleanup_ignores_independently_varying_snapshot_ids(): void
     {
         Http::fakeSequence()
             ->push($this->refreshPayload())
@@ -148,13 +148,13 @@ class SpotifyProbeTest extends TestCase
             ->push(['items' => []])
             ->push(['snapshot_id' => 'inserted'])
             ->push(['items' => $this->spotifyItems()])
-            ->push([]);
+            ->push(['snapshot_id' => 'cleared'])
+            ->push($this->cleanupPlaylist('newer-independent-snapshot'));
 
         $result = $this->probe()->probe($this->tester_session());
 
-        $this->assertInstanceOf(ProbeFailure::class, $result);
-        $this->assertSame('cleanup-failed', $result->category);
-        Http::assertSentCount(7);
+        $this->assertInstanceOf(ProbeResult::class, $result);
+        Http::assertSentCount(8);
         Sleep::assertNeverSlept();
     }
 
