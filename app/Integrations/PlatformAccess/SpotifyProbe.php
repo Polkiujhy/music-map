@@ -10,7 +10,7 @@ use Throwable;
 
 final readonly class SpotifyProbe implements PlatformProbe
 {
-    private const CLEANUP_VERIFICATION_ATTEMPTS = 5;
+    private const CLEANUP_VERIFICATION_DELAYS_SECONDS = [1, 2, 4, 8, 15];
 
     private const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
@@ -240,7 +240,7 @@ final readonly class SpotifyProbe implements PlatformProbe
                 return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
             }
 
-            for ($attempt = 1; $attempt <= self::CLEANUP_VERIFICATION_ATTEMPTS; $attempt++) {
+            for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
                 $verification = $request->get($this->itemsUrl($session), ['limit' => 1]);
 
                 if (! $verification->successful()) {
@@ -258,8 +258,8 @@ final readonly class SpotifyProbe implements PlatformProbe
                     return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
                 }
 
-                if ($attempt < self::CLEANUP_VERIFICATION_ATTEMPTS) {
-                    Sleep::sleep(1);
+                if (array_key_exists($attempt, self::CLEANUP_VERIFICATION_DELAYS_SECONDS)) {
+                    Sleep::sleep(self::CLEANUP_VERIFICATION_DELAYS_SECONDS[$attempt]);
                 }
             }
 
