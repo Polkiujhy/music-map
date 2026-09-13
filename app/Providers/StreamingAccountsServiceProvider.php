@@ -52,6 +52,10 @@ class StreamingAccountsServiceProvider extends ServiceProvider
                 ->whereKey((string) $accountId)
                 ->value('provider');
 
+            if ($provider instanceof StreamingProvider) {
+                return $provider->value;
+            }
+
             return is_string($provider) && StreamingProvider::tryFrom($provider) !== null
                 ? $provider
                 : 'unknown';

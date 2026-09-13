@@ -213,6 +213,34 @@ class StreamingOAuthTest extends TestCase
         $this->post(route('integrations.connect', 'youtube'))->assertRedirectContains('provider.example');
     }
 
+    public function test_verify_limiter_keeps_separate_budgets_for_cast_account_providers(): void
+    {
+        $user = User::factory()->create();
+        $spotify = StreamingAccount::factory()->for($user)->spotify()->create([
+            'scopes' => StreamingProvider::Spotify->requiredScopes(),
+        ]);
+        $youtube = StreamingAccount::factory()->for($user)->youtube()->create([
+            'scopes' => StreamingProvider::YouTube->requiredScopes(),
+        ]);
+        $spotifyGateway = new FlowFakeGateway(StreamingProvider::Spotify);
+        $youtubeGateway = new FlowFakeGateway(StreamingProvider::YouTube);
+        $this->app->instance('streaming-oauth.spotify', $spotifyGateway);
+        $this->app->instance('streaming-oauth.youtube', $youtubeGateway);
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->actingAs($user)
+                ->post(route('integrations.accounts.verify', $spotify))
+                ->assertRedirect(route('integrations.index'));
+        }
+
+        $this->post(route('integrations.accounts.verify', $spotify))->assertTooManyRequests();
+        $this->post(route('integrations.accounts.verify', $youtube))
+            ->assertRedirect(route('integrations.index'));
+
+        $this->assertSame(10, $spotifyGateway->refreshes);
+        $this->assertSame(1, $youtubeGateway->refreshes);
+    }
+
     private function connectState(User $user): string
     {
         $connect = $this->actingAs($user)->post(route('integrations.connect', 'spotify'));
