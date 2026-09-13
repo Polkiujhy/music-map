@@ -692,14 +692,14 @@ schematu lub semantyki wymaga v2 i migracji obu stron.
 
 #### Automated
 
-- [ ] 2.1 Zweryfikować macierze Spotify i exact restore
-- [ ] 2.2 Zweryfikować macierze YouTube i exact restore
-- [ ] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
-- [ ] 2.4 Potwierdzić brak regresji logowania Google
+- [x] 2.1 Zweryfikować macierze Spotify i exact restore
+- [x] 2.2 Zweryfikować macierze YouTube i exact restore
+- [x] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
+- [x] 2.4 Potwierdzić brak regresji logowania Google
 
 #### Manual
 
-- [ ] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
+- [x] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
 
 ### Phase 3: Komenda, źródło i akceptacja interoperacyjna
 
