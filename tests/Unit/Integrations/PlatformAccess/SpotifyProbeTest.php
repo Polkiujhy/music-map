@@ -147,14 +147,21 @@ class SpotifyProbeTest extends TestCase
             ->push(['items' => $this->spotifyItems()])
             ->push(['items' => $this->spotifyItems()])
             ->push(['items' => $this->spotifyItems()])
+            ->push(['items' => $this->spotifyItems()])
             ->push(['items' => $this->spotifyItems()]);
 
         $result = $this->probe()->probe($this->tester_session());
 
         $this->assertInstanceOf(ProbeFailure::class, $result);
         $this->assertSame('cleanup-failed', $result->category);
-        Http::assertSentCount(12);
-        Sleep::assertSleptTimes(4);
+        Http::assertSentCount(13);
+        Sleep::assertSequence([
+            Sleep::for(1)->second(),
+            Sleep::for(2)->seconds(),
+            Sleep::for(4)->seconds(),
+            Sleep::for(8)->seconds(),
+            Sleep::for(15)->seconds(),
+        ]);
     }
 
     public function test_cleanup_rejects_an_empty_page_that_advertises_more_items(): void
