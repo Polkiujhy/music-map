@@ -65,6 +65,7 @@ class ProbePlatformAccessTest extends TestCase
 
     public function test_invalid_configuration_stops_before_probe_dispatch(): void
     {
+        $this->writeTesterSession('spotify');
         $called = false;
         $this->bindProbe('spotify', static function () use (&$called): never {
             $called = true;
@@ -82,6 +83,7 @@ class ProbePlatformAccessTest extends TestCase
 
     public function test_invalid_session_stops_before_probe_dispatch(): void
     {
+        $this->configureTechnicalPrincipal('youtube');
         file_put_contents($this->sessionPath, '{}');
         $called = false;
         $this->bindProbe('youtube', static function () use (&$called): never {
@@ -134,13 +136,16 @@ class ProbePlatformAccessTest extends TestCase
     }
 
     #[DataProvider('invalidRawInvocationProvider')]
-    public function test_raw_argv_is_rejected_before_symfony_binds_the_command(array $arguments): void
-    {
+    public function test_raw_argv_is_rejected_before_symfony_binds_the_command(
+        array $arguments,
+        ?string $expectedProvider = 'spotify',
+        ?string $expectedPrincipal = 'technical',
+    ): void {
         [$exitCode, $stdout, $stderr] = $this->runSubprocess($arguments);
 
         $this->assertSame(2, $exitCode);
         $this->assertSame('', $stdout);
-        $this->assertFailure($stderr, 'spotify', 'technical', 'invalid-invocation');
+        $this->assertFailure($stderr, $expectedProvider, $expectedPrincipal, 'invalid-invocation');
         $this->assertStringNotContainsString('The "', $stderr);
     }
 
@@ -202,6 +207,34 @@ class ProbePlatformAccessTest extends TestCase
                 'separate-value',
                 ...$valid,
             ]],
+            'abbreviated command' => [[
+                'platform-access:p',
+                ...array_slice($valid, 1),
+            ]],
+            'abbreviated namespace' => [[
+                'platform-a:p',
+                ...array_slice($valid, 1),
+            ]],
+            'short abbreviated namespace' => [[
+                'pla:p',
+                ...array_slice($valid, 1),
+            ]],
+            'minimum unambiguous abbreviation' => [[
+                'pl:p',
+                ...array_slice($valid, 1),
+            ]],
+            'abbreviated command with separate option values' => [[
+                'platform-access:p',
+                '--provider',
+                'spotify',
+                '--principal',
+                'technical',
+                '--write',
+                '--format',
+                'json',
+                '--no-ansi',
+                '--no-interaction',
+            ], null, null],
         ];
     }
 

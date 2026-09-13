@@ -181,6 +181,41 @@ class YouTubeProbeTest extends TestCase
         $this->assertSame('cleanup-failed', $result->category);
     }
 
+    public function test_cleanup_deletes_known_insert_ids_when_bounded_scans_are_temporarily_empty(): void
+    {
+        Http::fakeSequence()
+            ->push($this->refreshPayload())
+            ->push(['items' => [['id' => 'stable-account']]])
+            ->push(['items' => [[
+                'snippet' => ['channelId' => 'stable-account'],
+                'status' => ['privacyStatus' => 'private'],
+            ]]])
+            ->push(['items' => []])
+            ->push(['id' => 'playlist-item-1'])
+            ->push(['id' => 'playlist-item-2'])
+            ->push(['id' => 'playlist-item-3'])
+            ->push(['items' => $this->youtubeItems()])
+            ->push(['items' => []])
+            ->push([], 204)
+            ->push([], 204)
+            ->push([], 204)
+            ->push(['items' => []]);
+
+        $result = $this->probe()->probe($this->tester_session());
+
+        $this->assertInstanceOf(ProbeResult::class, $result);
+        $deleteUrls = Http::recorded()
+            ->filter(static fn (array $record): bool => $record[0]->method() === 'DELETE')
+            ->map(static fn (array $record): string => $record[0]->url())
+            ->values()
+            ->all();
+        $this->assertSame([
+            'https://www.googleapis.com/youtube/v3/playlistItems?id=playlist-item-1',
+            'https://www.googleapis.com/youtube/v3/playlistItems?id=playlist-item-2',
+            'https://www.googleapis.com/youtube/v3/playlistItems?id=playlist-item-3',
+        ], $deleteUrls);
+    }
+
     private function probe(): YouTubeProbe
     {
         return new YouTubeProbe(new RefreshTokenRotationSink($this->temporaryPath()));

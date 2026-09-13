@@ -1,10 +1,10 @@
 #!/usr/bin/env php
 <?php
 
-use Illuminate\Foundation\Application;
 use App\Integrations\PlatformAccess\PlatformAccessProtocol;
 use App\Integrations\PlatformAccess\ProbeFailure;
 use App\Integrations\PlatformAccess\ProbeInvocation;
+use Illuminate\Foundation\Application;
 use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
@@ -21,7 +21,7 @@ $tokens = $input->getRawTokens(false);
 $isStandardHelp = ($tokens[0] ?? null) === 'help'
     && ($tokens[1] ?? null) === PlatformAccessProtocol::COMMAND;
 
-if (! $isStandardHelp && in_array(PlatformAccessProtocol::COMMAND, $tokens, true)) {
+if (! $isStandardHelp && ProbeInvocation::targetsCommand($tokens)) {
     $invocation = ProbeInvocation::fromRawTokens($tokens);
 
     if ($invocation instanceof ProbeFailure) {

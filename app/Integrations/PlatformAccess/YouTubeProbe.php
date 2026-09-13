@@ -325,7 +325,10 @@ final readonly class YouTubeProbe implements PlatformProbe
                     $itemIds = $knownItemIds;
                 } else {
                     $failed = $listed['has_next_page'];
-                    $itemIds = array_column($listed['items'], 'id');
+                    $itemIds = array_values(array_unique([
+                        ...$knownItemIds,
+                        ...array_column($listed['items'], 'id'),
+                    ]));
                 }
             }
         } catch (Throwable) {

@@ -65,6 +65,29 @@ final readonly class ProbeInvocation
         return new self($provider, $principal);
     }
 
+    public static function targetsCommand(array $tokens): bool
+    {
+        [$commandNamespace, $commandName] = explode(':', PlatformAccessProtocol::COMMAND, 2);
+
+        foreach ($tokens as $token) {
+            if (! is_string($token)) {
+                continue;
+            }
+
+            $parts = explode(':', $token);
+
+            if (count($parts) === 2
+                && $parts[0] !== ''
+                && $parts[1] !== ''
+                && str_starts_with($commandNamespace, $parts[0])
+                && str_starts_with($commandName, $parts[1])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function optionValues(array $tokens, string $prefix): array
     {
         return array_values(array_map(
