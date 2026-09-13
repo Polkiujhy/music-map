@@ -40,7 +40,8 @@ ograniczyć emitowane pola.
 - YouTube współdzieli `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` z logowaniem,
   ale grant, refresh token, scope i dane konta platform-access pozostają osobne.
 - Exact Spotify scope set to `playlist-modify-private`,
-  `playlist-read-private`, `user-read-private`; exact YouTube scope set to
+  `playlist-modify-public`, `playlist-read-private`, `user-read-private`;
+  exact YouTube scope set to
   `https://www.googleapis.com/auth/youtube`.
 - `scripts/verify-source-contract` jest ręcznym manifestem, więc każdy nowy
   stabilny plik aplikacji i testów musi zostać dopisany.
@@ -156,7 +157,7 @@ dokładnie właściwy zbiór:
 
 | Provider | Exact scope set |
 | --- | --- |
-| Spotify | `playlist-modify-private`, `playlist-read-private`, `user-read-private` |
+| Spotify | `playlist-modify-private`, `playlist-modify-public`, `playlist-read-private`, `user-read-private` |
 | YouTube | `https://www.googleapis.com/auth/youtube` |
 
 Probe zawsze wykonuje refresh-token exchange i nie używa istniejącego access

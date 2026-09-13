@@ -119,8 +119,8 @@ class ProbeInputTest extends TestCase
             'secret placeholder' => [['refresh_token' => '__REQUIRED_RUNTIME_SECRET__']],
             'value placeholder' => [['account_id' => '__REQUIRED_RUNTIME_VALUE__']],
             'account mismatch' => [['account_id' => 'account-2']],
-            'scope missing' => [['scopes' => 'playlist-read-private user-read-private']],
-            'scope additional' => [['scopes' => 'playlist-modify-private playlist-read-private user-read-private user-read-email']],
+            'scope missing' => [['scopes' => 'playlist-modify-private playlist-read-private user-read-private']],
+            'scope additional' => [['scopes' => 'playlist-modify-private playlist-modify-public playlist-read-private user-read-private user-read-email']],
         ];
     }
 
@@ -244,7 +244,7 @@ class ProbeInputTest extends TestCase
             'refresh_token' => 'refresh-token',
             'expected_account_id' => 'account-1',
             'account_id' => 'account-1',
-            'scopes' => 'user-read-private playlist-read-private playlist-modify-private',
+            'scopes' => 'user-read-private playlist-read-private playlist-modify-public playlist-modify-private',
         ];
     }
 
