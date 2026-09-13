@@ -2,6 +2,8 @@
 
 namespace App\Integrations\PlatformAccess;
 
+use Symfony\Component\Console\Input\InputInterface;
+
 final readonly class ProbeInvocation
 {
     private const REQUIRED_FLAGS = [
@@ -38,6 +40,25 @@ final readonly class ProbeInvocation
             || $principal === null
             || count($remaining) !== count(array_unique($remaining, SORT_STRING))
             || self::sorted($remaining) !== self::sorted($expected)) {
+            return ProbeFailure::make('invalid-invocation', $provider, $principal);
+        }
+
+        return new self($provider, $principal);
+    }
+
+    public static function fromInput(InputInterface $input): self|ProbeFailure
+    {
+        $providerValue = $input->getOption('provider');
+        $principalValue = $input->getOption('principal');
+        $provider = PlatformAccessProtocol::isProvider($providerValue) ? $providerValue : null;
+        $principal = PlatformAccessProtocol::isPrincipal($principalValue) ? $principalValue : null;
+
+        if ($provider === null
+            || $principal === null
+            || $input->getOption('write') !== true
+            || $input->getOption('format') !== 'json'
+            || $input->getOption('no-ansi') !== true
+            || $input->getOption('no-interaction') !== true) {
             return ProbeFailure::make('invalid-invocation', $provider, $principal);
         }
 

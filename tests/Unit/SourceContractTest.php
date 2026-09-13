@@ -54,6 +54,32 @@ class SourceContractTest extends TestCase
         );
     }
 
+    public function test_worktree_contract_rejects_php_source_missing_from_manifest(): void
+    {
+        $repository = dirname(__DIR__, 2);
+        $unexpectedPath = $repository.'/app/UnmanifestedSourceContractProbe.php';
+        $this->assertFileDoesNotExist($unexpectedPath);
+
+        try {
+            file_put_contents($unexpectedPath, "<?php\n");
+            exec(
+                'cd '.escapeshellarg($repository).' && sh scripts/verify-source-contract --worktree 2>&1',
+                $output,
+                $exitCode,
+            );
+        } finally {
+            if (is_file($unexpectedPath)) {
+                unlink($unexpectedPath);
+            }
+        }
+
+        $this->assertSame(1, $exitCode);
+        $this->assertContains(
+            'PHP source path is missing from required_paths: app/UnmanifestedSourceContractProbe.php',
+            $output,
+        );
+    }
+
     /** @return list<string> */
     private function requiredPaths(string $repository): array
     {

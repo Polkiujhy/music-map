@@ -692,23 +692,23 @@ schematu lub semantyki wymaga v2 i migracji obu stron.
 
 #### Automated
 
-- [x] 2.1 Zweryfikować macierze Spotify i exact restore
-- [x] 2.2 Zweryfikować macierze YouTube i exact restore
-- [x] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
-- [x] 2.4 Potwierdzić brak regresji logowania Google
+- [x] 2.1 Zweryfikować macierze Spotify i exact restore — 8ca1ec7
+- [x] 2.2 Zweryfikować macierze YouTube i exact restore — 8ca1ec7
+- [x] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność — 8ca1ec7
+- [x] 2.4 Potwierdzić brak regresji logowania Google — 8ca1ec7
 
 #### Manual
 
-- [x] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
+- [x] 2.5 Potwierdzić granicę PaaS i semantykę cleanup — 8ca1ec7
 
 ### Phase 3: Komenda, źródło i akceptacja interoperacyjna
 
 #### Automated
 
-- [ ] 3.1 Zweryfikować exact kontrakt komendy
-- [ ] 3.2 Uruchomić pełne bramki repozytorium
-- [ ] 3.3 Zweryfikować kompletny manifest źródła
+- [x] 3.1 Zweryfikować exact kontrakt komendy
+- [x] 3.2 Uruchomić pełne bramki repozytorium
+- [x] 3.3 Zweryfikować kompletny manifest źródła
 
 #### Manual
 
-- [ ] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS
+- [x] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS

@@ -2,6 +2,9 @@
 <?php
 
 use Illuminate\Foundation\Application;
+use App\Integrations\PlatformAccess\PlatformAccessProtocol;
+use App\Integrations\PlatformAccess\ProbeFailure;
+use App\Integrations\PlatformAccess\ProbeInvocation;
 use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
@@ -13,6 +16,21 @@ require __DIR__.'/vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/bootstrap/app.php';
 
-$status = $app->handleCommand(new ArgvInput);
+$input = new ArgvInput;
+$tokens = $input->getRawTokens(false);
+$isStandardHelp = ($tokens[0] ?? null) === 'help'
+    && ($tokens[1] ?? null) === PlatformAccessProtocol::COMMAND;
+
+if (! $isStandardHelp && in_array(PlatformAccessProtocol::COMMAND, $tokens, true)) {
+    $invocation = ProbeInvocation::fromRawTokens($tokens);
+
+    if ($invocation instanceof ProbeFailure) {
+        fwrite(STDERR, $invocation->stderr());
+
+        exit($invocation->exitCode());
+    }
+}
+
+$status = $app->handleCommand($input);
 
 exit($status);
