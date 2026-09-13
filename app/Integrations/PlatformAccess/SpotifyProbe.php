@@ -234,27 +234,32 @@ final readonly class SpotifyProbe implements PlatformProbe
     private function cleanup(PendingRequest $request, TesterSession $session): ?ProbeFailure
     {
         try {
+            $replace = $request->put($this->itemsUrl($session), ['uris' => []]);
+
+            if (! $replace->successful()) {
+                return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+            }
+
+            $cleanupSnapshot = $replace->json('snapshot_id');
+            if (! PlatformAccessProtocol::isBoundedString($cleanupSnapshot, 255)) {
+                return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
+            }
+
             for ($attempt = 0; $attempt <= count(self::CLEANUP_VERIFICATION_DELAYS_SECONDS); $attempt++) {
-                $replace = $request->put($this->itemsUrl($session), ['uris' => []]);
-
-                if (! $replace->successful()) {
-                    return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
-                }
-
-                $verification = $request->get($this->itemsUrl($session), ['limit' => 1]);
+                $verification = $request->get($this->playlistUrl($session), [
+                    'fields' => 'snapshot_id,items(total,items,next)',
+                ]);
 
                 if (! $verification->successful()) {
                     return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
                 }
 
-                $itemUris = $this->spotifyItemUris($verification, allowNextPage: true);
-                if ($itemUris === []) {
-                    return is_string($verification->json('next'))
-                        ? ProviderFailureMapper::cleanupFailed('spotify', 'tester')
-                        : null;
+                $cleanupState = $this->spotifyCleanupState($verification, $cleanupSnapshot);
+                if ($cleanupState === true) {
+                    return null;
                 }
 
-                if ($itemUris === null) {
+                if ($cleanupState === null) {
                     return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
                 }
 
@@ -269,7 +274,36 @@ final readonly class SpotifyProbe implements PlatformProbe
         }
     }
 
-    private function spotifyItemUris(Response $response, bool $allowNextPage = false): ?array
+    private function spotifyCleanupState(Response $response, string $expectedSnapshot): ?bool
+    {
+        $payload = $response->json();
+        $items = is_array($payload) ? ($payload['items'] ?? null) : null;
+
+        if (! is_array($payload)
+            || ! PlatformAccessProtocol::isBoundedString($payload['snapshot_id'] ?? null, 255)
+            || ! is_array($items)
+            || ! is_int($items['total'] ?? null)
+            || $items['total'] < 0
+            || ! isset($items['items'])
+            || ! is_array($items['items'])
+            || ! array_is_list($items['items'])
+            || ! array_key_exists('next', $items)
+            || ($items['next'] !== null && ! is_string($items['next']))) {
+            return null;
+        }
+
+        if ($payload['snapshot_id'] !== $expectedSnapshot) {
+            return false;
+        }
+
+        if ($items['total'] === 0) {
+            return $items['items'] === [] && $items['next'] === null ? true : null;
+        }
+
+        return false;
+    }
+
+    private function spotifyItemUris(Response $response): ?array
     {
         $payload = $response->json();
 
@@ -277,8 +311,7 @@ final readonly class SpotifyProbe implements PlatformProbe
             || ! isset($payload['items'])
             || ! is_array($payload['items'])
             || ! array_is_list($payload['items'])
-            || (isset($payload['next']) && ! is_string($payload['next']))
-            || (! $allowNextPage && isset($payload['next']))) {
+            || isset($payload['next'])) {
             return null;
         }
 
