@@ -1,374 +1,714 @@
 # Gotowość dostępu do Spotify i YouTube — plan implementacji
 
-> **Plan zastąpiony:** nie implementować lokalnego `platforms:authorize` ani
-> opisanego niżej alternatywnego kontraktu readiness. Aktualny plan pełnej
-> gotowości jest własnością Managera:
-> `/srv/manager/context/changes/music-map-platform-access-readiness/plan.md`.
-
 ## Przegląd
 
-Zmiana dostarcza powtarzalny i bezsekretny sposób potwierdzenia, że testowe aplikacje oraz dedykowane konta techniczne `music-map` mają minimalne uprawnienia potrzebne do przyszłego importu, linkowania i eksportu playlist przez Spotify Web API oraz YouTube Data API. Fundament definiuje też publiczny kontrakt konfiguracji produkcyjnej, ale zgodnie z decyzją planistyczną nie wykonuje live smoke przeciwko produkcyjnym poświadczeniom zarządzanym przez Manager.
+Zmiana implementuje po stronie `music-map` publiczny kontrakt
+`music-map.platform-access.v1`. Manager jest zewnętrznym PaaS: zarządza OAuth,
+poświadczeniami technicznymi, ich rotacją i dostarczeniem, uruchamia probe oraz
+obsługuje revoke i recovery. Aplikacja udostępnia wyłącznie deterministyczną
+komendę `php artisan platform-access:probe`, waliduje wejście, wykonuje
+minimalną próbę providera i zwraca zamknięty wynik JSON.
 
-Plan koryguje założenia produktu ujawnione przez aktualne API: Spotify pozwala odczytać elementy playlisty tylko autoryzowanemu właścicielowi lub współpracownikowi, YouTube wymaga szerokiego scope `youtube.force-ssl` do zapisu, a domyślna kwota YouTube uzasadnia ograniczenie MVP do playlist zawierających 20 utworów i pięciu rozpoczętych operacji zapisu dziennie.
+Plan utrwala pełny kontrakt konsumencki w zwykłym checkoutcie repozytorium, aby
+implementacja i testy nie zależały od kodu, hosta ani wewnętrznych planów
+Managera.
 
 ## Analiza stanu obecnego
 
-Repozytorium nie zawiera jeszcze kodu, konfiguracji, tras, migracji ani testów integracji Spotify lub YouTube. `config/services.php` zna wyłącznie klienta Google używanego do logowania, a `.env.example` nie definiuje żadnych poświadczeń platform streamingowych. Istniejąca integracja Google jest stanowa, waliduje odpowiedź dostawcy i loguje wyłącznie klasę wyjątku oraz correlation ID, co stanowi wzorzec dla bezpiecznych diagnostyk platform.
+Repozytorium nie implementuje jeszcze Spotify, YouTube ani
+`platform-access:probe`. `config/services.php` zawiera tylko klienta Google
+używanego do logowania, a `.env.example` nie ma technicznych ustawień
+platform-access. `AuthIdentity` przechowuje stabilne identyfikatory logowania,
+nie tokeny platform.
 
-Tabela `auth_identities` przechowuje wyłącznie stabilne identyfikatory metod logowania i celowo nie zawiera tokenów. Tokeny testowych kont technicznych będą więc pochodzić z lokalnego, nieśledzonego `.env`, produkcyjne wartości będą dostarczane przez zewnętrzny PaaS według tych samych symbolicznych nazw, a zaszyfrowany model poświadczeń kont użytkowników pozostaje odpowiedzialnością S-04.
-
-Planowanie zaktualizowało trwały kontrakt produktu w `context/foundation/prd.md`, `context/foundation/roadmap.md` oraz wspierające decyzje w `context/foundation/shape-notes.md`: limit playlist wynosi 20 utworów, zapis YouTube ma globalny budżet pięciu rozpoczętych operacji na dzień kwoty API, a import Spotify wymaga powiązanego konta będącego właścicielem lub współpracownikiem.
+Istniejące bezpieczne wzorce są wąskie, ale użyteczne: sekrety w
+`.env.example` mają sentinel `__REQUIRED_RUNTIME_SECRET__`, callback Google
+loguje wyłącznie klasę wyjątku i correlation ID, a nginx nie zapisuje pełnych
+URI. Nowy subsystem nie może zakładać globalnej redakcji logów; musi jawnie
+ograniczyć emitowane pola.
 
 ### Kluczowe odkrycia
 
-- F-01 odblokowuje S-02 oraz S-04–S-07, więc wynik musi rozróżniać gotowość odczytu i zapisu per platforma zamiast zwracać jeden ogólny status (`context/foundation/roadmap.md:42`, `context/foundation/roadmap.md:79`).
-- Konfiguracja usług zewnętrznych korzysta z `config/services.php`, a bezpieczne przykłady runtime używają sentinela `__REQUIRED_RUNTIME_SECRET__` (`config/services.php:38`, `.env.example:3`).
-- CI kopiuje `.env.example` i uruchamia testy bez sekretów providera, dlatego testy automatyczne muszą korzystać z atrap HTTP, a wywołania live pozostają jawnie lokalne (`.github/workflows/ci.yml:55`).
-- `auth_identities` nie ma pól tokenów, a wcześniejszy plan jawnie oddzielił logowanie Google od przyszłych integracji streamingowych (`app/Models/AuthIdentity.php:11`, `context/archive/2026-09-12-private-account-and-bank/plan.md:44`).
-- Callback Google zapewnia wzorzec neutralnego błędu i sanitowanego telemetry bez URI, payloadu, tokenów ani danych osobowych (`app/Http/Controllers/Auth/GoogleAuthController.php:54`).
-- Nginx aplikacji nie zapisuje pełnych URI, ponieważ parametry callbacków mogą zawierać dane uwierzytelniające; fundament nie może osłabić tego kontraktu (`docker/nginx/default.conf:9`, `tests/Unit/ProductionInfrastructureTest.php:227`).
-- Spotify Client Credentials nie daje dostępu do zasobów użytkownika. Zarówno konto techniczne, jak i późniejsze konto użytkownika wymagają Authorization Code oraz refresh tokenu.
-- YouTube nie obsługuje service accounts dla zasobów kanału. Konto techniczne musi być dedykowanym kontem Google/YouTube lub Brand Account autoryzowanym przez zwykły server-side OAuth.
+- Manager wywołuje aplikację; aplikacja nigdy nie wywołuje `s-manager`.
+- Publiczny entrypoint to `platform-access:probe`, nie stare
+  `platforms:authorize` ani `platforms:readiness`.
+- Zamknięty raw-argv preflight musi działać w `artisan` przed
+  `Application::handleCommand()`: override pojedynczej komendy następuje za późno,
+  aby przejąć nieopcyjny token umieszczony przed nazwą komendy.
+- `technical` i `tester` mają rozłączne źródła danych i nie mogą mieć
+  fallbacku między tożsamościami.
+- YouTube współdzieli `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` z logowaniem,
+  ale grant, refresh token, scope i dane konta platform-access pozostają osobne.
+- Exact Spotify scope set to `playlist-modify-private`,
+  `playlist-read-private`, `user-read-private`; exact YouTube scope set to
+  `https://www.googleapis.com/auth/youtube`.
+- `scripts/verify-source-contract` jest ręcznym manifestem, więc każdy nowy
+  stabilny plik aplikacji i testów musi zostać dopisany.
 
 ## Pożądany stan końcowy
 
-- `.env.example` i `config/services.php` definiują osobne od logowania Google, niesekretne nazwy konfiguracji Spotify oraz YouTube, minimalne scope i dane potrzebne do lokalnej próby gotowości.
-- Testowe konto Spotify ma scope `playlist-read-private`, `playlist-read-collaborative` i `playlist-modify-private`; YouTube używa API key do publicznego odczytu oraz OAuth `youtube.force-ssl` dopiero do zapisu.
-- Komenda Artisan zwraca zawsze pełną macierz `config/auth/read/write/cleanup`, ale wymagalność zależy od platformy i trybu: domyślnie Spotify wymaga `config/auth/read`, YouTube tylko `config/read`, a niewykonywane zdolności mają `SKIP`; po jawnym `--write` wszystkie zdolności wybranego providera są wymagane.
-- Brak, pusta wartość albo sentinel konfiguracji kończy się bez wywołania sieci. Błąd wymaganej zdolności daje niezerowy exit code, bez ujawniania sekretów, surowych odpowiedzi, pełnych URL-i, identyfikatorów zasobów lub danych konta.
-- Write smoke Spotify modyfikuje dedykowaną, wielorazową prywatną playlistę testową i w bloku `finally` przywraca jej pierwotne szczegóły oraz elementy; utworzenie prywatnej playlisty przez API jest osobnym, jednorazowym krokiem ręcznym. Write smoke YouTube tworzy wyraźnie jednorazową playlistę `unlisted`, modyfikuje ją i usuwa w `finally`. Nieudane przywrócenie albo usunięcie jest osobnym wynikiem blokującym.
-- Testy jednostkowe i funkcjonalne przechodzą bez połączeń z providerami, a lokalne próby live na osobnych projektach testowych są opisane w redagowanym `verification.md`.
-- Oddzielna, wyłącznie lokalna komenda bootstrapu OAuth przeprowadza Authorization Code z jednorazowym callbackiem loopback, `state` i PKCE, zapisując refresh token oraz datę autoryzacji bezpośrednio do ignorowanego `.env` bez ujawniania ich w argv, konsoli ani logach.
-- Produkcja ma zdefiniowany kontrakt symbolicznych nazw i bezpiecznego sygnalizowania wygaśnięcia lub wymaganej rotacji poświadczeń, lecz F-01 nie twierdzi, że produkcyjne wartości zostały sprawdzone live ani że PaaS udostępnia już zapisywalny kanał rotacji; ten kanał pozostaje prerequisite przyszłego runtime zapisującego.
+- Gotowy do przekazania PaaS, zreviewowany obraz FPM obsługuje dokładne
+  wywołanie v1 i tylko dozwolone wartości provider/principal.
+- `technical` czyta wyłącznie jawne ustawienia runtime, zawsze wymienia refresh
+  token, potwierdza konto, exact scope i odczyt bez mutowania zasobu providera.
+- `tester` czyta wyłącznie zamkniętą sesję z publicznego locatora, wykonuje
+  identity/read/write oraz obowiązkowy cleanup na trzech elementach
+  zarezerwowanej, początkowo pustej fixture providera.
+- Sukces i błąd mają zamknięte schematy, właściwy strumień, końcowy newline oraz
+  stabilne exit codes `0`, `1` i `2`.
+- Jeżeli provider zwróci replacement refresh token, probe przekazuje go
+  wyłącznie przez prywatny sink Managera; Manager przejmuje go przed uznaniem
+  sukcesu, bez emisji sekretu do stdout, stderr albo logów.
+- Automatyczne testy używają Laravel HTTP fake, nie wymagają sekretów ani sieci
+  i dowodzą braku danych providera w outputach oraz logach.
+- Zwykły checkout zawiera cały kontrakt potrzebny implementatorowi; nie wymaga
+  dostępu do `/srv/manager`.
 
 ## Czego NIE robimy
 
-- Nie dodajemy UI, tras aplikacji ani callbacków do linkowania kont użytkowników Spotify/YouTube. Dozwolony jest wyłącznie krótkotrwały callback loopback lokalnej komendy operatorskiej, niedostępny w runtime webowym i nieużywany przez konta użytkowników.
-- Nie tworzymy migracji ani modelu zaszyfrowanych tokenów użytkowników; należy to do S-04.
-- Nie implementujemy importu, dopasowania, eksportu, synchronizacji ani dziennego licznika kwoty w przepływie użytkownika.
-- Nie wykonujemy live smoke na produkcyjnych poświadczeniach ani produkcyjnych kontach technicznych.
-- Nie modyfikujemy `/srv/manager` i nie opisujemy hostowych ścieżek, mountów, uprawnień, transportu sekretów lub innych internalsów PaaS.
-- Nie używamy scrapingu, nieoficjalnych endpointów Spotify ani service accounts YouTube.
-- Nie dodajemy publicznych scope zapisu Spotify ani automatycznego publikowania playlist na profilach.
-- Nie zapisujemy tokenów, nazw kont, identyfikatorów testowych playlist ani surowych odpowiedzi API w repozytorium lub logach.
-- Nie automatyzujemy zwiększenia kwoty YouTube ani procesu weryfikacji aplikacji przez Google.
+- Nie implementujemy OAuth callback, PKCE, autoryzacji, trwałego
+  przechowywania ani recovery poświadczeń technicznych. Aplikacja zapisuje
+  ewentualny replacement refresh token tylko do efemerycznego sinka
+  dostarczonego i przejmowanego przez Managera.
+- Nie implementujemy komend `s-manager`, hostowego transportu, mountów,
+  uprawnień, blokad, journali, receiptów ani rollbacku PaaS.
+- Nie dodajemy UI, tras webowych, modeli tokenów użytkowników, importu,
+  eksportu domenowego, synchronizacji ani licznika kwoty.
+- Nie zmieniamy znaczenia istniejącego `services.google` ani
+  `GOOGLE_REDIRECT_URI` używanego przez logowanie.
+- Nie dodajemy human-readable outputu, nowych kategorii błędów, alternatywnego
+  protokołu ani fallbacku między `technical` i `tester`.
+- Nie zapisujemy tokenów trwale ani nie emitujemy tokenów, sekretów,
+  identyfikatorów kont, fixture, zasobów, PII, pełnych URL-i, surowych
+  odpowiedzi lub tekstów wyjątków do protokołu, logów ani trwałych plików.
+  Jedynym wyjątkiem jest efemeryczny replacement refresh token zapisany do
+  prywatnego sinka Managera opisanego w kontrakcie v1.
 
 ## Podejście do implementacji
 
-Powstanie pojedyncza komenda Artisan oparta na dwóch cienkich, niezależnych probe'ach platform. Wspólny kontrakt wyniku opisze zdolności i stabilne kategorie błędów, natomiast każdy probe zachowa właściwy model dostępu providera: Spotify odświeża OAuth konta technicznego przed odczytem lub zapisem, a YouTube rozdziela publiczny odczyt przez API key od zapisu z OAuth.
+Komenda będzie cienkim orkiestratorem nad zamkniętą walidacją v1 i dwoma
+provider probe'ami. Wspólna warstwa przyjmie wyłącznie znormalizowane DTO,
+wyrenderuje dokładnie jeden dokument sukcesu albo błędu i będzie jedynym
+miejscem mapowania kategorii oraz kodów procesu. Proste, zamknięte schematy
+będą walidowane typowanym kodem aplikacji bez nowej biblioteki JSON Schema.
 
-Osobna komenda `platforms:authorize` będzie lokalnym bootstrapem poświadczeń technicznych, a nie częścią zwykłego readiness ani przyszłego linkowania kont użytkowników. Uruchomi przeglądarkę bez wypisywania providerowego authorization URL, przyjmie dokładnie jeden callback na `127.0.0.1`, zweryfikuje `state` i PKCE, wymieni kod po stronie serwera oraz zapisze refresh token i datę autoryzacji przez wąski lokalny magazyn modyfikujący wyłącznie odpowiednie klucze ignorowanego `.env`. Komenda odmówi działania poza środowiskiem `local`. Ten sam magazyn zapisze nowy refresh token zwrócony podczas lokalnego odświeżenia Spotify; brak bezpiecznego zapisywalnego kontraktu rotacji w produkcyjnym PaaS pozostaje jawnym prerequisite przyszłego runtime, a nie ukrytą odpowiedzialnością F-01.
+Probe'y Spotify i YouTube korzystają z Laravel HTTP client z krótkim connect
+timeoutem, ograniczonym całkowitym timeoutem i bez automatycznego retry.
+Provider-controlled dane nigdy nie trafiają do komunikatów błędów ani logów.
+Każdy tester probe używa `try/finally`; `cleanup-failed` ma pierwszeństwo
+przed wcześniejszą awarią.
 
-Domyślne uruchomienie będzie niedestrukcyjne: dla Spotify sprawdzi konfigurację, odświeżenie dostępu i odczyt wskazanego fixture, a dla YouTube konfigurację i publiczny odczyt przez API key bez OAuth. Flaga `--write` jawnie uruchomi update/item-write/restore na dedykowanej prywatnej playliście testowej Spotify oraz OAuth i create/update/item-write/delete na koncie technicznym YouTube. Komenda będzie oferować format czytelny dla człowieka oraz wersjonowany JSON, aby kolejne wycinki mogły jednoznacznie ustalić, która zdolność jest dostępna.
+Ścieżki pozostające pod kontrolą `platform-access:probe` obowiązuje reguła
+zero logów: nie wywołują `Log::*` ani innego loggera nawet dla bezpiecznych
+komunikatów, ponieważ produkcyjny kanał logów współdzieli stderr z odpowiedzią
+protokołu. Po skutecznym dispatchu granica komendy przechwytuje każdy
+nieobsłużony `Throwable` z walidacji i probe'ów przed standardowym raportowaniem
+Kernela i mapuje go bez tekstu wyjątku na `provider-unavailable`. Awaria
+autoloadu, bootstrappingu, discovery albo konstrukcji komendy przed dispatchem
+nie jest odpowiedzią protokołu aplikacyjnego; Manager traktuje brak lub
+niezgodny wynik jako fail-closed błąd wykonania. Plan nie dodaje własnego
+Console Kernela. Ręczne uruchomienie lokalne po skutecznym dispatchu używa tego
+samego zamkniętego JSON; zmiana nie dodaje osobnego trybu diagnostycznego ani
+human-readable.
 
-Wszystkie testy automatyczne użyją atrap Laravel HTTP client i nie będą wymagały sekretów ani sieci. Prawdziwe próby zostaną wykonane lokalnie na oddzielnych projektach i kontach testowych, a ich redagowany wynik zostanie zapisany jako współczesny dowód. Produkcja konsumuje tylko ten sam publiczny kontrakt nazw i semantyki konfiguracji; sposób dostarczenia wartości pozostaje własnością Managera.
+## Publiczny kontrakt `music-map.platform-access.v1`
 
-## Krytyczne szczegóły implementacji
+Ta sekcja jest normatywnym kontraktem aplikacyjnym. Zmiana jej pól, wartości,
+strumieni lub semantyki wymaga nowej wersji protokołu i skoordynowanej migracji
+konsumenta. Poniższy rotation sink jest skoordynowaną korektą v1 przed jego
+pierwszą akceptacją live; po zaakceptowaniu pierwszego release zmiana tej
+semantyki wymaga v2.
 
-### Czas i cykl życia
+### Wywołanie
 
-Spotify access token jest krótkotrwały, a refresh token ma obecnie sześciomiesięczny limit od pierwotnej autoryzacji i podczas odświeżenia może zostać zastąpiony. F-01 musi rejestrować bezpieczną datę autoryzacji, odrzucać `invalid_grant` bez ponawiania oraz dokumentować konieczność ponownej autoryzacji; nie może udawać trwałej gotowości na podstawie pojedynczego access tokenu. Spotify Development Mode wymaga aktywnego Premium właściciela aplikacji oraz umieszczenia konta technicznego na allowliście; są to jawne wymagania operatorskie, ponieważ probe nie może ich niezawodnie odróżnić od innych odpowiedzi `403`.
+Manager uruchamia zaakceptowany obraz FPM dokładnie jako:
 
-YouTube zapisuje datę autoryzacji oraz status publikacji consent screen. Dla zewnętrznego projektu o statusie `testing` refresh token ze scope YouTube wygasa po siedmiu dniach; po przekroczeniu tego wieku readiness zwraca `reauthorization_required` bez próby sieciowej. Dla statusu `production` albo `internal` data pozostaje diagnostyczna, ponieważ token nadal może zostać unieważniony z innych powodów.
+```text
+php artisan platform-access:probe \
+  --provider=spotify|youtube \
+  --principal=technical|tester \
+  --write \
+  --format=json \
+  --no-ansi \
+  --no-interaction
+```
 
-### Debugowanie i obserwowalność
+`--write` i `--format=json` są wymagane. Dozwolone są wyłącznie providerzy
+`spotify` i `youtube` oraz principals `technical` i `tester`. Brakujące
+opcje, inne wartości, argumenty pozycyjne lub niewspierana kombinacja kończą się
+`invalid-invocation`/exit `2` przed requestem sieciowym. Dla
+`technical` obecność `--write` żąda pełnej macierzy akceptacyjnej, ale nie
+zezwala na mutację zasobu.
 
-Wynik może zawierać wyłącznie provider, nazwę zdolności, `PASS`/`FAIL`/`SKIP`, stabilną kategorię błędu, bezpieczny status HTTP oraz correlation ID. Surowe body, nagłówki autoryzacji, request URL, tokeny, nazwy kont, adresy e-mail i identyfikatory playlist są zabronione zarówno w konsoli, jak i w logach.
+### Wejście `technical`
 
-## Phase 1: Kontrakt platform i bezpieczna konfiguracja
+`technical` czyta wyłącznie poniższe wymagane, niepuste i nieplaceholderowe
+wartości runtime:
+
+| Provider | Klucze |
+| --- | --- |
+| Spotify | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_TECHNICAL_REFRESH_TOKEN`, `SPOTIFY_TECHNICAL_EXPECTED_ACCOUNT_ID`, `SPOTIFY_TECHNICAL_ACCOUNT_ID`, `SPOTIFY_TECHNICAL_SCOPES` |
+| YouTube | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `YOUTUBE_TECHNICAL_REFRESH_TOKEN`, `YOUTUBE_TECHNICAL_EXPECTED_ACCOUNT_ID`, `YOUTUBE_TECHNICAL_ACCOUNT_ID`, `YOUTUBE_TECHNICAL_SCOPES` |
+
+Dwa identyfikatory konta muszą być równe, a tożsamość zwrócona przez providera
+musi być im równa. Scope zapisane jako lista rozdzielona spacjami muszą tworzyć
+dokładnie właściwy zbiór:
+
+| Provider | Exact scope set |
+| --- | --- |
+| Spotify | `playlist-modify-private`, `playlist-read-private`, `user-read-private` |
+| YouTube | `https://www.googleapis.com/auth/youtube` |
+
+Probe zawsze wykonuje refresh-token exchange i nie używa istniejącego access
+tokenu jako dowodu. Nie czyta sesji ani konfiguracji testera. Obecne w
+środowisku access tokeny i metadane lifecycle nie są wejściem probe.
+
+Dla aplikacji Spotify w Development Mode Manager gwarantuje jako zewnętrzny
+warunek PaaS aktywne Premium właściciela aplikacji. Probe nie próbuje wywodzić
+tego warunku z profilu uwierzytelnionego principal ani z deprecated pola
+`product`; mapuje wyłącznie jednoznaczne strukturalne odmowy operacji.
+
+### Wejście `tester`
+
+`tester` czyta wyłącznie dokument UTF-8 JSON z
+`/run/secrets/music-map-platform-access/session.json` i nigdy nie korzysta
+z technicznych wartości środowiska. Obiekt jest
+zamknięty: nieznane pola są zabronione. Opublikowany limit całego dokumentu
+sesji wynosi 512 KiB; większy dokument jest odrzucany jako `invalid-session`.
+
+| Pole | Reguła |
+| --- | --- |
+| `protocol` | wymagane; dokładnie `music-map.platform-access.v1` |
+| `provider` | wymagane; `spotify` albo `youtube`; zgodne z opcją komendy |
+| `principal` | wymagane; dokładnie `tester` |
+| `client_id`, `client_secret`, `refresh_token` | wymagany string 1–8192 bez znaków U+0000–U+0020 |
+| `expected_account_id` | wymagany string 1–255 bez znaków U+0000–U+0020 |
+| `item_uris` | wymagana tablica dokładnie 3 stringów bez znaków U+0000–U+0020; Spotify wymaga kanonicznego URI `spotify:track:` + dokładnie 22 znaki base62 `[A-Za-z0-9]`, a YouTube dokładnie 11 znaków `[A-Za-z0-9_-]` przekazywanych jako `snippet.resourceId.videoId` |
+| `playlist_id` | wymagany dla Spotify i YouTube; string 1–255 bez znaków U+0000–U+0020; wskazuje dedykowaną, prywatną i początkowo pustą playlistę testową właściwego providera |
+
+Brak lub nieczytelność pliku, błędny JSON, dodatkowe pole, niezgodność
+protocol/provider/principal albo zła wartość kończą się
+`invalid-session`/exit `2` bez requestu sieciowego.
+
+Manager gwarantuje, że zarezerwowana playlista fixture właściwego providera nie
+jest używana ani modyfikowana przez innego aktora podczas probe. Aplikacja przed
+pierwszą mutacją potwierdza, że playlista jest prywatna, należy do oczekiwanego
+konta i jest pusta; inny stan oznacza `fixture-invalid` bez mutacji.
+
+### Prywatny rotation sink
+
+Dla obu principals Manager udostępnia aplikacji zapisywalny, efemeryczny
+locator `/run/secrets/music-map-platform-access/replacement.json`. Brak pliku
+po probe oznacza, że provider nie zwrócił replacement refresh tokenu. Jeżeli
+provider go zwróci, aplikacja przed dalszym autoryzowanym wywołaniem zapisuje
+do locatora dokładnie jeden dokument UTF-8 JSON zakończony newline, z polami
+wyłącznie `protocol`, `provider`, `principal` i
+`refresh_token`. Pierwsze trzy pola muszą odpowiadać wywołaniu, a
+`refresh_token` spełnia te same granice 1–8192 co wejście sesji.
+Opublikowany limit całego dokumentu replacement wynosi 128 KiB.
+
+Sink jest jedynym sekretnym kanałem wyjściowym probe. Token nie trafia do
+stdout, stderr ani logów. Błąd bezpiecznego zapisu kończy się
+`refresh-token-rotation-required`/exit `1` bez sukcesu. Po poprawnym zapisie
+probe używa otrzymanego access tokenu do dalszej weryfikacji. Manager uznaje
+wynik za kompletny dopiero po przejęciu dokumentu: dla `technical` zapisuje
+replacement token transakcyjnie w swoim credential store, a dla `tester`
+utrzymuje go wyłącznie do zakończenia revoke: dla YouTube odwołuje aktualny
+token programistycznie, a dla Spotify usuwa sekret po ręcznym `Remove Access`.
+Sposób utworzenia, transportu, przejęcia i usunięcia sinka pozostaje wewnętrzną
+odpowiedzialnością PaaS.
+
+### Odpowiedź sukcesu
+
+Sukces zapisuje dokładnie jeden obiekt UTF-8 JSON zakończony newline do stdout
+i nic do stderr. Obiekt ma wyłącznie:
+
+| Pole | Wartość |
+| --- | --- |
+| `protocol` | `music-map.platform-access.v1` |
+| `provider` | znormalizowane `spotify` albo `youtube` |
+| `principal` | znormalizowane `technical` albo `tester` |
+| `status` | `ok` |
+| `capabilities` | unikalna tablica stringów w porządku bajtowym |
+| `complete` | `true` |
+
+Exact capability sets:
+
+| Principal | Capabilities |
+| --- | --- |
+| `technical` | `identity`, `read`, `refresh-token-exchange` |
+| `tester` | `cleanup`, `identity`, `read`, `refresh-token-exchange`, `write` |
+
+`refresh-token-exchange` wolno zwrócić dopiero po rzeczywistej wymianie
+refresh tokenu i co najmniej jednym autoryzowanym wywołaniu API nowym access
+tokenem. Exit `0` jest dozwolony dopiero po wszystkich operacjach, w tym
+cleanup testera, oraz po bezpiecznym zapisaniu ewentualnego replacement tokenu
+do rotation sinka. Manager nie uznaje tego sukcesu, dopóki nie przejmie sinka.
+
+### Odpowiedź błędu i exit codes
+
+Błąd pozostawia stdout pusty i zapisuje do stderr dokładnie jeden obiekt JSON
+UTF-8 zakończony newline, nie większy niż 1024 bajty. Obiekt ma wyłącznie:
+`protocol`, `provider`, `principal`, `status: error`, `category`,
+świeży niepoufny UUIDv4 `correlation_id` i `complete: false`.
+
+Dla `invalid-invocation` pola `provider` i `principal` zawierają poprawną
+znormalizowaną wartość albo JSON `null`, gdy wartość jest brakująca lub
+nieobsługiwana; surowa błędna wartość nigdy nie jest odbijana. Dla pozostałych
+kategorii oba pola są niepuste i zgodne z wywołaniem.
+
+| Exit | Kategoria | Znaczenie |
+| ---: | --- | --- |
+| 2 | `invalid-invocation` | Niewspierane albo niekompletne opcje komendy. |
+| 2 | `invalid-configuration` | Brakująca, placeholderowa, błędnie sformatowana albo wewnętrznie niespójna konfiguracja technical. |
+| 2 | `invalid-session` | Brakująca, nieczytelna albo niezgodna ze schematem sesja testera. |
+| 1 | `provider-unavailable` | Awaria sieci, timeout albo odpowiedź providera 5xx. |
+| 1 | `provider-response-invalid` | Ograniczona odpowiedź providera jest błędnie sformatowana albo niekompletna. |
+| 1 | `authorization-denied` | Refresh token albo wynikowa autoryzacja zostały odrzucone. |
+| 1 | `account-mismatch` | Tożsamość providera różni się od oczekiwanego konta. |
+| 1 | `scope-mismatch` | Zaobserwowana autoryzacja nie ma dokładnie wymaganego zbioru scope'ów. |
+| 1 | `account-requirement-failed` | Warunek konta providera, np. Spotify Premium, nie jest spełniony. |
+| 1 | `resource-access-denied` | Autoryzowane konto nie może odczytać albo zmienić wymaganego zasobu probe. |
+| 1 | `fixture-invalid` | Stan początkowy fixture jest niezgodny z kontraktem albo syntaktycznie poprawny element testera został odrzucony przez providera jako nieużywalny. |
+| 1 | `rate-limited` | Provider zgłosił throttling albo HTTP 429. |
+| 1 | `quota-exceeded` | Spotify albo YouTube zgłosił strukturalnym kodem wyczerpanie kwoty aplikacji lub projektu. |
+| 1 | `refresh-token-rotation-required` | Provider zwrócił replacement refresh token, ale probe nie mógł bezpiecznie zapisać go do prywatnego sinka Managera. |
+| 1 | `cleanup-failed` | Przywrócenie pustego stanu fixture Spotify albo YouTube było niekompletne lub którakolwiek mutacja YouTube miała niejednoznaczny wynik; ta kategoria ma pierwszeństwo przed wcześniejszą awarią. |
+
+Nieklasyfikowalna bezpiecznie awaria używa `provider-unavailable`.
+`cleanup-failed` ma pierwszeństwo przed wcześniejszą awarią. Nie wolno
+dodawać kategorii ani emitować provider-controlled tekstu.
+
+### Semantyka providerów
+
+- Oba principals wymieniają refresh token przy każdym wywołaniu, potwierdzają
+  expected account, exact scope oraz przynajmniej jeden autoryzowany odczyt.
+- `technical` nie wykonuje mutacji zasobu providera. Jeżeli provider zwróci
+  replacement refresh token, probe zapisuje go wyłącznie do prywatnego sinka
+  Managera; nie zapisuje go trwale i nie emituje w protokole lub logach.
+- Spotify `tester` używa zarezerwowanej, prywatnej i początkowo pustej
+  playlisty, zapisuje dokładnie trzy `item_uris`, weryfikuje ich kolejność i w
+  `finally` przywraca oraz potwierdza pusty stan początkowy.
+- YouTube `tester` używa zarezerwowanej, prywatnej i początkowo pustej
+  playlisty, zapisuje dokładnie trzy `item_uris`, weryfikuje ich kolejność i w
+  `finally` usuwa elementy oraz potwierdza pusty stan początkowy.
+- Nieudane przywrócenie Spotify albo YouTube zwraca
+  `cleanup-failed`, nawet jeśli wcześniejszy krok także się nie udał.
+
+## Phase 1: Publiczny protokół i granice wejścia/wyjścia
 
 ### Przegląd
 
-Faza utrwala minimalne scope, rozdział tożsamości i symboliczny kontrakt konfiguracji wspólny dla lokalnych projektów testowych i późniejszego runtime produkcyjnego.
+Faza utrwala kontrakt jako typowane wartości, zamkniętą walidację i bezpieczne
+serializery, zanim powstanie kod wywołujący providerów.
 
 ### Wymagane zmiany
 
-#### 1. Konfiguracja środowiska
+#### 1. Konfiguracja i stałe protokołu
 
-**Pliki**: `.env.example`, `config/services.php`
+**Pliki**: `.env.example`, `config/services.php`,
+`app/Integrations/PlatformAccess/PlatformAccessProtocol.php`
 
-**Cel**: Zdefiniować osobne od logowania Google konfiguracje Spotify i YouTube oraz jednoznacznie rozdzielić wartości publiczne, sekrety aplikacji, refresh tokeny kont technicznych i niesekretne fixture readiness.
+**Cel**: Dodać symboliczne technical keys i exact scope bez zmiany istniejącego
+`services.google`. Konfiguracja YouTube wskazuje te same klucze klienta Google,
+ale osobne tokeny, konto i scope platform-access.
 
-**Kontrakt**: Spotify korzysta z `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`, `SPOTIFY_TECHNICAL_REFRESH_TOKEN`, `SPOTIFY_TECHNICAL_AUTHORIZED_AT`, `SPOTIFY_READINESS_PLAYLIST_ID`, osobnego `SPOTIFY_READINESS_WRITE_PLAYLIST_ID` wskazującego dedykowaną, wielorazową prywatną playlistę testową oraz niesekretnego `SPOTIFY_READINESS_ITEM_URI` wskazującego kontrolny element możliwy do zapisania. YouTube korzysta z `YOUTUBE_API_KEY`, `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REDIRECT_URI`, `YOUTUBE_TECHNICAL_REFRESH_TOKEN`, `YOUTUBE_TECHNICAL_AUTHORIZED_AT`, niesekretnego `YOUTUBE_OAUTH_PUBLISHING_STATUS` o wartości `testing`, `production` albo `internal`, `YOUTUBE_READINESS_PLAYLIST_ID` i niesekretnego `YOUTUBE_READINESS_VIDEO_ID` wskazującego kontrolny publiczny film możliwy do dodania do playlisty. Sekrety mają sentinel `__REQUIRED_RUNTIME_SECRET__`; wszystkie identyfikatory fixture pozostają wyłącznie w lokalnym `.env` lub zewnętrznej konfiguracji runtime i nigdy nie są emitowane. Wartości środowiskowe nie są sufiksowane, więc lokalny `.env` wskazuje projekty testowe, a produkcja dostarcza własne wartości pod tymi samymi nazwami. Scope są stałym, przeglądalnym kontraktem kodu, nie dowolną wartością env.
+#### 2. Zamknięte wejście
 
-#### 2. Wspólny kontrakt wyniku readiness
+**Pliki**: `app/Integrations/PlatformAccess/ProbeInvocation.php`,
+`app/Integrations/PlatformAccess/TesterSession.php`,
+`app/Integrations/PlatformAccess/TechnicalConfiguration.php`
 
-**Pliki**: `app/Services/PlatformAccess/ReadinessResult.php`, `app/Services/PlatformAccess/ReadinessCapability.php`, `app/Services/PlatformAccess/ReadinessError.php`
+**Cel**: Ręcznie i w sposób typowany walidować dokładny kontrakt v1 bez dodatkowej
+zależności. Walidacja invocation musi przejąć kontrolę także nad brakującymi,
+nieobsługiwanymi i pozycyjnymi argumentami, aby Symfony Console nie wypisało
+niezgodnego human-readable błędu. `ProbeInvocation` udostępnia walidację pełnej
+listy raw tokenów: pierwszym tokenem musi być dokładnie
+`platform-access:probe`, a po nim występują dokładnie po jednym
+`--provider=<spotify|youtube>` i `--principal=<technical|tester>` oraz flagi
+`--write`, `--format=json`, `--no-ansi`, `--no-interaction`, niezależnie od ich
+kolejności. Walidator odrzuca token przed nazwą komendy, duplikaty, formę
+rozdzieloną spacją, inne opcje i każdy argument pozycyjny. Integracja tego
+walidatora z `ArgvInput` należy do Fazy 3; testy jednostkowe tej fazy sprawdzają
+sam zamknięty parser tokenów.
 
-**Cel**: Zapewnić jeden typowany format zdolności i błędów, który nie zależy od tekstu odpowiedzi Spotify lub Google i może być bezpiecznie renderowany w konsoli oraz JSON.
+#### 3. Zamknięte wyjście
 
-**Kontrakt**: Zdolności to `config`, `auth`, `read`, `write` i `cleanup`; statusy to `PASS`, `FAIL` i `SKIP`. Kategorie obejmują co najmniej brak/placeholder konfiguracji, nieprawidłowy fixture, wymaganie ponownej autoryzacji, odmowę autoryzacji, niespełnione wymaganie konta, brak zakresu, brak dostępu do zasobu, limit/kwotę, niedostępność providera, nieprawidłową odpowiedź i nieudany cleanup. Format JSON ma jawne `schema_version: 1`, czas sprawdzenia, tryb, wynik ogólny oraz listę wyników per provider bez pól na surowe dane.
+**Pliki**: `app/Integrations/PlatformAccess/ProbeResult.php`,
+`app/Integrations/PlatformAccess/ProbeFailure.php`
 
-Pełna macierz jest zawsze obecna i ma następującą wymagalność:
+**Cel**: Serializować exact success/failure schema, strumienie i newline.
+`ProbeFailure` dopuszcza nullable provider/principal wyłącznie dla
+`invalid-invocation` i wiąże każdą kategorię z exit `1` albo `2`.
 
-| Provider i tryb | `config` | `auth` | `read` | `write` | `cleanup` |
-| --- | --- | --- | --- | --- | --- |
-| Spotify, domyślny | wymagane | wymagane | wymagane | `SKIP` | `SKIP` |
-| YouTube, domyślny | wymagane | `SKIP` | wymagane | `SKIP` | `SKIP` |
-| Spotify, `--write` | wymagane | wymagane | wymagane | wymagane | wymagane |
-| YouTube, `--write` | wymagane | wymagane | wymagane | wymagane | wymagane |
+#### 4. Prywatny kanał replacement refresh tokenu
 
-`SKIP` nie obniża wyniku ogólnego. Przy `--provider` wyniki drugiego providera nie są emitowane. Brakujące ustawienie potrzebne wyłącznie do zapisu nie blokuje domyślnego odczytu, ale blokuje `--write` przed jakimkolwiek requestem.
+**Plik**: `app/Integrations/PlatformAccess/RefreshTokenRotationSink.php`
 
-#### 3. Dokumentacja kontraktu i zabezpieczenia źródła
-
-**Pliki**: `README.md`, `scripts/verify-source-contract`, `tests/Unit/ProductionInfrastructureTest.php`, `tests/Unit/Services/PlatformAccess/PlatformAccessConfigurationTest.php`
-
-**Cel**: Opisać bezpieczne przygotowanie lokalnych projektów testowych i chronić komplet symbolicznych placeholderów bez wprowadzania sekretów do CI.
-
-**Kontrakt**: README rozróżnia klienta Google do logowania od klienta YouTube do integracji, wyjaśnia dedykowane konta techniczne, minimalne scope, lokalny `.env` i brak live testów w CI. Dokumentuje siedmiodniowy cykl refresh tokenu YouTube przy zewnętrznym consent screen w statusie `testing` oraz wymagania Spotify Development Mode: Premium właściciela aplikacji i allowlistę konta technicznego. Source contract dodaje wszystkie stabilne pliki readiness z `app/Console/Commands/`, `app/Contracts/PlatformAccess/`, `app/Services/PlatformAccess/`, `tests/Feature/Console/` i `tests/Unit/Services/PlatformAccess/`, ale zgodnie z kontraktem cyklu życia nie dodaje `context/changes/platform-access-readiness/verification.md` ani innych artefaktów `context/changes/*` do `required_paths`. Test infrastrukturalny potwierdza wymagane placeholdery, brak nowych sekretów workflow i zachowanie istniejącego zakazu logowania pełnych URI.
+**Cel**: Zapisywać opcjonalny replacement refresh token wyłącznie do stałego
+locatora PaaS jako zamknięty, ograniczony dokument. Zapis musi zakończyć się
+przed dalszym provider call i przed sukcesem; nieobecny albo niezapisywalny sink
+przy replacement tokenie daje `refresh-token-rotation-required`. Klasa nie zna
+hosta, mountów, journali ani trwałego credential store Managera.
 
 ### Kryteria sukcesu
 
-#### Weryfikacja automatyczna
+#### Automated Verification
 
-- Test konfiguracji potwierdza komplet symbolicznych ustawień i minimalnych scope bez wypisywania wartości poufnych: `php artisan test tests/Unit/Services/PlatformAccess/PlatformAccessConfigurationTest.php`.
-- Test kontraktu środowiska odrzuca puste wartości i sentinel jako gotowe poświadczenia, nie wymagając live API: `php artisan test tests/Unit/ProductionInfrastructureTest.php`.
-- Test cyklu poświadczeń odrzuca bez sieci przeterminowaną siedmiodniową autoryzację YouTube w statusie `testing` i zachowuje odrębne reguły dla `production` oraz `internal`: `php artisan test tests/Unit/Services/PlatformAccess/PlatformAccessConfigurationTest.php`.
-- Testy typów wyniku potwierdzają stałą macierz, wersję JSON i brak pól zdolnych przenosić surowe request/response lub tokeny: `php artisan test tests/Unit/Services/PlatformAccess`.
-- Kontrakt źródła przechodzi po dodaniu dokładnie stabilnych plików readiness, a test parsera potwierdza wykluczenie artefaktów cyklu życia zmian: `sh scripts/verify-source-contract --worktree` oraz `php artisan test tests/Unit/SourceContractTest.php`.
-- PHP ma poprawny styl: `vendor/bin/pint --test`.
+- Zweryfikować zamknięty kontrakt wejścia i wywołania — odrzuca wszystkie niepoprawne dane
+  przed siecią; tabela testowa obejmuje brak, duplikat, formę rozdzieloną
+  spacją, nieznaną opcję, złą wartość i argument pozycyjny:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/ProbeInputTest.php`.
+- Zweryfikować zamknięte odpowiedzi i kody wyjścia — mają dokładne pola oraz limit błędu:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/ProbeOutputTest.php`.
+- Potwierdzić separację principal i brak sieci po błędzie wejścia:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/PrincipalBoundaryTest.php`.
+- Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/RefreshTokenRotationSinkTest.php`.
 
-#### Weryfikacja ręczna
+#### Manual Verification
 
-- Przegląd `.env.example`, konfiguracji i README potwierdza oddzielenie Google login, Spotify integration i YouTube integration oraz brak realnych danych kont.
-- Przegląd scope potwierdza dokładnie `playlist-read-private`, `playlist-read-collaborative`, `playlist-modify-private` dla Spotify oraz publiczny odczyt API key i `youtube.force-ssl` do zapisu YouTube.
-- Operator potwierdza, że lokalne wartości wskazują osobne projekty testowe, a repo opisuje produkcję tylko przez nazwy i semantykę publicznego kontraktu PaaS.
-- Operator potwierdza status consent screen i wiek autoryzacji YouTube oraz aktywne Premium właściciela i obecność konta technicznego na allowliście Spotify Development Mode.
+- Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS — przegląd obejmuje
+  invocation, wejścia, odpowiedzi, scope'y, capabilities, kategorie i exit codes
+  z opublikowanym v1.
 
-**Uwaga implementacyjna**: Po zakończeniu fazy zatrzymaj się na ręczne potwierdzenie granicy sekretów i scope przed dodaniem kodu wywołującego zewnętrzne API.
-
----
-
-## Phase 2: Powtarzalna komenda readiness
+## Phase 2: Probe'y providerów i macierze principal
 
 ### Przegląd
 
-Faza dostarcza testowalny bez sieci mechanizm diagnostyczny oraz jawnie opt-in próbę zapisu z obowiązkowym cleanup.
+Faza implementuje tylko aplikacyjne wywołania Spotify i YouTube wymagane przez
+capability v1. OAuth lifecycle i uruchamianie prób pozostają poza repozytorium.
 
 ### Wymagane zmiany
 
-#### 1. Lokalny bootstrap OAuth i magazyn technicznych poświadczeń
+#### 1. Wspólny kontrakt probe
 
-**Pliki**: `app/Console/Commands/AuthorizePlatformAccess.php`, `app/Services/PlatformAccess/LocalEnvironmentCredentialStore.php`, `app/Services/PlatformAccess/SpotifyAuthorizationBootstrap.php`, `app/Services/PlatformAccess/YouTubeAuthorizationBootstrap.php`
+**Plik**: `app/Integrations/PlatformAccess/PlatformProbe.php`
 
-**Cel**: Umożliwić powtarzalne uzyskanie poświadczeń kont technicznych oraz bezpieczne zachowanie rotacji Spotify bez dodawania tras aplikacji i bez kopiowania tokenów przez konsolę.
+**Cel**: Przyjąć wyłącznie zwalidowane wejście i zwrócić capabilities albo
+typowane `ProbeFailure`; interface nie przyjmuje źródła konfiguracji ani nie
+potrafi przełączać principal. Konkretne probe'y otrzymują
+`RefreshTokenRotationSink` jako zależność i zapisują replacement token przed
+dalszym autoryzowanym requestem; sam interface nie ujawnia sekretu w wyniku.
 
-**Kontrakt**: `php artisan platforms:authorize --provider=spotify|youtube` działa wyłącznie przy `APP_ENV=local`, tworzy krótkotrwały listener na `127.0.0.1`, otwiera przeglądarkę bez renderowania authorization URL, używa losowego `state` i PKCE, przyjmuje dokładnie jeden callback i wymienia kod po stronie serwera. Zapisuje wyłącznie właściwy refresh token oraz datę autoryzacji do ignorowanego `.env`, zachowując pozostałą zawartość; token, kod, verifier, pełny callback URI i odpowiedzi providera nigdy nie trafiają do argv, outputu ani logów. Odmowa, timeout, niedopasowany `state`, brak refresh tokenu i błąd zapisu kończą się neutralnym komunikatem oraz niezerowym kodem bez częściowej aktualizacji `.env`. Lokalny probe Spotify używa tego samego magazynu, gdy odpowiedź refresh zawiera nowy refresh token, ale nie zmienia daty pierwotnej autoryzacji.
+#### 2. Spotify
 
-#### 2. Probe Spotify
+**Plik**: `app/Integrations/PlatformAccess/SpotifyProbe.php`
 
-**Pliki**: `app/Services/PlatformAccess/SpotifyReadinessProbe.php`, `app/Contracts/PlatformAccess/PlatformReadinessProbe.php`
+**Cel**: Dla obu principals wykonać `POST https://accounts.spotify.com/api/token`
+z `grant_type=refresh_token`, następnie porównać zwrócony `scope` jako zbiór z
+exact Spotify scope i wykonać `GET https://api.spotify.com/v1/me` nowym access
+tokenem. Pole `account_id` (nie zmienne `id`) musi być równe
+`expected_account_id`. Pole `product`, jeśli mimo deprecjacji występuje w
+odpowiedzi, jest ignorowane; wyłącznie strukturalny kod operacji jednoznacznie
+wskazujący niespełniony wymóg konta mapuje się na
+`account-requirement-failed`. Replacement refresh token jest zapisywany do
+prywatnego rotation sinka przed dalszym użyciem access tokenu; błąd zapisu
+kończy próbę jako `refresh-token-rotation-required`.
 
-**Cel**: Sprawdzić odświeżenie dostępu, odczyt playlisty właściciela lub współpracownika oraz prywatny zapis dedykowanego konta bez implementowania domenowego importu lub eksportu.
+Dla `technical` udane `/me` jest dowodem identity/read i kończy próbę bez
+mutacji. Dla `tester` najpierw pobrać metadane z
+`GET /v1/playlists/{playlist_id}` oraz pierwszą stronę
+`GET /v1/playlists/{playlist_id}/items?limit=1` i potwierdzić przed mutacją, że
+playlista jest prywatna, pusta i należy do oczekiwanego konta. Stabilne
+`/me.account_id` jest jedyną wartością porównywaną z `expected_account_id`.
+Efemeryczne `/me.id` służy wyłącznie do porównania z `playlist.owner.id`, ponieważ
+obiekt playlisty nie udostępnia `owner.account_id`; nie jest fallbackiem
+tożsamości, nie jest utrwalane i nie trafia do outputu ani logów. Brak
+`/me.id`, brak `playlist.owner.id` lub ich różnica daje `fixture-invalid` bez
+mutacji. Niepusta albo publiczna playlista również kończy się
+`fixture-invalid` bez mutacji. Następnie zastąpić zawartość dokładnie trzema `spotify:track:` URI przez
+`PUT /v1/playlists/{playlist_id}/items`, ponownie odczytać i porównać kolejność.
+W `finally` wyczyścić playlistę przez `PUT` z pustą tablicą URI, ponownie ją
+odczytać i potwierdzić pusty stan. Każda awaria lub niepełna weryfikacja
+wyczyszczenia kończy się `cleanup-failed`; pól zmiennych niezależnie od probe,
+takich jak `snapshot_id` i liczba followers, nie używa się do porównania stanu.
 
-**Kontrakt**: Probe wymienia refresh token na access token, klasyfikuje `invalid_grant` jako wymagający ponownej autoryzacji i nigdy nie ponawia go automatycznie. Odczyt potwierdza dostęp do elementów skonfigurowanej playlisty. Write smoke odczytuje i zapamiętuje szczegóły oraz elementy dedykowanej prywatnej playlisty `SPOTIFY_READINESS_WRITE_PLAYLIST_ID`, aktualizuje ją, zapisuje dokładnie `SPOTIFY_READINESS_ITEM_URI`, a w `finally` przywraca dokładnie zapamiętany stan. Brak, sentinel albo składniowo niepoprawny URI kończy się przed siecią; odrzucenie prawidłowo ukształtowanego elementu przez Spotify daje bezpieczną kategorię `invalid_fixture`. Probe nie tworzy ani nie próbuje usuwać playlisty przez API. Nieudane przywrócenie daje blokujący wynik `cleanup`; częściowe przywrócenie pozostaje błędem wymagającym ręcznej kontroli. Zwrócony nowy refresh token nie trafia do outputu; w środowisku lokalnym zostaje bezpiecznie zapisany przez `LocalEnvironmentCredentialStore`, a błąd zapisu blokuje gotowość. Jednorazowe utworzenie prywatnej playlisty przez aktualny endpoint Spotify jest osobnym ręcznym testem zapisanym w `verification.md`.
+#### 3. YouTube
 
-#### 3. Probe YouTube
+**Plik**: `app/Integrations/PlatformAccess/YouTubeProbe.php`
 
-**Plik**: `app/Services/PlatformAccess/YouTubeReadinessProbe.php`
+**Cel**: Dla obu principals wykonać `POST https://oauth2.googleapis.com/token`
+z `grant_type=refresh_token`, porównać zwrócony `scope` jako zbiór z exact
+YouTube scope i wywołać
+`GET https://www.googleapis.com/youtube/v3/channels?part=id&mine=true` nowym
+access tokenem. Odpowiedź musi jednoznacznie wskazywać jedno konto zgodne z
+`expected_account_id`; to wywołanie stanowi dowód identity/read dla
+`technical`, który nie mutuje zasobów. Jeżeli refresh response zawiera
+replacement refresh token, probe zapisuje go do prywatnego rotation sinka
+przed dalszym requestem; błąd zapisu kończy próbę jako
+`refresh-token-rotation-required`.
 
-**Cel**: Niezależnie potwierdzić tani publiczny odczyt przez API key oraz zapis playlisty przez OAuth zwykłego konta YouTube.
+Dla `tester` pobrać zarezerwowaną playlistę przez dokładnie
+`GET /youtube/v3/playlists?part=snippet,status&id=<playlist_id>` i wymagać
+dokładnie jednego wyniku, `snippet.channelId == expected_account_id` oraz
+`status.privacyStatus == private`. Następnie pobrać pierwszą stronę jej
+elementów z `maxResults=1` i potwierdzić pusty stan. Każda niezgodność przed
+mutacją daje `fixture-invalid` bez mutacji. Dla każdego z dokładnie trzech `item_uris`
+wykonać `POST /youtube/v3/playlistItems?part=snippet` z dokładnym body
+`{"snippet":{"playlistId":"<playlist_id>","resourceId":{"kind":"youtube#video","videoId":"<item_uri>"}}}`
+i zachowywać zwrócony playlist-item ID wyłącznie do cleanup. Testy asertują
+dokładne body wszystkich trzech insertów. Następnie wykonać dokładnie jedno
+`GET /youtube/v3/playlistItems?part=id,snippet&playlistId=<id>&maxResults=50`:
+odpowiedź musi zawierać dokładnie trzy video IDs w kolejności i nie może mieć
+`nextPageToken`; dodatkowa strona jest `provider-response-invalid`.
 
-**Kontrakt**: Read używa `playlists.list` i `playlistItems.list` z paginacją do limitu 20 elementów. Auth/write odświeża token konta technicznego ze scope `youtube.force-ssl`; service account jest niedozwolony. Przed odświeżeniem konfiguracja o statusie `testing` sprawdza siedmiodniowy wiek `YOUTUBE_TECHNICAL_AUTHORIZED_AT` i po jego przekroczeniu zwraca `reauthorization_required` bez requestu. Write smoke tworzy playlistę `unlisted`, wykonuje read-modify-write bez zerowania pominiętych pól, dodaje dokładnie `YOUTUBE_READINESS_VIDEO_ID` i usuwa playlistę w `finally`. Brak, sentinel albo składniowo niepoprawny ID kończy się przed siecią; odrzucenie prawidłowo ukształtowanego filmu przez YouTube daje bezpieczną kategorię `invalid_fixture`. Błędy `quotaExceeded`/HTTP 403 są odróżnione od braku uprawnień.
+`finally` odczytuje bieżące elementy fixture, usuwa każdy playlist-item przez
+`DELETE /youtube/v3/playlistItems?id=<playlist-item-id>`, ponownie odczytuje
+fixture i potwierdza pusty stan. Playlista nie jest tworzona ani usuwana przez
+probe. Timeout transportu, niejednoznaczna odpowiedź albo 2xx bez wymaganego ID
+przy dowolnym `playlistItems.insert/delete` zawsze kończą się
+`cleanup-failed`, nawet jeżeli późniejszy bounded odczyt chwilowo pokazuje pustą
+playlistę; brak elementu po pojedynczym skanie nie jest dowodem, że opóźniona
+mutacja nie zostanie zatwierdzona. Taki wynik wymaga późniejszego, zewnętrznego
+potwierdzenia pustej fixture przed kolejnym smoke lub closeoutem. Playlist ID,
+playlist-item IDs i odpowiedzi pozostają provider-controlled i nie trafiają do
+outputu ani logów. Service account i API-key fallback są niedozwolone.
 
-#### 4. Komenda i format wyjścia
+#### 4. Mapowanie i poufność
 
-**Plik**: `app/Console/Commands/CheckPlatformAccess.php`
+**Plik**: `app/Integrations/PlatformAccess/ProviderFailureMapper.php`
 
-**Cel**: Udostępnić jeden bezpieczny entrypoint dla lokalnej weryfikacji obu platform i umożliwić precyzyjne blokowanie kolejnych wycinków.
-
-**Kontrakt**: `php artisan platforms:readiness` wykonuje niedestrukcyjną macierz domyślną; `--write` włącza pełną macierz zapisu, `--provider=spotify|youtube` zawęża próbę, a `--format=json` emituje schema v1. Kod `0` oznacza wszystkie wymagane zdolności `PASS`, `1` niegotowość providera, `2` niebezpieczną lub brakującą konfigurację, a `3` nieudany cleanup. Gdy wystąpi kilka klas błędów, obowiązuje deterministyczna precedencja `3` cleanup > `2` konfiguracja > `1` provider > `0` sukces. Komenda nie przyjmuje sekretów w argumentach, nie wypisuje wyjątków ani surowych odpowiedzi i nie oferuje flagi produkcyjnego fallbacku.
-
-#### 5. Testy zachowania i poufności
-
-**Pliki**: `tests/Feature/Console/CheckPlatformAccessTest.php`, `tests/Feature/Console/AuthorizePlatformAccessTest.php`, `tests/Unit/Services/PlatformAccess/SpotifyReadinessProbeTest.php`, `tests/Unit/Services/PlatformAccess/YouTubeReadinessProbeTest.php`, `tests/Unit/Services/PlatformAccess/LocalEnvironmentCredentialStoreTest.php`
-
-**Cel**: Utrwalić wszystkie ścieżki powodzenia, odmowy i cleanup bez prawdziwych połączeń sieciowych.
-
-**Kontrakt**: Laravel HTTP fake pokrywa pełną macierz obu providerów, timeout, 401, 403, 429/`quotaExceeded`, błędne body, brak scope, `invalid_grant`, brakujące/sentinelowe/nieprawidłowe elementy fixture, przeterminowaną autoryzację YouTube w statusie `testing`, rotację refresh tokenu i awarię cleanup. Testy dowodzą, że nieprawidłowa konfiguracja fixture i przeterminowany token są odrzucane bez sieci, domyślny tryb nie wykonuje mutacji, `--write` zawsze próbuje cleanup po częściowym sukcesie, exit codes są stabilne, a output/logi nie zawierają wstrzykniętych tokenów, sekretów, nagłówków, URL-i, nazw kont, fixture ID ani surowych body.
-
-Test bootstrapu używa atrap przeglądarki, listenera loopback i odpowiedzi token endpointu. Potwierdza local-only, jednorazowy callback, `state`, PKCE, timeout i odmowę oraz zapis do tymczasowego pliku `.env` bez ujawnienia tokenu, kodu, verifiera lub callback URI. Test magazynu potwierdza zachowanie pozostałych kluczy, brak częściowego zapisu oraz zapis rotacji Spotify bez zmiany daty pierwotnej autoryzacji.
+**Cel**: Mapować wyłącznie etap operacji, HTTP status i bezpieczny strukturalny
+kod/reason odpowiedzi. Transport, timeout i 5xx → `provider-unavailable`; 2xx z
+błędnym JSON-em lub brakującymi wymaganymi polami →
+`provider-response-invalid`; odrzucenie refresh tokenu albo 401 →
+`authorization-denied`; brak lub inny exact scope → `scope-mismatch`; różna
+tożsamość → `account-mismatch`; niespełniony wymóg konta Spotify →
+`account-requirement-failed`; 403/404 dla playlisty przy poprawnej autoryzacji →
+`resource-access-denied`; niezgodny stan początkowy fixture albo strukturalne
+odrzucenie jej elementu podczas insertu → `fixture-invalid`; Spotify
+`QUOTA_EXCEEDED` oraz YouTube `quotaExceeded` albo `dailyLimitExceeded` →
+`quota-exceeded`; pozostałe 429 → `rate-limited`; nieudany zapis replacement
+refresh tokenu do prywatnego sinka → `refresh-token-rotation-required`;
+nieudany restore/delete → `cleanup-failed`.
+Niejednoznaczny 4xx nie jest zgadywany na podstawie tekstu i wpada do
+bezpiecznego `provider-unavailable`. Żaden exception message, body, URL, header
+ani identyfikator nie trafia do wyniku lub logu.
 
 ### Kryteria sukcesu
 
-#### Weryfikacja automatyczna
+#### Automated Verification
 
-- Test komendy potwierdza macierz human/JSON, filtrowanie providerów i exit codes: `php artisan test tests/Feature/Console/CheckPlatformAccessTest.php`.
-- Test Spotify przechodzi dla auth/read/write/cleanup oraz wszystkich sklasyfikowanych odmów: `php artisan test tests/Unit/Services/PlatformAccess/SpotifyReadinessProbeTest.php`.
-- Test YouTube przechodzi dla API-key read, OAuth write, paginacji do 20 elementów, kwoty i cleanup: `php artisan test tests/Unit/Services/PlatformAccess/YouTubeReadinessProbeTest.php`.
-- Test lokalnego bootstrapu i magazynu poświadczeń potwierdza state/PKCE, local-only, jednorazowy callback, bezpieczny zapis i rotację Spotify: `php artisan test tests/Feature/Console/AuthorizePlatformAccessTest.php tests/Unit/Services/PlatformAccess/LocalEnvironmentCredentialStoreTest.php`.
-- Test poufności potwierdza nieobecność wszystkich wstrzykniętych sekretów i identyfikatorów w output/logach także przy wyjątkach.
-- Pełny zestaw PHPUnit przechodzi bez sieci i poświadczeń providerów: `composer test`.
-- PHP ma poprawny styl: `vendor/bin/pint --test`.
+- Zweryfikować macierze Spotify i exact restore:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/SpotifyProbeTest.php`.
+- Zweryfikować macierze YouTube i exact restore:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/YouTubeProbeTest.php`.
+- Potwierdzić zamknięte mapowanie błędów i poufność:
+  `php artisan test tests/Unit/Integrations/PlatformAccess/ProviderFailureMapperTest.php`;
+  każda z 12 provider-facing kategorii publicznego kontraktu ma co najmniej
+  jeden deterministyczny przypadek, a canary provider-controlled text nigdy nie
+  opuszcza adaptera; trzy błędy wejścia pokrywa Faza 1.
+- Potwierdzić brak regresji logowania Google:
+  `php artisan test tests/Feature/Auth/GoogleAuthenticationTest.php`.
 
-#### Weryfikacja ręczna
+#### Manual Verification
 
-- Przegląd potwierdza, że probe'y są wyłącznie diagnostyczne i nie wprowadzają modeli, tras ani logiki domenowej późniejszych wycinków.
-- Uruchomienie bez `--write` nie tworzy, nie modyfikuje ani nie usuwa żadnego zasobu platformy.
-- Playlista Spotify jest jednoznacznie oznaczonym, dedykowanym fixture wielorazowym, a po próbie odzyskuje pierwotne szczegóły i elementy; playlista YouTube jest jednoznacznie jednorazowa. Awaria przywrócenia albo usunięcia jest widoczna jako wynik blokujący.
-- Operator potwierdza, że bootstrap otwiera zgodę właściwego projektu testowego, callback loopback nie jest trasą aplikacji, a poświadczenia są zapisane bez ręcznego kopiowania lub wyświetlenia.
+- Potwierdzić granicę PaaS i semantykę cleanup — przegląd obejmuje brak OAuth
+  lifecycle, Manager internals, fallbacków i mutacji dla `technical` oraz
+  obowiązkowy cleanup dla `tester`.
 
-**Uwaga implementacyjna**: Po automatycznej weryfikacji zatrzymaj się przed live `--write`; operator musi potwierdzić, że aktywne środowisko wskazuje wyłącznie dedykowane projekty i konta testowe.
-
----
-
-## Phase 3: Lokalna weryfikacja live i trwały dowód
+## Phase 3: Komenda, źródło i akceptacja interoperacyjna
 
 ### Przegląd
 
-Faza przeprowadza kontrolowane próby na rzeczywistych testowych API, sprawdza cykl odświeżania i unieważniania oraz zapisuje redagowany dowód gotowości bez twierdzeń o produkcyjnym smoke.
+Faza składa adapter w jeden entrypoint, chroni jego obecność w obrazie i
+przygotowuje zreviewowany, zielony artefakt do przekazania zewnętrznemu PaaS.
+Promocja release, OAuth i live rehearsal należą do planu Managera.
 
 ### Wymagane zmiany
 
-#### 1. Instrukcja prób live i unieważniania
+#### 1. Entrypoint
 
-**Plik**: `README.md`
+**Pliki**: `artisan`, `app/Console/Commands/ProbePlatformAccess.php`
 
-**Cel**: Zapewnić powtarzalną kolejność lokalnych prób i bezpieczne odtworzenie dostępu po teście unieważnienia.
+**Cel**: Udostępnić exact signature `platform-access:probe`, wybrać probe po
+providerze bez fallbacku i wykonać opisany w Fazie 1 raw-argv preflight przed
+rozwiązywaniem nazwy komendy przez Symfony. Front controller `artisan`, po
+załadowaniu autoloadera i aplikacji, lecz przed
+`$app->handleCommand(new ArgvInput())`, pobiera pełne
+`ArgvInput::getRawTokens(false)`. Standardowe meta-wywołanie
+`help platform-access:probe` przepuszcza bez zmian. Dla pozostałych list
+zawierających dokładny token `platform-access:probe` przekazuje całość do
+wspólnego `ProbeInvocation`; błąd renderuje przez wspólny serializer jako
+jedyny JSON na stderr i kończy exit `2`, bez wejścia do Console Kernel. Dzięki
+temu także
+nieopcyjny token albo wartość nieznanej opcji przed nazwą komendy nie zostaje
+uznany przez Symfony za inną komendę i nie powoduje human-readable outputu.
 
-**Kontrakt**: Runbook zaczyna od config-only review i lokalnego `platforms:authorize` dla brakujących lub unieważnionych poświadczeń, uruchamia niedestrukcyjny readiness per provider, potem jawny `--write`, a na końcu osobno testuje unieważnienie. YouTube używa oficjalnego revoke i ponownej autoryzacji przez bootstrap; Spotify usuwa lokalne wartości tokenów, wymaga ręcznego cofnięcia dostępu w ustawieniach Apps i ponownej autoryzacji przez bootstrap. Żaden krok nie podaje tokenu w argv, nie kopiuje go do raportu i nie zmienia produkcyjnego środowiska.
+Po udanym preflighcie `artisan` przekazuje ten sam `ArgvInput` do aplikacji.
+`ProbePlatformAccess` korzysta ze standardowego bindu i typowanej walidacji;
+dla programowego `ArrayInput` zachowuje tę samą walidację wartości bez założenia
+o `getRawTokens()`. Komenda zwraca exact JSON na właściwym strumieniu i kończy
+kodem z `ProbeResult` albo `ProbeFailure`. Jej zewnętrzna granica przechwytuje
+każdy nieobsłużony `Throwable`, nie przekazuje go do Kernela ani loggera i
+renderuje pojedyncze `provider-unavailable`. Parser i serializer nie są
+duplikowane w `artisan`.
 
-#### 2. Redagowany zapis weryfikacji
+#### 2. Test komendy
 
-**Plik**: `context/changes/platform-access-readiness/verification.md`
+**Plik**: `tests/Feature/Console/ProbePlatformAccessTest.php`
 
-**Cel**: Utrwalić współczesny dowód, na którym bez ponownego zgadywania oprą się S-02 oraz S-04–S-07.
+**Cel**: Pokryć cztery poprawne kombinacje provider×principal, invalid
+invocation/session/configuration, exact capabilities, stdout/stderr/newline,
+exit codes i brak jakiegokolwiek requestu po błędzie wejścia. Testy adaptera
+mogą używać Laravel HTTP fake, ale macierz niepoprawnych surowych tokenów musi
+uruchamiać prawdziwy subprocess `php artisan` z timeoutem i osobnym przechwyceniem
+stdout/stderr. Macierz zawiera nieznaną opcję zarówno przed, jak i po nazwie
+komendy, nieopcyjny token przed nazwą oraz parę
+`--unknown separate-value` przed nazwą. Potwierdza też standardowy wynik
+`php artisan help platform-access:probe`, zachowanie innych komend Artisan oraz
+to, że poprawne programowe `ArrayInput` nie próbuje
+wywołać `getRawTokens()`. Dzięki temu testuje front controller, etap
+rozwiązywania komendy i bind Symfony, którego `artisan()` ani
+`ApplicationTester` z `ArrayInput` nie odwzorowują.
+Test in-process używa kontrolowanego bindingu, aby wymusić nieoczekiwany wyjątek
+po skutecznym dispatchu wewnątrz komendy, i potwierdza pojedynczy kontraktowy
+JSON z newline na stderr, pusty stdout oraz brak przekazania wyjątku do loggera.
+Prawdziwy subprocess pozostaje wymagany dla raw argv i dokładnego rozdzielenia
+strumieni na ścieżkach niewymagających testowego fault injection.
 
-**Kontrakt**: Dokument zawiera datę, oznaczenie lokalnego środowiska testowego, wersję schematu komendy, użyte minimalne scope, niesekretny status consent screen YouTube, potwierdzenie wymagań konta Spotify Development Mode oraz macierz `config/auth/read/write/cleanup/revoke` per provider, status i bezpieczną kategorię błędu. Nie zawiera nazw/e-maili kont, client IDs, tokenów, fixture IDs, URL-i zasobów ani surowych odpowiedzi. Jawnie stwierdza, że produkcyjne poświadczenia nie były testowane live.
+#### 3. Kontrakt źródła i dokumentacja
 
-#### 3. Zamknięcie kontraktu MVP
+**Pliki**: `scripts/verify-source-contract`,
+`tests/Unit/SourceContractTest.php`, `README.md`
 
-**Pliki**: `context/foundation/prd.md`, `context/foundation/roadmap.md`, `context/foundation/shape-notes.md`
-
-**Cel**: Zweryfikować, że dalsze wycinki konsumują ustalone podczas planowania ograniczenia platform, pojemności i kwoty bez powrotu do niewykonalnej obietnicy publicznego importu Spotify.
-
-**Kontrakt**: FR-004 wymaga konta właściciela/współpracownika dla Spotify, NFR-001/NFR-002 używają 20 utworów, NFR-006 utrwala pięć rozpoczętych zapisów YouTube na dzień kwoty API, roadmapa opisuje F-01 jako lokalny dowód testowy plus produkcyjny kontrakt konfiguracji, a wspierające decyzje w `shape-notes.md` pozostają zgodne z tymi samymi wartościami. Implementacja F-01 nie dodaje jeszcze runtime enforcement NFR-006.
+**Cel**: Dodać każdy stabilny plik subsystemu do manifestu źródła i opisać
+wyłącznie entrypoint oraz publiczną granicę. Artefakty
+`context/changes/*` nie trafiają do `required_paths`. Rozszerzyć
+`scripts/verify-source-contract`, aby po sprawdzeniu jawnego manifestu
+enumerował wszystkie pliki PHP pod `app/` i `tests/` oraz kończył się błędem,
+gdy którykolwiek nie występuje w `required_paths`; dzięki temu nowy pominięty
+plik nie może przejść trybu `--worktree`. `SourceContractTest` chroni tę regułę
+przed usunięciem.
 
 ### Kryteria sukcesu
 
-#### Weryfikacja automatyczna
+#### Automated Verification
 
-- Pełne bramki repo przechodzą: `composer test`, `vendor/bin/pint --test`, `npm run build` oraz `sh scripts/verify-source-contract --worktree`.
-- Statyczna kontrola potwierdza spójne wartości 20 utworów i pięciu zapisów YouTube w PRD, roadmapie, `shape-notes.md` oraz testach kontraktu.
-- `git diff --check` nie zgłasza błędów whitespace, a `git diff` nie zawiera wartości lokalnego `.env` ani artefaktów runtime.
+- Zweryfikować exact kontrakt komendy:
+  `php artisan test tests/Feature/Console/ProbePlatformAccessTest.php`.
+- Uruchomić pełne bramki repozytorium bez sieci i sekretów:
+  `composer test && vendor/bin/pint --test && npm run build`.
+- Zweryfikować kompletny manifest źródła bez artefaktów lifecycle:
+  `sh scripts/verify-source-contract --worktree`; negatywny przypadek testowy
+  dowodzi, że dodatkowy plik PHP pod `app/` lub `tests/`, którego nie ma w
+  `required_paths`, powoduje błąd.
 
-#### Weryfikacja ręczna
+#### Manual Verification
 
-- Spotify potwierdza auth, odczyt playlisty właściciela lub współpracownika oraz powtarzalny update/item-write/restore dedykowanej prywatnej playlisty testowej; osobny jednorazowy test ręczny potwierdza utworzenie prywatnej playlisty przez aktualny endpoint API.
-- YouTube potwierdza publiczny odczyt przez API key, OAuth `youtube.force-ssl`, create/update/item-write playlisty `unlisted` oraz cleanup na dedykowanym koncie testowym.
-- Domyślna komenda i oba uruchomienia `--write` kończą się kodem `0` w lokalnym środowisku testowym; redagowany JSON nie zawiera danych poufnych.
-- Test unieważnienia dowodzi programistycznego revoke i reautoryzacji YouTube oraz lokalnego usunięcia tokenów, ręcznego cofnięcia zgody i reautoryzacji Spotify.
-- `verification.md` został zapisany w chwili prób, zawiera wszystkie wyniki i ograniczenie braku produkcyjnego smoke, ale nie ujawnia poświadczeń, PII ani identyfikatorów zasobów.
-- Operator potwierdza, że osobne produkcyjne projekty mogą dostarczyć te same symboliczne ustawienia przez Manager, bez kopiowania mechaniki PaaS do repozytorium.
-
-**Uwaga implementacyjna**: Faza i całe F-01 kończą się dopiero po ręcznej akceptacji redagowanego `verification.md`. Produkcyjne live smoke pozostaje jawnym prerequisite pierwszego wdrożenia S-04/S-06/S-07, a nie dowodem tej zmiany.
-
----
+- Potwierdzić gotowość artefaktu do przekazania PaaS — exact commit przechodzi
+  literalny przegląd kontraktu i wszystkie bramki repozytorium; promocja, OAuth
+  i live acceptance pozostają wyłącznie w planie Managera.
 
 ## Strategia testowania
 
-### Testy jednostkowe
-
-- Mapowanie odpowiedzi i wyjątków obu providerów na stabilne statusy oraz kategorie bez surowego payloadu.
-- Walidacja brakujących, pustych i sentinelowych wartości konfiguracji przed siecią.
-- Odświeżanie access tokenu, `invalid_grant`, sygnał rotacji Spotify i odmowa service account YouTube.
-- Paginacja odczytu do 20 elementów i odróżnienie limitu/kwoty od braku uprawnień.
-- Obowiązkowy cleanup po pełnym i częściowym write smoke.
-
-### Testy integracyjne
-
-- Komenda Artisan składa oba probe'y, renderuje tabelę/JSON schema v1 i zwraca właściwy exit code.
-- Tryb domyślny nie wysyła requestów mutujących, a `--write` uruchamia je tylko dla wybranego providera.
-- Laravel HTTP fake potwierdza dokładne hosty, metody i minimalne scope bez wykonywania sieci.
-- Output i logi pozostają bezpieczne po błędzie token endpointu, API oraz cleanup.
-
-### Kroki testowania ręcznego
-
-1. Skonfigurować nieśledzony lokalny `.env` wartościami osobnych projektów i dedykowanych kont testowych.
-2. Uruchomić lokalny bootstrap dla brakujących poświadczeń, a następnie niedestrukcyjny readiness kolejno dla Spotify i YouTube; potwierdzić wymagane `config/auth/read` Spotify, wymagane `config/read` YouTube oraz `SKIP` dla niewykonywanych zdolności.
-3. Uruchomić `--write` per provider, potwierdzić pełne przywrócenie prywatnego fixture Spotify oraz usunięcie jednorazowej playlisty `unlisted` YouTube; osobno wykonać i zapisać jednorazowy test utworzenia prywatnej playlisty Spotify przez API.
-4. Przejrzeć output i logi pod kątem tokenów, PII, fixture IDs, pełnych URL-i i surowych odpowiedzi.
-5. Wykonać osobny test unieważnienia oraz ponownej autoryzacji obu kont testowych.
-6. Zapisać redagowaną macierz do `verification.md` i jawnie zaznaczyć brak produkcyjnego live smoke.
+- Testy wejścia generują brakujące, dodatkowe, błędnie typowane i graniczne
+  pola, w tym nullable provider/principal tylko dla `invalid-invocation`;
+  osobna tabela subprocess sprawdza pełne raw argv przed bindowaniem Symfony,
+  w tym nieznaną opcję przed i po nazwie komendy.
+- HTTP fake pokrywa timeout, 401, 403, 429, 5xx, błędny JSON, account/scope
+  mismatch, quota, rotation-required oraz awarię cleanup.
+- Canary secrets, PII i identyfikatory są wstrzykiwane do requestów, odpowiedzi
+  i wyjątków; asercje potwierdzają ich brak w stdout, stderr i logach.
+- Testy replacement tokenu potwierdzają exact dokument prywatnego sinka,
+  przerwanie przed dalszym requestem przy błędzie zapisu oraz brak sekretu w
+  stdout, stderr, logach i trwałych plikach aplikacji.
+- Testy ustawiają spy loggera i potwierdzają zero interakcji dla każdej ścieżki
+  probe; kontrolowany test in-process catch-all dowodzi również, że wyjątek nie
+  trafia do standardowego raportowania Laravel. Subprocess nie wymaga osobnego
+  mechanizmu fault injection.
+- Testy cleanup obu providerów obejmują niepustą, cudzą lub publiczną fixture
+  bez mutacji, awarię po zapisie i podczas czyszczenia oraz potwierdzenie
+  powrotu do pustego stanu. Spotify osobno porównuje `/me.account_id` z
+  `expected_account_id` oraz efemeryczne `/me.id` z `playlist.owner.id`, w tym
+  brak i mismatch obu pól właściciela. YouTube dodatkowo dowodzi, że timeout albo
+  niejednoznaczna odpowiedź z `playlistItems.insert/delete` zawsze daje
+  `cleanup-failed`, nawet gdy późniejszy bounded odczyt nie widzi elementu;
+  awaria cleanup zawsze wygrywa kategorią.
+- Test regresyjny Google chroni współdzielone client ID/secret i niezależny
+  redirect logowania.
 
 ## Uwagi dotyczące wydajności
 
-Komenda readiness jest narzędziem operatorskim uruchamianym lokalnie i nie należy do ścieżki żądania użytkownika. Każdy request ma krótki connect timeout i ograniczony całkowity timeout; komenda nie wykonuje automatycznych pętli retry. `429`, `Retry-After` i YouTube `quotaExceeded` są klasyfikowane, a nie maskowane długim oczekiwaniem.
-
-Domyślna kwota YouTube 10 000 jednostek dziennie pozwala jedynie na małą liczbę operacji zapisujących po 20 elementów. F-01 utrwala globalny budżet pięciu rozpoczętych zapisów dziennie, lecz mechanizm rezerwacji i egzekwowania powstanie wraz z rzeczywistym przepływem eksportu/synchronizacji.
+Probe jest jednorazowym narzędziem akceptacyjnym, nie ścieżką requestu
+użytkownika. Nie wykonuje retry. Odczyty są ograniczone do danych koniecznych
+do identity/read, a tester zapisuje dokładnie trzy elementy. Mechanizm limitu
+pięciu operacji YouTube dziennie należy do późniejszego przepływu produktu,
+nie do tego probe.
 
 ## Uwagi dotyczące migracji
 
-Zmiana nie modyfikuje bazy danych. Tokeny testowych kont technicznych pozostają w lokalnym, nieśledzonym środowisku, a produkcyjne wartości są zewnętrzną konfiguracją runtime. Zaszyfrowane tokeny kont użytkowników i ich rotacyjny zapis wymagają osobnej migracji w S-04.
+Zmiana nie modyfikuje bazy danych ani zapisanych tożsamości użytkowników.
+Rollback kodu usuwa entrypoint wraz z obrazem; rollback i recovery poświadczeń
+pozostają odpowiedzialnością Managera. Rotation sink jest korektą kontraktu v1
+przed jego pierwszą akceptacją live. Po pierwszym accepted release zmiana jego
+schematu lub semantyki wymaga v2 i migracji obu stron.
 
 ## Referencje
 
-- Zakres F-01 i zależności: `context/foundation/roadmap.md:42`, `context/foundation/roadmap.md:79`.
-- Kontrakt produktu i bezpieczeństwa: `context/foundation/prd.md:77`, `context/foundation/prd.md:84`, `context/foundation/prd.md:90`, `context/foundation/prd.md:113`.
-- Wzorzec bezpiecznego callbacku: `app/Http/Controllers/Auth/GoogleAuthController.php:23`.
-- Wzorzec konfiguracji usług: `config/services.php:38`, `.env.example:58`.
-- Wcześniejsza separacja auth i streaming: `context/archive/2026-09-12-private-account-and-bank/plan.md:44`.
-- Spotify playlist items: `https://developer.spotify.com/documentation/web-api/reference/get-playlists-items`.
-- Spotify scopes i authorization: `https://developer.spotify.com/documentation/web-api/concepts/scopes`, `https://developer.spotify.com/documentation/web-api/concepts/authorization`.
-- Spotify refresh-token expiration: `https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration`.
-- YouTube authentication i server-side OAuth: `https://developers.google.com/youtube/v3/guides/authentication`, `https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps`.
-- YouTube playlist operations i quota: `https://developers.google.com/youtube/v3/docs/playlists`, `https://developers.google.com/youtube/v3/determine_quota_cost`.
+- Zakres produktu: `context/foundation/prd.md`.
+- Kolejność i zależności: `context/foundation/roadmap.md`.
+- Publiczna granica PaaS: `AGENTS.md`.
+- Wzorzec bezpiecznego logowania: `app/Http/Controllers/Auth/GoogleAuthController.php`.
+- Konfiguracja Google login: `config/services.php`.
+- Kontrakt source manifest: `scripts/verify-source-contract`.
+- Spotify Web API: refresh token, `/me`, playlist items, replace i add items:
+  `https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens`,
+  `https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide`,
+  `https://developer.spotify.com/blog/2026-07-23-web-api-quota-updates`,
+  `https://developer.spotify.com/documentation/web-api/reference/get-current-users-profile`,
+  `https://developer.spotify.com/documentation/web-api/reference/get-playlists-items`,
+  `https://developer.spotify.com/documentation/web-api/reference/reorder-or-replace-playlists-items`,
+  `https://developer.spotify.com/documentation/web-api/reference/add-items-to-playlist`.
+- YouTube Data API: `channels.list`, `playlists.list` oraz
+  `playlistItems.insert/list/delete`:
+  `https://developers.google.com/youtube/v3/docs/channels/list`,
+  `https://developers.google.com/youtube/v3/docs/playlists/list`,
+  `https://developers.google.com/youtube/v3/docs/playlistItems/insert`,
+  `https://developers.google.com/youtube/v3/docs/playlistItems/list`,
+  `https://developers.google.com/youtube/v3/docs/playlistItems/delete`.
+- Google OAuth refresh-token exchange i pole `scope` odpowiedzi:
+  `https://developers.google.com/identity/protocols/oauth2/web-server#offline`.
 
 ## Progress
 
-> Konwencja: `- [ ]` oczekujące, `- [x]` wykonane. Dodaj ` — <commit sha>` po wylądowaniu kroku. Nie zmieniaj nazw tytułów kroków. Zobacz `.agents/skills/10x-plan/references/progress-format.md`.
+> Konwencja: `- [ ]` oczekujące, `- [x]` wykonane. Dodaj ` — <commit sha>` po wylądowaniu kroku. Nie zmieniaj nazw tytułów kroków.
 
-### Phase 1: Kontrakt platform i bezpieczna konfiguracja
-
-#### Automated
-
-- [ ] 1.1 Zweryfikować kompletny i bezsekretny kontrakt konfiguracji Laravel
-- [ ] 1.2 Potwierdzić walidację braków i sentineli bez live API
-- [ ] 1.9 Zweryfikować cykl autoryzacji YouTube zależny od statusu projektu
-- [ ] 1.3 Potwierdzić typowany wynik readiness i JSON schema v1
-- [ ] 1.4 Zweryfikować rozszerzony kontrakt źródła
-- [ ] 1.5 Sprawdzić formatowanie PHP
-
-#### Manual
-
-- [ ] 1.6 Potwierdzić separację klientów Google login, Spotify i YouTube
-- [ ] 1.7 Potwierdzić minimalne scope obu platform
-- [ ] 1.8 Potwierdzić granicę lokalnych testów i produkcyjnego PaaS
-- [ ] 1.10 Potwierdzić wymagania kont testowych Spotify i YouTube
-
-### Phase 2: Powtarzalna komenda readiness
+### Phase 1: Publiczny protokół i granice wejścia/wyjścia
 
 #### Automated
 
-- [ ] 2.1 Zweryfikować macierz, formaty i exit codes komendy
-- [ ] 2.2 Zweryfikować probe Spotify i sklasyfikowane odmowy
-- [ ] 2.3 Zweryfikować probe YouTube, paginację, kwotę i cleanup
-- [ ] 2.10 Zweryfikować lokalny bootstrap OAuth, state/PKCE i bezpieczny magazyn
-- [ ] 2.4 Potwierdzić brak sekretów i identyfikatorów w output oraz logach
-- [ ] 2.5 Uruchomić pełny PHPUnit bez sieci i poświadczeń providerów
-- [ ] 2.6 Sprawdzić formatowanie PHP
+- [x] 1.1 Zweryfikować zamknięty kontrakt wejścia i wywołania
+- [x] 1.2 Zweryfikować zamknięte odpowiedzi i kody wyjścia
+- [x] 1.3 Potwierdzić separację principal i brak sieci po błędzie wejścia
+- [x] 1.5 Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu
 
 #### Manual
 
-- [ ] 2.7 Potwierdzić diagnostyczną granicę probe'ów
-- [ ] 2.8 Potwierdzić brak mutacji bez flagi write
-- [ ] 2.9 Potwierdzić jednorazowość zasobów i blokujący cleanup
-- [ ] 2.11 Potwierdzić lokalną granicę bootstrapu i brak ręcznego kopiowania tokenów
+- [x] 1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS
 
-### Phase 3: Lokalna weryfikacja live i trwały dowód
+### Phase 2: Probe'y providerów i macierze principal
 
 #### Automated
 
-- [ ] 3.1 Uruchomić pełne bramki repozytorium
-- [ ] 3.2 Potwierdzić spójny limit 20 utworów i pięciu zapisów YouTube
-- [ ] 3.3 Potwierdzić czysty diff bez sekretów i artefaktów runtime
+- [ ] 2.1 Zweryfikować macierze Spotify i exact restore
+- [ ] 2.2 Zweryfikować macierze YouTube i exact restore
+- [ ] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
+- [ ] 2.4 Potwierdzić brak regresji logowania Google
 
 #### Manual
 
-- [ ] 3.4 Potwierdzić pełną macierz Spotify na koncie testowym
-- [ ] 3.5 Potwierdzić pełną macierz YouTube na koncie testowym
-- [ ] 3.6 Uzyskać kod zero i bezpieczny JSON dla lokalnych prób read i write
-- [ ] 3.7 Potwierdzić unieważnienie i ponowną autoryzację obu platform
-- [ ] 3.8 Zatwierdzić redagowany verification bez produkcyjnego smoke
-- [ ] 3.9 Potwierdzić zgodność produkcyjnego kontraktu z granicą PaaS
+- [ ] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
+
+### Phase 3: Komenda, źródło i akceptacja interoperacyjna
+
+#### Automated
+
+- [ ] 3.1 Zweryfikować exact kontrakt komendy
+- [ ] 3.2 Uruchomić pełne bramki repozytorium
+- [ ] 3.3 Zweryfikować kompletny manifest źródła
+
+#### Manual
+
+- [ ] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS

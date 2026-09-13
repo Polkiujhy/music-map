@@ -1,14 +1,14 @@
 ---
 change_id: platform-access-readiness
 title: Gotowość dostępu do Spotify i YouTube
-status: superseded
+status: impl_reviewed
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-13
 ---
 
 ## Notes
 
-Zastąpiony przez plan operatorski
-`/srv/manager/context/changes/music-map-platform-access-readiness/plan.md`.
-Manager ma już gotowy OAuth, rotację, tester smoke, revoke i recovery; aplikacja
-implementuje wyłącznie publiczny probe `music-map.platform-access.v1`.
+Manager pozostaje właścicielem OAuth, rotacji, dostarczania, revoke, recovery
+i uruchamiania prób jako zewnętrzny PaaS. Aplikacja implementuje wyłącznie
+publiczny probe `music-map.platform-access.v1`; jego kompletny kontrakt
+konsumencki jest utrwalony w `plan.md`.
