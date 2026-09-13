@@ -23,6 +23,7 @@ final class PlatformAccessProtocol
     public const SCOPES = [
         'spotify' => [
             'playlist-modify-private',
+            'playlist-modify-public',
             'playlist-read-private',
             'user-read-private',
         ],

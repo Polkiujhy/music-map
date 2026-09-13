@@ -49,7 +49,7 @@ interoperacyjna została utrwalona w pełnym planie razem z exact scope.
 | Entrypoint | `php artisan platform-access:probe` |
 | Protokół | `music-map.platform-access.v1` |
 | Principals | Rozłączne `technical` i `tester`, bez fallbacku |
-| Spotify scope | `playlist-modify-private playlist-read-private user-read-private` |
+| Spotify scope | `playlist-modify-private playlist-modify-public playlist-read-private user-read-private` |
 | YouTube scope | `https://www.googleapis.com/auth/youtube` |
 | YouTube client | Istniejące `GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET` |
 | Technical | Refresh exchange + identity/read, bez mutacji |
