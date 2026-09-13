@@ -1,7 +1,7 @@
 ---
 change_id: platform-access-readiness
 title: Gotowość dostępu do Spotify i YouTube
-status: impl_reviewed
+status: implemented
 created: 2026-09-12
 updated: 2026-09-13
 ---
