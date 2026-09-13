@@ -828,11 +828,11 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [x] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą
-- [x] 3.2 Granice auth, verified i cross-user przechodzą
-- [x] 3.3 Pełna macierz streaming accounts przechodzi
-- [x] 3.4 Widoki kompilują się
-- [x] 3.5 Formatowanie przechodzi
+- [x] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą — b453d93
+- [x] 3.2 Granice auth, verified i cross-user przechodzą — b453d93
+- [x] 3.3 Pełna macierz streaming accounts przechodzi — b453d93
+- [x] 3.4 Widoki kompilują się — b453d93
+- [x] 3.5 Formatowanie przechodzi — b453d93
 
 #### Manual
 
@@ -843,12 +843,12 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [ ] 4.1 Pełny PHPUnit przechodzi
-- [ ] 4.2 PHP formatting przechodzi
-- [ ] 4.3 Produkcyjny frontend buduje się
-- [ ] 4.4 Manifest źródła przechodzi
-- [ ] 4.5 Audyty zależności przechodzą
-- [ ] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04
+- [x] 4.1 Pełny PHPUnit przechodzi
+- [x] 4.2 PHP formatting przechodzi
+- [x] 4.3 Produkcyjny frontend buduje się
+- [x] 4.4 Manifest źródła przechodzi
+- [x] 4.5 Audyty zależności przechodzą
+- [x] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04
 
 #### Manual
 

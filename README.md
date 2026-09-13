@@ -53,8 +53,45 @@ MAIL_PASSWORD=local-smtp-password
 MAIL_FROM_ADDRESS=no-reply@example.invalid
 ```
 
-Provider secrets and OAuth tokens must not be written to source files, database
-tables, command output, or application logs.
+Provider client secrets and user access tokens must not be written to source
+files, database tables, command output, HTML, sessions, or application logs.
+The only user OAuth credential persisted by the streaming-account subsystem is
+the refresh token, encrypted at rest by Laravel with `APP_KEY`.
+
+## Streaming-account linking
+
+Authenticated, verified users manage Spotify and YouTube connections at
+`/integrations`. The application owns the complete user OAuth flow: link,
+relink, refresh/verify, reconnect state, unlink, and provider operations. It
+persists the stable provider account identifier, minimal display label, granted
+scopes, and an encrypted refresh token. Access tokens remain request-local and
+must never be persisted or rendered.
+
+`WithStreamingAccess` is the application port for operations that need a
+short-lived access token. It refreshes the user grant, protects refresh-token
+rotation with `credential_version`, and invokes a synchronous callback only
+while the credential still belongs to the same connected account. A provider's
+definitive rejection clears the local refresh token and changes the connection
+to `reconnect-required`; transient failures leave the credential unchanged.
+
+Manager is an external PaaS for this repository. It stores and supplies the
+application-level client credentials and runtime configuration under these
+symbolic settings:
+
+```dotenv
+SPOTIFY_CLIENT_ID=__REQUIRED_RUNTIME_SECRET__
+SPOTIFY_CLIENT_SECRET=__REQUIRED_RUNTIME_SECRET__
+SPOTIFY_REDIRECT_URI=https://music-map.example.invalid/integrations/spotify/callback
+GOOGLE_CLIENT_ID=__REQUIRED_RUNTIME_SECRET__
+GOOGLE_CLIENT_SECRET=__REQUIRED_RUNTIME_SECRET__
+YOUTUBE_REDIRECT_URI=https://music-map.example.invalid/integrations/youtube/callback
+```
+
+Manager does not handle application-user OAuth callbacks, grants, linked
+accounts, refresh/reconnect, unlink/revoke, or playlist operations. Keep all
+credential values out of source, output, and logs. `APP_PREVIOUS_KEYS` must
+retain old Laravel encryption keys during a controlled `APP_KEY` rotation until
+existing refresh tokens have been re-encrypted or users have reauthorized.
 
 ## Platform-access probe
 
@@ -72,9 +109,11 @@ to the public contract. Technical credentials come only from the documented
 runtime configuration. Tester sessions and optional replacement refresh tokens
 use the fixed private locators defined by `music-map.platform-access.v1`.
 
-OAuth, credential lifecycle, probe invocation, promotion, revoke, and recovery
-remain PaaS responsibilities. Never pass credentials on the command line or
-write their values to source, application storage, output, or logs.
+For the technical/tester probe only, OAuth, credential lifecycle, probe
+invocation, promotion, revoke, and recovery remain PaaS responsibilities. This
+does not include application-user streaming OAuth described above. Never pass
+probe credentials on the command line or write their values to source,
+application storage, output, or logs.
 
 ## Disposable PostgreSQL smoke test
 
@@ -101,7 +140,7 @@ run the same critical matrix:
 
 ```bash
 php artisan migrate:fresh --force --no-interaction
-php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
+php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountModelTest.php tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
 ```
 
 `migrate:fresh` destroys all tables in the selected database. Verify the target

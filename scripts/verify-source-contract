@@ -140,6 +140,7 @@ tests/Feature/BankAccessTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
+tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
 tests/Feature/StreamingAccounts/StreamingAccountAuthorizationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php
