@@ -26,6 +26,7 @@ README.md.scaffold
 app/Actions/Fortify/CreateNewUser.php
 app/Actions/Fortify/PasswordValidationRules.php
 app/Actions/Fortify/ResetUserPassword.php
+app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
 app/Http/Controllers/Auth/GoogleAuthController.php
@@ -35,6 +36,12 @@ app/Http/Controllers/StreamingAccountOAuthController.php
 app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
+app/Integrations/PlaylistImport/Data/PlaylistItemSnapshot.php
+app/Integrations/PlaylistImport/Data/PlaylistReference.php
+app/Integrations/PlaylistImport/Data/PlaylistSnapshot.php
+app/Integrations/PlaylistImport/ImportFailureCode.php
+app/Integrations/PlaylistImport/ImportResult.php
+app/Integrations/PlaylistImport/PlaylistShareUrlParser.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
 app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
@@ -64,6 +71,8 @@ app/Integrations/PlatformAccess/TechnicalConfiguration.php
 app/Integrations/PlatformAccess/TesterSession.php
 app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Models/AuthIdentity.php
+app/Models/Playlist.php
+app/Models/PlaylistItem.php
 app/Models/StreamingAccount.php
 app/Models/User.php
 app/Providers/AppServiceProvider.php
@@ -95,6 +104,8 @@ context/foundation/prd.md
 context/foundation/shape-notes.md
 context/foundation/tech-stack.md
 database/.gitignore
+database/factories/PlaylistFactory.php
+database/factories/PlaylistItemFactory.php
 database/factories/StreamingAccountFactory.php
 database/factories/UserFactory.php
 database/migrations/0001_01_01_000000_create_users_table.php
@@ -103,6 +114,8 @@ database/migrations/0001_01_01_000002_create_jobs_table.php
 database/migrations/2026_09_12_000000_make_users_password_nullable.php
 database/migrations/2026_09_12_000001_create_auth_identities_table.php
 database/migrations/2026_09_13_000000_create_streaming_accounts_table.php
+database/migrations/2026_09_13_010000_create_playlists_table.php
+database/migrations/2026_09_13_010100_create_playlist_items_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -139,6 +152,8 @@ storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
+tests/Feature/Playlists/PlaylistMigrationTest.php
+tests/Feature/Playlists/PlaylistPersistenceTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
@@ -155,6 +170,8 @@ tests/Feature/Auth/SessionSecurityTest.php
 tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
+tests/Unit/Integrations/PlaylistImport/PlaylistDataTest.php
+tests/Unit/Integrations/PlaylistImport/PlaylistShareUrlParserTest.php
 tests/Unit/Integrations/PlatformAccess/PrincipalBoundaryTest.php
 tests/Unit/Integrations/PlatformAccess/ProbeInputTest.php
 tests/Unit/Integrations/PlatformAccess/ProbeOutputTest.php
