@@ -40,7 +40,8 @@ ograniczyć emitowane pola.
 - YouTube współdzieli `GOOGLE_CLIENT_ID` i `GOOGLE_CLIENT_SECRET` z logowaniem,
   ale grant, refresh token, scope i dane konta platform-access pozostają osobne.
 - Exact Spotify scope set to `playlist-modify-private`,
-  `playlist-read-private`, `user-read-private`; exact YouTube scope set to
+  `playlist-modify-public`, `playlist-read-private`, `user-read-private`;
+  exact YouTube scope set to
   `https://www.googleapis.com/auth/youtube`.
 - `scripts/verify-source-contract` jest ręcznym manifestem, więc każdy nowy
   stabilny plik aplikacji i testów musi zostać dopisany.
@@ -93,10 +94,12 @@ miejscem mapowania kategorii oraz kodów procesu. Proste, zamknięte schematy
 będą walidowane typowanym kodem aplikacji bez nowej biblioteki JSON Schema.
 
 Probe'y Spotify i YouTube korzystają z Laravel HTTP client z krótkim connect
-timeoutem, ograniczonym całkowitym timeoutem i bez automatycznego retry.
-Provider-controlled dane nigdy nie trafiają do komunikatów błędów ani logów.
-Każdy tester probe używa `try/finally`; `cleanup-failed` ma pierwszeństwo
-przed wcześniejszą awarią.
+timeoutem, ograniczonym całkowitym timeoutem i bez automatycznego retry
+transportu lub mutacji. Wyłącznie wskazane w publicznym kontrakcie odczyty
+spójności są ponawiane według zamkniętego harmonogramu. Provider-controlled
+dane nigdy nie trafiają do komunikatów błędów ani logów. Każdy tester probe
+używa `try/finally`; `cleanup-failed` ma pierwszeństwo przed wcześniejszą
+awarią.
 
 Ścieżki pozostające pod kontrolą `platform-access:probe` obowiązuje reguła
 zero logów: nie wywołują `Log::*` ani innego loggera nawet dla bezpiecznych
@@ -156,7 +159,7 @@ dokładnie właściwy zbiór:
 
 | Provider | Exact scope set |
 | --- | --- |
-| Spotify | `playlist-modify-private`, `playlist-read-private`, `user-read-private` |
+| Spotify | `playlist-modify-private`, `playlist-modify-public`, `playlist-read-private`, `user-read-private` |
 | YouTube | `https://www.googleapis.com/auth/youtube` |
 
 Probe zawsze wykonuje refresh-token exchange i nie używa istniejącego access
@@ -292,6 +295,33 @@ dodawać kategorii ani emitować provider-controlled tekstu.
 - YouTube `tester` używa zarezerwowanej, prywatnej i początkowo pustej
   playlisty, zapisuje dokładnie trzy `item_uris`, weryfikuje ich kolejność i w
   `finally` usuwa elementy oraz potwierdza pusty stan początkowy.
+- Probe nie ponawia refresh-token exchange, odczytu tożsamości, requestów
+  mutujących ani błędnych odpowiedzi HTTP. Ponawianie dotyczy wyłącznie
+  opisanych niżej, ograniczonych odczytów spójności po zaakceptowanej mutacji.
+- Po wyczyszczeniu fixture Spotify probe odczytuje metadane playlisty
+  natychmiast, a przy poprawnym, lecz nadal niepustym stanie ponawia odczyt po
+  `1`, `2`, `4`, `8` i `15` sekundach. Wykonuje więc najwyżej sześć odczytów w
+  chwilach `0`, `1`, `3`, `7`, `15` i `30` sekund od przyjęcia mutacji cleanup.
+  Pierwszy poprawny stan z `items.total == 0`, pustym `items.items` i
+  `items.next == null` kończy cleanup sukcesem; błąd HTTP albo odpowiedź
+  niezgodna ze schematem kończy go od razu jako `cleanup-failed`.
+- Po trzech insertach YouTube probe weryfikuje zapis natychmiast, a przy
+  poprawnym, niepaginowanym, lecz jeszcze niepełnym albo źle uporządkowanym
+  stanie ponawia odczyt po `1`, `2`, `4` i `8` sekundach. Wykonuje najwyżej
+  pięć odczytów w chwilach `0`, `1`, `3`, `7` i `15` sekund. Błąd HTTP,
+  odpowiedź niezgodna ze schematem albo `nextPageToken` kończy weryfikację bez
+  ponowienia; brak exact trzech video ID w wymaganej kolejności po ostatnim
+  odczycie daje `provider-response-invalid`.
+- Cleanup YouTube wykonuje jeden wstępny odczyt przed usunięciem, usuwa
+  jednokrotnie unię znanych ID insertów i widocznych ID elementów, a następnie
+  stosuje ten sam harmonogram najwyżej pięciu odczytów w chwilach `0`, `1`,
+  `3`, `7` i `15` sekund. Sukces wymaga dwóch kolejnych poprawnych,
+  niepaginowanych i dokładnie pustych snapshotów. Niepusty, błędny albo
+  niedostępny snapshot zeruje serię pustych obserwacji i może zostać ponowiony
+  w pozostałym budżecie. Paginacja lub obcy element w końcowym harmonogramie
+  kończą cleanup od razu; wykryte we wstępnym odczycie zatrzaskują błąd.
+  Błędy mutacji i wcześniej wykryte niebezpieczne stany również pozostają
+  zatrzaśnięte, więc późniejsze puste odczyty nie mogą zmienić wyniku na sukces.
 - Nieudane przywrócenie Spotify albo YouTube zwraca
   `cleanup-failed`, nawet jeśli wcześniejszy krok także się nie udał.
 
@@ -419,10 +449,12 @@ tożsamości, nie jest utrwalane i nie trafia do outputu ani logów. Brak
 mutacji. Niepusta albo publiczna playlista również kończy się
 `fixture-invalid` bez mutacji. Następnie zastąpić zawartość dokładnie trzema `spotify:track:` URI przez
 `PUT /v1/playlists/{playlist_id}/items`, ponownie odczytać i porównać kolejność.
-W `finally` wyczyścić playlistę przez `PUT` z pustą tablicą URI, ponownie ją
-odczytać i potwierdzić pusty stan. Każda awaria lub niepełna weryfikacja
-wyczyszczenia kończy się `cleanup-failed`; pól zmiennych niezależnie od probe,
-takich jak `snapshot_id` i liczba followers, nie używa się do porównania stanu.
+W `finally` wyczyścić playlistę przez `PUT` z pustą tablicą URI i potwierdzić
+pusty stan przez maksymalnie sześć odczytów metadanych playlisty według
+harmonogramu `0`, `1`, `3`, `7`, `15`, `30` sekund opisanego w kontrakcie.
+Każda awaria lub niepełna weryfikacja wyczyszczenia kończy się
+`cleanup-failed`; pól zmiennych niezależnie od probe, takich jak `snapshot_id`
+i liczba followers, nie używa się do porównania stanu.
 
 #### 3. YouTube
 
@@ -448,16 +480,21 @@ mutacją daje `fixture-invalid` bez mutacji. Dla każdego z dokładnie trzech `i
 wykonać `POST /youtube/v3/playlistItems?part=snippet` z dokładnym body
 `{"snippet":{"playlistId":"<playlist_id>","resourceId":{"kind":"youtube#video","videoId":"<item_uri>"}}}`
 i zachowywać zwrócony playlist-item ID wyłącznie do cleanup. Testy asertują
-dokładne body wszystkich trzech insertów. Następnie wykonać dokładnie jedno
-`GET /youtube/v3/playlistItems?part=id,snippet&playlistId=<id>&maxResults=50`:
-odpowiedź musi zawierać dokładnie trzy video IDs w kolejności i nie może mieć
-`nextPageToken`; dodatkowa strona jest `provider-response-invalid`.
+dokładne body wszystkich trzech insertów. Następnie wykonać maksymalnie pięć
+`GET /youtube/v3/playlistItems?part=id,snippet&playlistId=<id>&maxResults=50`
+według harmonogramu `0`, `1`, `3`, `7`, `15` sekund: sukces wymaga dokładnie
+trzech video ID w kolejności i braku `nextPageToken`. Poprawny,
+niepaginowany, lecz jeszcze niepełny albo źle uporządkowany wynik zużywa
+kolejną próbę; błąd HTTP, błędny schemat lub dodatkowa strona kończą
+weryfikację od razu jako odpowiednia zamknięta kategoria.
 
-`finally` odczytuje bieżące elementy fixture, usuwa każdy playlist-item przez
-`DELETE /youtube/v3/playlistItems?id=<playlist-item-id>`, ponownie odczytuje
-fixture i potwierdza pusty stan. Playlista nie jest tworzona ani usuwana przez
-probe. Timeout transportu, niejednoznaczna odpowiedź albo 2xx bez wymaganego ID
-przy dowolnym `playlistItems.insert/delete` zawsze kończą się
+`finally` odczytuje bieżące elementy fixture, usuwa przez
+`DELETE /youtube/v3/playlistItems?id=<playlist-item-id>` jednokrotnie każdy
+element z unii ID zwróconych przez insert i widocznych we wstępnym odczycie,
+a następnie wymaga dwóch kolejnych pustych snapshotów w ramach maksymalnie
+pięciu odczytów w chwilach `0`, `1`, `3`, `7`, `15` sekund. Playlista nie jest
+tworzona ani usuwana przez probe. Timeout transportu, niejednoznaczna odpowiedź
+albo 2xx bez wymaganego ID przy dowolnym `playlistItems.insert/delete` zawsze kończą się
 `cleanup-failed`, nawet jeżeli późniejszy bounded odczyt chwilowo pokazuje pustą
 playlistę; brak elementu po pojedynczym skanie nie jest dowodem, że opóźniona
 mutacja nie zostanie zatwierdzona. Taki wynik wymaga późniejszego, zewnętrznego
@@ -622,20 +659,26 @@ przed usunięciem.
   bez mutacji, awarię po zapisie i podczas czyszczenia oraz potwierdzenie
   powrotu do pustego stanu. Spotify osobno porównuje `/me.account_id` z
   `expected_account_id` oraz efemeryczne `/me.id` z `playlist.owner.id`, w tym
-  brak i mismatch obu pól właściciela. YouTube dodatkowo dowodzi, że timeout albo
-  niejednoznaczna odpowiedź z `playlistItems.insert/delete` zawsze daje
-  `cleanup-failed`, nawet gdy późniejszy bounded odczyt nie widzi elementu;
-  awaria cleanup zawsze wygrywa kategorią.
+  brak i mismatch obu pól właściciela, oraz sprawdza sześć odczytów cleanup z
+  backoffem `1`, `2`, `4`, `8`, `15`. YouTube dodatkowo dowodzi pięciu
+  odczytów spójności z backoffem `1`, `2`, `4`, `8`, wymogu dwóch kolejnych
+  pustych snapshotów cleanup oraz tego, że timeout albo niejednoznaczna
+  odpowiedź z `playlistItems.insert/delete` zawsze daje `cleanup-failed`, nawet
+  gdy późniejszy bounded odczyt nie widzi elementu; awaria cleanup zawsze
+  wygrywa kategorią.
 - Test regresyjny Google chroni współdzielone client ID/secret i niezależny
   redirect logowania.
 
 ## Uwagi dotyczące wydajności
 
 Probe jest jednorazowym narzędziem akceptacyjnym, nie ścieżką requestu
-użytkownika. Nie wykonuje retry. Odczyty są ograniczone do danych koniecznych
-do identity/read, a tester zapisuje dokładnie trzy elementy. Mechanizm limitu
-pięciu operacji YouTube dziennie należy do późniejszego przepływu produktu,
-nie do tego probe.
+użytkownika. Nie wykonuje automatycznego retry transportu ani ponowienia
+mutacji. Wykonuje wyłącznie jawnie ograniczone odczyty spójności: Spotify
+cleanup może obserwować stan przez 30 sekund, a YouTube write verification i
+cleanup przez 15 sekund każdy. Pozostałe odczyty są pojedyncze i ograniczone do
+danych koniecznych do identity/read, a tester zapisuje dokładnie trzy elementy.
+Mechanizm limitu pięciu operacji YouTube dziennie należy do późniejszego
+przepływu produktu, nie do tego probe.
 
 ## Uwagi dotyczące migracji
 
@@ -679,36 +722,36 @@ schematu lub semantyki wymaga v2 i migracji obu stron.
 
 #### Automated
 
-- [x] 1.1 Zweryfikować zamknięty kontrakt wejścia i wywołania
-- [x] 1.2 Zweryfikować zamknięte odpowiedzi i kody wyjścia
-- [x] 1.3 Potwierdzić separację principal i brak sieci po błędzie wejścia
-- [x] 1.5 Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu
+- [x] 1.1 Zweryfikować zamknięty kontrakt wejścia i wywołania — 2931c26
+- [x] 1.2 Zweryfikować zamknięte odpowiedzi i kody wyjścia — 2931c26
+- [x] 1.3 Potwierdzić separację principal i brak sieci po błędzie wejścia — 2931c26
+- [x] 1.5 Zweryfikować prywatny rotation sink i brak wycieku replacement tokenu — 2931c26
 
 #### Manual
 
-- [x] 1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS
+- [x] 1.4 Potwierdzić zgodność lokalnego kontraktu z publikacją PaaS — 2931c26
 
 ### Phase 2: Probe'y providerów i macierze principal
 
 #### Automated
 
-- [ ] 2.1 Zweryfikować macierze Spotify i exact restore
-- [ ] 2.2 Zweryfikować macierze YouTube i exact restore
-- [ ] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność
-- [ ] 2.4 Potwierdzić brak regresji logowania Google
+- [x] 2.1 Zweryfikować macierze Spotify i exact restore — 8ca1ec7
+- [x] 2.2 Zweryfikować macierze YouTube i exact restore — 8ca1ec7
+- [x] 2.3 Potwierdzić zamknięte mapowanie błędów i poufność — 8ca1ec7
+- [x] 2.4 Potwierdzić brak regresji logowania Google — 8ca1ec7
 
 #### Manual
 
-- [ ] 2.5 Potwierdzić granicę PaaS i semantykę cleanup
+- [x] 2.5 Potwierdzić granicę PaaS i semantykę cleanup — 8ca1ec7
 
 ### Phase 3: Komenda, źródło i akceptacja interoperacyjna
 
 #### Automated
 
-- [ ] 3.1 Zweryfikować exact kontrakt komendy
-- [ ] 3.2 Uruchomić pełne bramki repozytorium
-- [ ] 3.3 Zweryfikować kompletny manifest źródła
+- [x] 3.1 Zweryfikować exact kontrakt komendy — 6abc6ff
+- [x] 3.2 Uruchomić pełne bramki repozytorium — 6abc6ff
+- [x] 3.3 Zweryfikować kompletny manifest źródła — 6abc6ff
 
 #### Manual
 
-- [ ] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS
+- [x] 3.4 Potwierdzić gotowość artefaktu do przekazania PaaS — 6abc6ff
