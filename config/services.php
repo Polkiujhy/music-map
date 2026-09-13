@@ -41,6 +41,19 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'streaming_accounts' => [
+        'spotify' => [
+            'client_id' => env('SPOTIFY_CLIENT_ID'),
+            'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+            'redirect_uri' => env('SPOTIFY_REDIRECT_URI'),
+        ],
+        'youtube' => [
+            'client_id' => env('GOOGLE_CLIENT_ID'),
+            'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+            'redirect_uri' => env('YOUTUBE_REDIRECT_URI'),
+        ],
+    ],
+
     'platform_access' => [
         'spotify' => [
             'technical' => [

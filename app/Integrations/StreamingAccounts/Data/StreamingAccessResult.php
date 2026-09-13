@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Integrations\StreamingAccounts\Data;
+
+use App\Integrations\StreamingAccounts\StreamingAccessFailure;
+
+final readonly class StreamingAccessResult
+{
+    private function __construct(
+        public bool $successful,
+        public mixed $value,
+        public ?StreamingAccessFailure $failure,
+    ) {}
+
+    public static function success(mixed $value): self
+    {
+        return new self(true, $value, null);
+    }
+
+    public static function failure(StreamingAccessFailure $failure): self
+    {
+        return new self(false, null, $failure);
+    }
+}

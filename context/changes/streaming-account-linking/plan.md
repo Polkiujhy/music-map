@@ -442,11 +442,17 @@ poświadczenia.
 
 **Pliki**:
 `app/Http/Controllers/StreamingAccountOAuthController.php`,
-`routes/web.php`
+`app/Http/Controllers/StreamingAccountController.php`, `routes/web.php`,
+`resources/views/integrations/index.blade.php`
 
-**Cel**: Udostępnić bezpieczne wejście, callback i ręczne sprawdzenie grantu.
+**Cel**: Udostępnić bezpieczne wejście, callback, ręczne sprawdzenie grantu
+i istniejący w tej samej fazie cel przekierowań OAuth.
 
-**Kontrakt**: Nazwane trasy POST connect, GET callback i właścicielski
+**Kontrakt**: `StreamingAccountController::index()` i nazwana trasa
+`GET /integrations` / `integrations.index` działają pod `auth` i `verified`.
+Minimalny widok fazy 2 renderuje bezpieczne komunikaty flash po linkowaniu,
+reconnect i verify; nie zawiera jeszcze docelowych kart, unlink ani wpisu
+w nawigacji z fazy 3. Nazwane trasy POST connect, GET callback i właścicielski
 `POST /integrations/{streamingAccount}/verify` /
 `integrations.accounts.verify` działają pod `auth`, `verified` oraz limiterem
 `throttle:streaming-oauth` per user/provider. Connect tworzy attempt, callback najpierw konsumuje state i
@@ -492,6 +498,9 @@ Surowa baza zawiera wyłącznie ciphertext refresh tokenu.
   `php artisan test tests/Unit/Integrations/StreamingAccounts/SpotifyOAuthGatewayTest.php tests/Unit/Integrations/StreamingAccounts/YouTubeOAuthGatewayTest.php`.
 - State, wybrana tożsamość kanału, konflikty i callbacki przechodzą:
   `php artisan test tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingOAuthTest.php`.
+  Test przepływu potwierdza też, że `integrations.index` istnieje już w fazie 2,
+  jest chronione przez `auth` i `verified`, a wszystkie wyniki OAuth i verify
+  mogą bezpiecznie zakończyć się przekierowaniem do tej trasy.
 - Testy dowodzą braku access tokenu w storage i bezpiecznego szyfrowania refresh
   tokenu.
 - Regresja Google login i probe F-01 przechodzi:
@@ -565,13 +574,14 @@ ręcznego `Remove Access`.
 `resources/views/components/app-navigation.blade.php`,
 `resources/css/app.css`
 
-**Cel**: Dać użytkownikowi jedno stabilne, dostępne miejsce zarządzania obiema
-platformami.
+**Cel**: Rozbudować minimalny cel przekierowań z fazy 2 do docelowego,
+dostępnego miejsca zarządzania obiema platformami.
 
-**Kontrakt**: `StreamingAccountController::index()` obsługuje nazwaną trasę
-`GET /integrations` / `integrations.index` pod middleware `auth` i `verified`,
-pobiera przez `User::streamingAccounts()` najwyżej dwa rekordy i pokazuje dwie
-karty, minimalną label oraz trzy stany bez account ID, scope'ów i tokenów.
+**Kontrakt**: Istniejące już `StreamingAccountController::index()`, trasa
+`integrations.index` i minimalny widok są rozszerzane bez zmiany nazwy ani URL.
+Kontroler pobiera przez `User::streamingAccounts()` najwyżej dwa rekordy i
+pokazuje dwie karty, minimalną label oraz trzy stany bez account ID, scope'ów
+i tokenów.
 Connect, reconnect i „Sprawdź połączenie” są formularzami POST. Weryfikacja
 jest dostępna dla stanu connected i wywołuje właścicielską trasę verify. Unlink
 używa dostępnego modala Flux z opisem skutków dla importu, eksportu i przyszłej
@@ -789,10 +799,10 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [x] 1.1 Test migracji bezpiecznie sprawdza up, constraints i down na in-memory SQLite
-- [x] 1.2 Model, własność, constraints i szyfrowanie przechodzą
-- [x] 1.3 Brak regresji rozdzielenia metod logowania
-- [x] 1.4 Formatowanie PHP przechodzi
+- [x] 1.1 Test migracji bezpiecznie sprawdza up, constraints i down na in-memory SQLite — 53db8c5
+- [x] 1.2 Model, własność, constraints i szyfrowanie przechodzą — 53db8c5
+- [x] 1.3 Brak regresji rozdzielenia metod logowania — 53db8c5
+- [x] 1.4 Formatowanie PHP przechodzi — 53db8c5
 
 #### Manual
 
@@ -803,11 +813,11 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [ ] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów
-- [ ] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą
-- [ ] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu
-- [ ] 2.4 Regresja Google login i probe F-01 przechodzi
-- [ ] 2.5 Formatowanie i frontend przechodzą
+- [x] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów
+- [x] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą
+- [x] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu
+- [x] 2.4 Regresja Google login i probe F-01 przechodzi
+- [x] 2.5 Formatowanie i frontend przechodzą
 
 #### Manual
 
