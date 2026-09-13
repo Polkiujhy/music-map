@@ -799,56 +799,56 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [x] 1.1 Test migracji bezpiecznie sprawdza up, constraints i down na in-memory SQLite — 53db8c5
-- [x] 1.2 Model, własność, constraints i szyfrowanie przechodzą — 53db8c5
-- [x] 1.3 Brak regresji rozdzielenia metod logowania — 53db8c5
-- [x] 1.4 Formatowanie PHP przechodzi — 53db8c5
+- [x] 1.1 Test migracji bezpiecznie sprawdza up, constraints i down na in-memory SQLite — 7c0d113
+- [x] 1.2 Model, własność, constraints i szyfrowanie przechodzą — 7c0d113
+- [x] 1.3 Brak regresji rozdzielenia metod logowania — 7c0d113
+- [x] 1.4 Formatowanie PHP przechodzi — 7c0d113
 
 #### Manual
 
-- [x] 1.5 Przegląd schematu potwierdza expand-only i brak plaintextowych sekretów
-- [x] 1.6 Przegląd modelu potwierdza szyfrowanie refresh tokenu i cykl APP_KEY
+- [x] 1.5 Przegląd schematu potwierdza expand-only i brak plaintextowych sekretów — aaf581e
+- [x] 1.6 Przegląd modelu potwierdza szyfrowanie refresh tokenu i cykl APP_KEY — aaf581e
 
 ### Phase 2: OAuth i atomowe linkowanie
 
 #### Automated
 
-- [x] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów — f61d3dc
-- [x] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą — f61d3dc
-- [x] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu — f61d3dc
-- [x] 2.4 Regresja Google login i probe F-01 przechodzi — f61d3dc
-- [x] 2.5 Formatowanie i frontend przechodzą — f61d3dc
+- [x] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów — 92cb51f
+- [x] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą — 92cb51f
+- [x] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu — 92cb51f
+- [x] 2.4 Regresja Google login i probe F-01 przechodzi — 92cb51f
+- [x] 2.5 Formatowanie i frontend przechodzą — 92cb51f
 
 #### Manual
 
-- [x] 2.6 Przegląd żądań potwierdza scope, state i stałe endpointy providerów
-- [x] 2.7 Przegląd bazy i logów potwierdza brak access tokenów, plaintext refresh tokenu i PII
+- [x] 2.6 Przegląd żądań potwierdza scope, state i stałe endpointy providerów — aaf581e
+- [x] 2.7 Przegląd bazy i logów potwierdza brak access tokenów, plaintext refresh tokenu i PII — aaf581e
 
 ### Phase 3: Odłączenie i ekran Integracje
 
 #### Automated
 
-- [x] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą — b453d93
-- [x] 3.2 Granice auth, verified i cross-user przechodzą — b453d93
-- [x] 3.3 Pełna macierz streaming accounts przechodzi — b453d93
-- [x] 3.4 Widoki kompilują się — b453d93
-- [x] 3.5 Formatowanie przechodzi — b453d93
+- [x] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą — 82bac2b
+- [x] 3.2 Granice auth, verified i cross-user przechodzą — 82bac2b
+- [x] 3.3 Pełna macierz streaming accounts przechodzi — 82bac2b
+- [x] 3.4 Widoki kompilują się — 82bac2b
+- [x] 3.5 Formatowanie przechodzi — 82bac2b
 
 #### Manual
 
-- [x] 3.6 Ekran i modal przechodzą weryfikację dostępności i responsywności
-- [x] 3.7 Teksty rozróżniają unlink, revocation YouTube i czynność ręczną Spotify
+- [x] 3.6 Ekran i modal przechodzą weryfikację dostępności i responsywności — aaf581e
+- [x] 3.7 Teksty rozróżniają unlink, revocation YouTube i czynność ręczną Spotify — aaf581e
 
 ### Phase 4: Utwardzenie i wydanie
 
 #### Automated
 
-- [x] 4.1 Pełny PHPUnit przechodzi — 7ac0962
-- [x] 4.2 PHP formatting przechodzi — 7ac0962
-- [x] 4.3 Produkcyjny frontend buduje się — 7ac0962
-- [x] 4.4 Manifest źródła przechodzi — 7ac0962
-- [x] 4.5 Audyty zależności przechodzą — 7ac0962
-- [x] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04 — 7ac0962
+- [x] 4.1 Pełny PHPUnit przechodzi — d05b43c
+- [x] 4.2 PHP formatting przechodzi — d05b43c
+- [x] 4.3 Produkcyjny frontend buduje się — d05b43c
+- [x] 4.4 Manifest źródła przechodzi — d05b43c
+- [x] 4.5 Audyty zależności przechodzą — d05b43c
+- [x] 4.6 PostgreSQL CI wykonuje krytyczną macierz S-04 — d05b43c
 
 #### Manual
 
