@@ -325,32 +325,29 @@ final readonly class YouTubeProbe implements PlatformProbe
         TesterSession $session,
         array $knownItemIds,
     ): bool {
-        $failed = false;
-        $itemIds = [];
+        $knownItemIds = array_values(array_unique($knownItemIds));
+        $failed = count($knownItemIds) !== 3;
+        $itemIds = $knownItemIds;
 
         try {
             $current = $this->listItems($request, $session);
 
-            if (! $current->successful()) {
-                $failed = true;
-                $itemIds = $knownItemIds;
-            } else {
+            if ($current->successful()) {
                 $listed = $this->youtubeItems($current);
 
-                if ($listed === null) {
-                    $failed = true;
-                    $itemIds = $knownItemIds;
-                } else {
-                    $failed = $listed['has_next_page'];
+                if ($listed !== null) {
+                    $listedIds = array_column($listed['items'], 'id');
+                    $failed = $failed
+                        || $listed['has_next_page']
+                        || array_diff($listedIds, $knownItemIds) !== [];
                     $itemIds = array_values(array_unique([
                         ...$knownItemIds,
-                        ...array_column($listed['items'], 'id'),
+                        ...$listedIds,
                     ]));
                 }
             }
         } catch (Throwable) {
-            $failed = true;
-            $itemIds = $knownItemIds;
+            // The known insert IDs and final exact-empty read can resolve a read anomaly.
         }
 
         foreach (array_values(array_unique($itemIds)) as $itemId) {
@@ -367,25 +364,39 @@ final readonly class YouTubeProbe implements PlatformProbe
             }
         }
 
-        try {
-            for ($attempt = 0; $attempt <= count(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+        $emptyObserved = false;
+
+        for ($attempt = 0; $attempt <= count(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS); $attempt++) {
+            try {
                 $verification = $this->listItems($request, $session);
                 $listed = $verification->successful() ? $this->youtubeItems($verification) : null;
 
-                if ($listed === null || $listed['has_next_page']) {
+                if ($listed !== null && $listed['has_next_page']) {
                     return true;
                 }
 
-                if ($listed['items'] === []) {
-                    return $failed;
+                if ($listed !== null
+                    && array_diff(array_column($listed['items'], 'id'), $knownItemIds) !== []) {
+                    return true;
                 }
 
-                if (array_key_exists($attempt, self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS)) {
-                    Sleep::sleep(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS[$attempt]);
+                if ($listed !== null && $listed['items'] === []) {
+                    if ($emptyObserved) {
+                        return $failed;
+                    }
+
+                    $emptyObserved = true;
+                } else {
+                    $emptyObserved = false;
                 }
+            } catch (Throwable) {
+                // Retry read-only observation; mutation failures remain latched above.
+                $emptyObserved = false;
             }
-        } catch (Throwable) {
-            return true;
+
+            if (array_key_exists($attempt, self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS)) {
+                Sleep::sleep(self::CONSISTENCY_VERIFICATION_DELAYS_SECONDS[$attempt]);
+            }
         }
 
         return true;
