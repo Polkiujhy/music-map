@@ -65,8 +65,8 @@ operacje na playlistach.
 | Faza | Co dostarcza | Kluczowe ryzyko |
 | --- | --- | --- |
 | 1. Domena i storage | Model, migracja i szyfrowanie | Rotacja APP_KEY |
-| 2. OAuth i linkowanie | Gatewaye, state i providerowy wybór kanału | Kolizja callbacku |
-| 3. Unlink i UI | Modal, revoke i seam S-08 | Grant po unlink |
+| 2. OAuth i linkowanie | Gatewaye, state, wybór kanału i minimalny cel callbacku | Kolizja callbacku |
+| 3. Unlink i pełny UI | Rozbudowa ekranu, modal, revoke i seam S-08 | Grant po unlink |
 | 4. Utwardzenie | CI, schema-release i live smoke | Fake vs consent |
 
 **Wymagania wstępne:** aktywne projekty i konta testowe, exact HTTPS callbacki,

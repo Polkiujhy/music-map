@@ -8,17 +8,16 @@ final readonly class StreamingAccessResult
 {
     private function __construct(
         public bool $successful,
-        public mixed $value,
         public ?StreamingAccessFailure $failure,
     ) {}
 
-    public static function success(mixed $value): self
+    public static function success(): self
     {
-        return new self(true, $value, null);
+        return new self(true, null);
     }
 
     public static function failure(StreamingAccessFailure $failure): self
     {
-        return new self(false, null, $failure);
+        return new self(false, $failure);
     }
 }

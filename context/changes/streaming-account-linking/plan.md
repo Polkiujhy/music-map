@@ -806,8 +806,8 @@ elementem rollbacku S-04.
 
 #### Manual
 
-- [ ] 1.5 Przegląd schematu potwierdza expand-only i brak plaintextowych sekretów
-- [ ] 1.6 Przegląd modelu potwierdza szyfrowanie refresh tokenu i cykl APP_KEY
+- [x] 1.5 Przegląd schematu potwierdza expand-only i brak plaintextowych sekretów
+- [x] 1.6 Przegląd modelu potwierdza szyfrowanie refresh tokenu i cykl APP_KEY
 
 ### Phase 2: OAuth i atomowe linkowanie
 
@@ -821,8 +821,8 @@ elementem rollbacku S-04.
 
 #### Manual
 
-- [ ] 2.6 Przegląd żądań potwierdza scope, state i stałe endpointy providerów
-- [ ] 2.7 Przegląd bazy i logów potwierdza brak access tokenów, plaintext refresh tokenu i PII
+- [x] 2.6 Przegląd żądań potwierdza scope, state i stałe endpointy providerów
+- [x] 2.7 Przegląd bazy i logów potwierdza brak access tokenów, plaintext refresh tokenu i PII
 
 ### Phase 3: Odłączenie i ekran Integracje
 
@@ -836,8 +836,8 @@ elementem rollbacku S-04.
 
 #### Manual
 
-- [ ] 3.6 Ekran i modal przechodzą weryfikację dostępności i responsywności
-- [ ] 3.7 Teksty rozróżniają unlink, revocation YouTube i czynność ręczną Spotify
+- [x] 3.6 Ekran i modal przechodzą weryfikację dostępności i responsywności
+- [x] 3.7 Teksty rozróżniają unlink, revocation YouTube i czynność ręczną Spotify
 
 ### Phase 4: Utwardzenie i wydanie
 

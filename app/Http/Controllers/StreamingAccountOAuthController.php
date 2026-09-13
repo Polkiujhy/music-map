@@ -6,6 +6,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\StreamingAccounts\Actions\LinkStreamingAccount;
 use App\Integrations\StreamingAccounts\Contracts\StreamingOAuthGateway;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
+use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\Data\StreamingGrant;
 use App\Integrations\StreamingAccounts\Data\StreamingIdentity;
 use App\Integrations\StreamingAccounts\StreamingAccessFailure;
@@ -15,6 +16,9 @@ use App\Models\StreamingAccount;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 class StreamingAccountOAuthController extends Controller
 {
@@ -69,30 +73,39 @@ class StreamingAccountOAuthController extends Controller
             return $this->failure('Nie udało się bezpiecznie połączyć konta. Spróbuj ponownie.');
         }
 
-        $gateway = $this->gateway($streamingProvider);
-        $grant = $gateway->exchange($code);
+        try {
+            $gateway = $this->gateway($streamingProvider);
+            $grant = $gateway->exchange($code);
 
-        if (! $grant instanceof StreamingGrant) {
-            return $this->oauthFailure($grant);
+            if (! $grant instanceof StreamingGrant) {
+                return $this->oauthFailure($grant);
+            }
+
+            if (array_diff($streamingProvider->requiredScopes(), $grant->scopes) !== []) {
+                return $this->failure('Nie udzielono wszystkich wymaganych uprawnień. Połącz konto ponownie.');
+            }
+
+            $identity = $gateway->identity($grant->accessToken);
+
+            if (! $identity instanceof StreamingIdentity) {
+                return $this->oauthFailure($identity);
+            }
+
+            $result = $link->handle($request->user(), $streamingProvider, $grant, $identity);
+
+            if ($result instanceof StreamingOAuthFailure) {
+                return $this->oauthFailure($result);
+            }
+
+            return to_route('integrations.index')->with('status', 'Konto streamingowe zostało połączone.');
+        } catch (Throwable $exception) {
+            Log::warning('Streaming OAuth callback failed.', [
+                'exception_class' => $exception::class,
+                'correlation_id' => (string) Str::uuid(),
+            ]);
+
+            return $this->failure('Nie udało się teraz połączyć konta. Spróbuj ponownie później.');
         }
-
-        if (array_diff($streamingProvider->requiredScopes(), $grant->scopes) !== []) {
-            return $this->failure('Nie udzielono wszystkich wymaganych uprawnień. Połącz konto ponownie.');
-        }
-
-        $identity = $gateway->identity($grant->accessToken);
-
-        if (! $identity instanceof StreamingIdentity) {
-            return $this->oauthFailure($identity);
-        }
-
-        $result = $link->handle($request->user(), $streamingProvider, $grant, $identity);
-
-        if ($result instanceof StreamingOAuthFailure) {
-            return $this->oauthFailure($result);
-        }
-
-        return to_route('integrations.index')->with('status', 'Konto streamingowe zostało połączone.');
     }
 
     public function verify(
@@ -110,7 +123,7 @@ class StreamingAccountOAuthController extends Controller
             $request->user(),
             $account,
             $account->provider->requiredScopes(),
-            static fn (): bool => true,
+            static function (StreamingAccessContext $context): void {},
         );
 
         if ($result->successful) {

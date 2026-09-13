@@ -53,11 +53,44 @@ class YouTubeOAuthGatewayTest extends TestCase
     {
         Http::fakeSequence()
             ->push(['items' => []])
+            ->push(['items' => [
+                ['id' => 'channel-one', 'snippet' => ['title' => 'One']],
+                ['id' => 'channel-two', 'snippet' => ['title' => 'Two']],
+            ]])
             ->push(['error' => ['errors' => [['reason' => 'quotaExceeded']]]], 403);
 
         $gateway = new YouTubeOAuthGateway;
 
         $this->assertSame(StreamingOAuthFailure::InvalidResponse, $gateway->identity('access-one'));
-        $this->assertSame(StreamingOAuthFailure::QuotaExceeded, $gateway->identity('access-two'));
+        $this->assertSame(StreamingOAuthFailure::InvalidResponse, $gateway->identity('access-two'));
+        $this->assertSame(StreamingOAuthFailure::QuotaExceeded, $gateway->identity('access-three'));
+    }
+
+    public function test_transport_and_5xx_failures_are_temporary_without_retry(): void
+    {
+        Http::fakeSequence()
+            ->pushFailedConnection('sensitive transport details')
+            ->push([], 503);
+
+        $gateway = new YouTubeOAuthGateway;
+
+        $this->assertSame(StreamingOAuthFailure::TemporarilyUnavailable, $gateway->exchange('code-canary'));
+        $this->assertSame(StreamingOAuthFailure::TemporarilyUnavailable, $gateway->identity('access-canary'));
+        Http::assertSentCount(2);
+    }
+
+    public function test_malformed_response_invalid_grant_and_rate_limit_are_mapped(): void
+    {
+        Http::fakeSequence()
+            ->push('not-json')
+            ->push(['error' => 'invalid_grant'], 400)
+            ->push([], 429);
+
+        $gateway = new YouTubeOAuthGateway;
+
+        $this->assertSame(StreamingOAuthFailure::InvalidResponse, $gateway->exchange('code-canary'));
+        $this->assertSame(StreamingOAuthFailure::AuthorizationDenied, $gateway->refresh('refresh-canary'));
+        $this->assertSame(StreamingOAuthFailure::RateLimited, $gateway->identity('access-canary'));
+        Http::assertSentCount(3);
     }
 }

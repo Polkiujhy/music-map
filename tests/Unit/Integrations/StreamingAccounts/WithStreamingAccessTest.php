@@ -37,15 +37,14 @@ class WithStreamingAccessTest extends TestCase
             $account->user,
             $account,
             array_reverse(StreamingProvider::Spotify->requiredScopes()),
-            function (StreamingAccessContext $context) use (&$contextSeen): string {
+            function (StreamingAccessContext $context) use (&$contextSeen): void {
                 $contextSeen = $context;
-
-                return 'callback-result';
             },
         );
 
         $this->assertTrue($result->successful);
-        $this->assertSame('callback-result', $result->value);
+        $this->assertNull($result->failure);
+        $this->assertFalse(property_exists($result, 'value'));
         $this->assertSame('stable-account', $contextSeen->providerAccountId);
         $this->assertSame('access-canary', $contextSeen->accessToken);
         $this->assertSame(2, $account->fresh()->credential_version);
@@ -54,6 +53,33 @@ class WithStreamingAccessTest extends TestCase
             'replacement-canary',
             DB::table('streaming_accounts')->where('id', $account->id)->value('refresh_token'),
         );
+    }
+
+    public function test_callback_cannot_return_secret_bearing_values(): void
+    {
+        $account = $this->account();
+        $gateway = new AccessFakeGateway(fn () => new StreamingGrant(
+            'access-canary',
+            null,
+            StreamingProvider::Spotify->requiredScopes(),
+        ));
+        $this->app->instance('streaming-oauth.spotify', $gateway);
+
+        foreach ([
+            static fn (StreamingAccessContext $context): string => $context->accessToken,
+            static fn (StreamingAccessContext $context): array => ['context' => $context],
+        ] as $callback) {
+            $result = $this->app->make(WithStreamingAccessContract::class)->handle(
+                $account->user,
+                $account,
+                StreamingProvider::Spotify->requiredScopes(),
+                $callback,
+            );
+
+            $this->assertFalse($result->successful);
+            $this->assertSame(StreamingAccessFailure::TemporarilyUnavailable, $result->failure);
+            $this->assertFalse(property_exists($result, 'value'));
+        }
     }
 
     public function test_no_replacement_refresh_cannot_run_callback_after_unlink_relink(): void
@@ -81,9 +107,10 @@ class WithStreamingAccessTest extends TestCase
         $this->assertFalse($called);
     }
 
-    public function test_late_invalid_grant_does_not_clear_relinked_credential(): void
+    public function test_late_invalid_grant_uses_credential_version_when_updated_at_is_unchanged(): void
     {
         $account = $this->account();
+        $originalUpdatedAt = $account->updated_at;
         $gateway = new AccessFakeGateway(function () use ($account) {
             StreamingAccount::query()->whereKey($account->id)->update([
                 'refresh_token' => Crypt::encryptString('new-canary'),
@@ -104,6 +131,7 @@ class WithStreamingAccessTest extends TestCase
         $this->assertSame(StreamingAccessFailure::StaleCredential, $result->failure);
         $this->assertSame(2, $account->fresh()->credential_version);
         $this->assertSame('new-canary', $account->fresh()->refresh_token);
+        $this->assertTrue($account->fresh()->updated_at->equalTo($originalUpdatedAt));
     }
 
     public function test_missing_scope_stops_before_refresh(): void

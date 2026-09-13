@@ -26,10 +26,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/integrations/{provider}/connect', [StreamingAccountOAuthController::class, 'connect'])
         ->whereIn('provider', ['spotify', 'youtube'])
         ->middleware('throttle:streaming-oauth')
+        ->block(5, 5)
         ->name('integrations.connect');
     Route::get('/integrations/{provider}/callback', [StreamingAccountOAuthController::class, 'callback'])
         ->whereIn('provider', ['spotify', 'youtube'])
         ->middleware('throttle:streaming-oauth')
+        ->block(30, 30)
         ->name('integrations.callback');
     Route::post('/integrations/{streamingAccount}/verify', [StreamingAccountOAuthController::class, 'verify'])
         ->middleware('throttle:streaming-oauth')

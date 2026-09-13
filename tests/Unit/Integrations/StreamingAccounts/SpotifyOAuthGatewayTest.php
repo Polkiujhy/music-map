@@ -69,4 +69,32 @@ class SpotifyOAuthGatewayTest extends TestCase
             (new SpotifyOAuthGateway)->identity('access-canary'),
         );
     }
+
+    public function test_transport_and_5xx_failures_are_temporary_without_retry(): void
+    {
+        Http::fakeSequence()
+            ->pushFailedConnection('sensitive transport details')
+            ->push([], 503);
+
+        $gateway = new SpotifyOAuthGateway;
+
+        $this->assertSame(StreamingOAuthFailure::TemporarilyUnavailable, $gateway->exchange('code-canary'));
+        $this->assertSame(StreamingOAuthFailure::TemporarilyUnavailable, $gateway->identity('access-canary'));
+        Http::assertSentCount(2);
+    }
+
+    public function test_malformed_response_invalid_grant_and_rate_limit_are_mapped(): void
+    {
+        Http::fakeSequence()
+            ->push('not-json')
+            ->push(['error' => 'invalid_grant'], 400)
+            ->push([], 429);
+
+        $gateway = new SpotifyOAuthGateway;
+
+        $this->assertSame(StreamingOAuthFailure::InvalidResponse, $gateway->exchange('code-canary'));
+        $this->assertSame(StreamingOAuthFailure::AuthorizationDenied, $gateway->refresh('refresh-canary'));
+        $this->assertSame(StreamingOAuthFailure::RateLimited, $gateway->identity('access-canary'));
+        Http::assertSentCount(3);
+    }
 }

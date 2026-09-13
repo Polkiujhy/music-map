@@ -81,18 +81,18 @@ final readonly class WithStreamingAccess implements WithStreamingAccessContract
         );
 
         try {
-            $value = $callback($context);
+            $outcome = $callback($context);
         } catch (Throwable) {
             return StreamingAccessResult::failure(StreamingAccessFailure::TemporarilyUnavailable);
         }
 
-        if ($value instanceof StreamingAccessContext) {
+        if ($outcome !== null && ! $outcome instanceof StreamingAccessFailure) {
             return StreamingAccessResult::failure(StreamingAccessFailure::TemporarilyUnavailable);
         }
 
-        return $value instanceof StreamingAccessFailure
-            ? StreamingAccessResult::failure($value)
-            : StreamingAccessResult::success($value);
+        return $outcome instanceof StreamingAccessFailure
+            ? StreamingAccessResult::failure($outcome)
+            : StreamingAccessResult::success();
     }
 
     private function guardCredential(

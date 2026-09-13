@@ -11,6 +11,9 @@ use App\Models\StreamingAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\TestCase;
 
 class StreamingOAuthTest extends TestCase
@@ -28,6 +31,17 @@ class StreamingOAuthTest extends TestCase
             ->get('/integrations')
             ->assertOk()
             ->assertSee('Integracje streamingowe');
+    }
+
+    public function test_oauth_attempt_mutations_are_session_blocked(): void
+    {
+        $connect = app('router')->getRoutes()->getByName('integrations.connect');
+        $callback = app('router')->getRoutes()->getByName('integrations.callback');
+
+        $this->assertSame(5, $connect->locksFor());
+        $this->assertSame(5, $connect->waitsFor());
+        $this->assertSame(30, $callback->locksFor());
+        $this->assertSame(30, $callback->waitsFor());
     }
 
     public function test_callback_consumes_state_once_and_persists_only_encrypted_refresh_token(): void
@@ -98,6 +112,76 @@ class StreamingOAuthTest extends TestCase
         $this->assertSame(0, $gateway->exchanges);
     }
 
+    public function test_unexpected_callback_failure_is_neutral_and_logs_no_secrets(): void
+    {
+        Log::spy();
+        $user = User::factory()->create();
+        $gateway = new FlowFakeGateway(StreamingProvider::Spotify);
+        $gateway->failExchange = true;
+        $this->app->instance('streaming-oauth.spotify', $gateway);
+
+        $connect = $this->actingAs($user)->post(route('integrations.connect', 'spotify'));
+        parse_str((string) parse_url($connect->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->get(route('integrations.callback', [
+            'provider' => 'spotify',
+            'state' => $query['state'],
+            'code' => 'code-canary',
+        ]))
+            ->assertRedirect(route('integrations.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseCount('streaming_accounts', 0);
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context): bool {
+                $encodedContext = json_encode($context, JSON_THROW_ON_ERROR);
+
+                return $message === 'Streaming OAuth callback failed.'
+                    && array_keys($context) === ['exception_class', 'correlation_id']
+                    && $context['exception_class'] === RuntimeException::class
+                    && Str::isUuid($context['correlation_id'])
+                    && ! str_contains($encodedContext, 'code-canary')
+                    && ! str_contains($encodedContext, 'access-canary')
+                    && ! str_contains($encodedContext, 'sensitive details');
+            });
+    }
+
+    public function test_callback_rejects_missing_scopes_invalid_identity_and_account_change(): void
+    {
+        $user = User::factory()->create();
+        $gateway = new FlowFakeGateway(StreamingProvider::Spotify);
+        $this->app->instance('streaming-oauth.spotify', $gateway);
+
+        $gateway->exchangeResult = new StreamingGrant('access-scope-canary', 'refresh-scope-canary', []);
+        $this->streamingCallback($user, $this->connectState($user), 'code-scope-canary')
+            ->assertSessionHas('error');
+        $this->assertDatabaseCount('streaming_accounts', 0);
+
+        $gateway->exchangeResult = null;
+        $gateway->identityResult = StreamingOAuthFailure::InvalidResponse;
+        $this->streamingCallback($user, $this->connectState($user), 'code-identity-canary')
+            ->assertSessionHas('error');
+        $this->assertDatabaseCount('streaming_accounts', 0);
+
+        $existing = StreamingAccount::factory()->for($user)->spotify()->create([
+            'provider_account_id' => 'existing-account',
+            'refresh_token' => 'existing-refresh-canary',
+        ]);
+        $gateway->identityResult = new StreamingIdentity('different-account', 'Different account');
+        $this->streamingCallback($user, $this->connectState($user), 'code-account-canary')
+            ->assertSessionHas('error', 'Najpierw odłącz obecne konto tego providera.');
+
+        $this->assertDatabaseCount('streaming_accounts', 1);
+        $this->assertSame('existing-account', $existing->fresh()->provider_account_id);
+        $this->assertSame('existing-refresh-canary', $existing->fresh()->refresh_token);
+        $session = serialize(session()->all());
+        $this->assertStringNotContainsString('access-scope-canary', $session);
+        $this->assertStringNotContainsString('refresh-scope-canary', $session);
+        $this->assertStringNotContainsString('code-identity-canary', $session);
+        $this->assertStringNotContainsString('Different account', $session);
+    }
+
     public function test_verify_resolves_only_owned_accounts_and_uses_one_unknown_rate_key(): void
     {
         $user = User::factory()->create();
@@ -128,6 +212,23 @@ class StreamingOAuthTest extends TestCase
 
         $this->post(route('integrations.connect', 'youtube'))->assertRedirectContains('provider.example');
     }
+
+    private function connectState(User $user): string
+    {
+        $connect = $this->actingAs($user)->post(route('integrations.connect', 'spotify'));
+        parse_str((string) parse_url($connect->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        return $query['state'];
+    }
+
+    private function streamingCallback(User $user, string $state, string $code)
+    {
+        return $this->actingAs($user)->get(route('integrations.callback', [
+            'provider' => 'spotify',
+            'state' => $state,
+            'code' => $code,
+        ]));
+    }
 }
 
 final class FlowFakeGateway implements StreamingOAuthGateway
@@ -135,6 +236,12 @@ final class FlowFakeGateway implements StreamingOAuthGateway
     public int $exchanges = 0;
 
     public int $refreshes = 0;
+
+    public bool $failExchange = false;
+
+    public StreamingGrant|StreamingOAuthFailure|null $exchangeResult = null;
+
+    public StreamingIdentity|StreamingOAuthFailure|null $identityResult = null;
 
     public function __construct(private readonly StreamingProvider $provider) {}
 
@@ -147,7 +254,12 @@ final class FlowFakeGateway implements StreamingOAuthGateway
     {
         $this->exchanges++;
 
-        return new StreamingGrant('access-canary', 'refresh-canary', $this->provider->requiredScopes());
+        if ($this->failExchange) {
+            throw new RuntimeException('Provider failed with code-canary, access-canary, and sensitive details.');
+        }
+
+        return $this->exchangeResult
+            ?? new StreamingGrant('access-canary', 'refresh-canary', $this->provider->requiredScopes());
     }
 
     public function refresh(string $refreshToken): StreamingGrant|StreamingOAuthFailure
@@ -159,7 +271,8 @@ final class FlowFakeGateway implements StreamingOAuthGateway
 
     public function identity(string $accessToken): StreamingIdentity|StreamingOAuthFailure
     {
-        return new StreamingIdentity('provider-account-canary', 'Canary account');
+        return $this->identityResult
+            ?? new StreamingIdentity('provider-account-canary', 'Canary account');
     }
 
     public function revoke(string $token): ?StreamingOAuthFailure
