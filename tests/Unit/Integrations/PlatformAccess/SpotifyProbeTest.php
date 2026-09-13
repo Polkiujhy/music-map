@@ -118,7 +118,10 @@ class SpotifyProbeTest extends TestCase
             ->push(['snapshot_id' => 'inserted'])
             ->push(['items' => $this->spotifyItems()])
             ->push(['snapshot_id' => 'cleared'])
-            ->push(['items' => $this->spotifyItems()])
+            ->push([
+                'items' => [$this->spotifyItems()[0]],
+                'next' => 'https://api.spotify.com/v1/playlists/fixture-playlist-canary/items?offset=1&limit=1',
+            ])
             ->push(['items' => []]);
 
         $result = $this->probe()->probe($this->tester_session());

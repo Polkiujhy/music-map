@@ -247,7 +247,7 @@ final readonly class SpotifyProbe implements PlatformProbe
                     return ProviderFailureMapper::cleanupFailed('spotify', 'tester');
                 }
 
-                $itemUris = $this->spotifyItemUris($verification);
+                $itemUris = $this->spotifyItemUris($verification, allowNextPage: true);
                 if ($itemUris === []) {
                     return null;
                 }
@@ -267,7 +267,7 @@ final readonly class SpotifyProbe implements PlatformProbe
         }
     }
 
-    private function spotifyItemUris(Response $response): ?array
+    private function spotifyItemUris(Response $response, bool $allowNextPage = false): ?array
     {
         $payload = $response->json();
 
@@ -275,7 +275,8 @@ final readonly class SpotifyProbe implements PlatformProbe
             || ! isset($payload['items'])
             || ! is_array($payload['items'])
             || ! array_is_list($payload['items'])
-            || (isset($payload['next']) && $payload['next'] !== null)) {
+            || (isset($payload['next']) && ! is_string($payload['next']))
+            || (! $allowNextPage && isset($payload['next']))) {
             return null;
         }
 
