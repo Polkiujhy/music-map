@@ -37,7 +37,10 @@ app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
+app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
+app/Integrations/StreamingAccounts/Actions/NoopDisableDependentStreamingSynchronizations.php
 app/Integrations/StreamingAccounts/Actions/WithStreamingAccess.php
+app/Integrations/StreamingAccounts/Contracts/DisableDependentStreamingSynchronizations.php
 app/Integrations/StreamingAccounts/Contracts/StreamingOAuthGateway.php
 app/Integrations/StreamingAccounts/Contracts/WithStreamingAccess.php
 app/Integrations/StreamingAccounts/Data/StreamingAccessContext.php
@@ -138,6 +141,8 @@ tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
+tests/Feature/StreamingAccounts/StreamingAccountAuthorizationTest.php
+tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php
 tests/Feature/StreamingAccounts/StreamingOAuthTest.php
 tests/Feature/Auth/AuthIdentityModelTest.php
 tests/Feature/Auth/AuthenticationTest.php

@@ -21,6 +21,8 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/integrations', [StreamingAccountController::class, 'index'])
         ->name('integrations.index');
+    Route::delete('/integrations/{streamingAccount}', [StreamingAccountController::class, 'destroy'])
+        ->name('integrations.destroy');
     Route::post('/integrations/{provider}/connect', [StreamingAccountOAuthController::class, 'connect'])
         ->whereIn('provider', ['spotify', 'youtube'])
         ->middleware('throttle:streaming-oauth')

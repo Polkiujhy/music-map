@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Enums\StreamingProvider;
+use App\Integrations\StreamingAccounts\Actions\NoopDisableDependentStreamingSynchronizations;
 use App\Integrations\StreamingAccounts\Actions\WithStreamingAccess;
+use App\Integrations\StreamingAccounts\Contracts\DisableDependentStreamingSynchronizations;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess as WithStreamingAccessContract;
 use App\Integrations\StreamingAccounts\SpotifyOAuthGateway;
 use App\Integrations\StreamingAccounts\YouTubeOAuthGateway;
@@ -18,6 +20,10 @@ class StreamingAccountsServiceProvider extends ServiceProvider
     {
         $this->app->bind('streaming-oauth.spotify', SpotifyOAuthGateway::class);
         $this->app->bind('streaming-oauth.youtube', YouTubeOAuthGateway::class);
+        $this->app->bind(
+            DisableDependentStreamingSynchronizations::class,
+            NoopDisableDependentStreamingSynchronizations::class,
+        );
         $this->app->bind(WithStreamingAccessContract::class, WithStreamingAccess::class);
     }
 

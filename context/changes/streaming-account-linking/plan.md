@@ -813,11 +813,11 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [x] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów
-- [x] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą
-- [x] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu
-- [x] 2.4 Regresja Google login i probe F-01 przechodzi
-- [x] 2.5 Formatowanie i frontend przechodzą
+- [x] 2.1 Gatewaye przechodzą macierz exchange, refresh, identity, revoke i błędów — f61d3dc
+- [x] 2.2 State, wybrana tożsamość, konflikty i callbacki przechodzą — f61d3dc
+- [x] 2.3 Testy dowodzą braku access tokenu w storage i szyfrowania refresh tokenu — f61d3dc
+- [x] 2.4 Regresja Google login i probe F-01 przechodzi — f61d3dc
+- [x] 2.5 Formatowanie i frontend przechodzą — f61d3dc
 
 #### Manual
 
@@ -828,11 +828,11 @@ elementem rollbacku S-04.
 
 #### Automated
 
-- [ ] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą
-- [ ] 3.2 Granice auth, verified i cross-user przechodzą
-- [ ] 3.3 Pełna macierz streaming accounts przechodzi
-- [ ] 3.4 Widoki kompilują się
-- [ ] 3.5 Formatowanie przechodzi
+- [x] 3.1 Zarządzanie i wszystkie wyniki unlink przechodzą
+- [x] 3.2 Granice auth, verified i cross-user przechodzą
+- [x] 3.3 Pełna macierz streaming accounts przechodzi
+- [x] 3.4 Widoki kompilują się
+- [x] 3.5 Formatowanie przechodzi
 
 #### Manual
 
