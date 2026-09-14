@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\PlaylistSync;
 
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Actions\PlaylistSync\DispatchPlaylistSynchronization;
+use App\Actions\PlaylistSync\FingerprintSourcePlaylist;
 use App\Enums\PlaylistSyncStatus;
 use App\Enums\PlaylistSyncTrigger;
+use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\YouTubeWriteAdmission\Actions\ReserveYouTubeWrite;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
@@ -61,10 +64,16 @@ class PlaylistSynchronizationPostgresTest extends TestCase
         $playlist = Playlist::factory()->for($user)->create([
             'streaming_account_id' => $account->id,
         ]);
-        PlaylistItem::factory()->for($playlist)->create();
+        $item = PlaylistItem::factory()->for($playlist)->create();
+        $playlist->load('items');
         $sync = PlaylistSynchronization::factory()->for($playlist)->create([
             'streaming_account_id' => $account->id,
             'status' => PlaylistSyncStatus::Enabled,
+            'baseline_bank_fingerprint' => (new FingerprintPlaylistContent)->handle($playlist),
+            'baseline_source_fingerprint' => (new FingerprintSourcePlaylist)->handle(
+                new SourcePlaylistSnapshot([$item->catalog_id]),
+            ),
+            'baseline_provider_revision' => 'postgres-baseline-revision',
         ]);
         $barrier = sys_get_temp_dir().'/music-map-sync-dispatch-'.Str::uuid();
         File::ensureDirectoryExists($barrier, 0700);
@@ -87,7 +96,7 @@ class PlaylistSynchronizationPostgresTest extends TestCase
                         }
                         $run = app(DispatchPlaylistSynchronization::class)->handle(
                             (int) $sync->getKey(),
-                            PlaylistSyncTrigger::Scheduled,
+                            PlaylistSyncTrigger::Automatic,
                         );
                         file_put_contents("{$barrier}/result-{$index}", $run === null ? 'existing' : 'created');
                         exit(0);
