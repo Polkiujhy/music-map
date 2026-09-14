@@ -110,7 +110,7 @@
                                 <div class="mt-3 flex flex-col gap-3 sm:flex-row">
                                     @foreach (['keep' => 'Zachowaj w banku', 'remove' => 'Usuń z banku przy potwierdzeniu'] as $value => $text)
                                         <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-ash-grey-700 p-4 focus-within:ring-2 focus-within:ring-ash-grey-300">
-                                            <input type="radio" name="decisions[{{ $item->id }}]" value="{{ $value }}" wire:click="choose({{ $item->id }}, '{{ $value }}')" @checked(($decisions[$item->id] ?? null) === $value) class="mt-1 size-4 border-ash-grey-700 bg-[#171717] text-ash-grey-400 accent-ash-grey-400 focus:ring-ash-grey-400">
+                                            <input type="radio" name="decisions[{{ $item->id }}]" value="{{ $value }}" wire:model="decisions.{{ $item->id }}" wire:change="choose({{ $item->id }}, '{{ $value }}')" class="mt-1 size-4 border-ash-grey-700 bg-[#171717] text-ash-grey-400 accent-ash-grey-400 focus:ring-ash-grey-400">
                                             <span class="text-sm">{{ $text }}</span>
                                         </label>
                                     @endforeach
