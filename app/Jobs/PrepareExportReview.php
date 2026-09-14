@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
 use App\Integrations\ExportMatching\Data\MatchResult;
@@ -48,7 +48,7 @@ final class PrepareExportReview implements ShouldQueue
         SpotifyCatalogSearch $spotify,
         YouTubeCatalogSearch $youtube,
         YouTubeSearchBudget $budget,
-        FingerprintPlaylist $fingerprint,
+        FingerprintPlaylistContent $fingerprint,
     ): void {
         $review = ExportReview::query()->with(['items', 'playlist.items', 'user'])->find($this->exportReviewId);
 

@@ -3,7 +3,7 @@
 namespace Tests\Feature\ExportMatchReview;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportDestinationType;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewStatus;
@@ -89,7 +89,7 @@ class ExportReviewRaceTest extends TestCase
             app(SpotifyCatalogSearch::class),
             app(YouTubeCatalogSearch::class),
             app(YouTubeSearchBudget::class),
-            app(FingerprintPlaylist::class),
+            app(FingerprintPlaylistContent::class),
         );
 
         $this->assertSame(ExportReviewStatus::Confirmed, $review->fresh()->status);
@@ -137,7 +137,7 @@ class ExportReviewRaceTest extends TestCase
             'target_account_id' => $account?->provider_account_id ?? 'managed-spotify',
             'target_market' => 'GB',
             'status' => ExportReviewStatus::Ready,
-            'source_fingerprint' => app(FingerprintPlaylist::class)->handle($playlist),
+            'source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($playlist),
         ]);
         ExportReviewItem::factory()->for($review)->create([
             'position' => 0,

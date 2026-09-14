@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\ExportMatchReview;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
@@ -121,7 +121,7 @@ class ExportReviewDecisionConcurrencyTest extends TestCase
         $review = ExportReview::factory()->for($playlist->user)->for($playlist)->create([
             'status' => ExportReviewStatus::Ready,
             'target_account_id' => 'managed-spotify',
-            'source_fingerprint' => app(FingerprintPlaylist::class)->handle($playlist),
+            'source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($playlist),
         ]);
         ExportReviewItem::factory()->for($review)->create([
             'position' => 0,

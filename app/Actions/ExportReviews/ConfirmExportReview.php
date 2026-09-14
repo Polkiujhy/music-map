@@ -2,6 +2,7 @@
 
 namespace App\Actions\ExportReviews;
 
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
@@ -15,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 final readonly class ConfirmExportReview
 {
     public function __construct(
-        private FingerprintPlaylist $fingerprint,
+        private FingerprintPlaylistContent $fingerprint,
         private ResolveExportDestination $destinations,
     ) {}
 

@@ -2,6 +2,8 @@
 
 ## Integrate the canonical S-03 playlist fingerprint
 
+- **Status**: Completed while rebasing S-05 onto the merged S-03 baseline.
+
 - **Source contract**: `/srv/music-map/app/Actions/Playlists/FingerprintPlaylistContent.php` (`playlist-content:v1`).
 - **When**: While integrating or rebasing S-05 with `bank-playlist-editing`.
 - **Action**: Replace `app/Actions/ExportReviews/FingerprintPlaylist.php` with the shared `App\Actions\Playlists\FingerprintPlaylistContent` dependency in start, job, confirmation, and tests.

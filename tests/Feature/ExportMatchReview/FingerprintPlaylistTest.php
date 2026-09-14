@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\ExportMatchReview;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,13 +18,13 @@ class FingerprintPlaylistTest extends TestCase
         $second = $this->playlist([['position' => 0], ['position' => 1]]);
         $second->update(['provider_revision' => 'different-revision']);
 
-        $action = new FingerprintPlaylist;
+        $action = new FingerprintPlaylistContent;
         $this->assertSame($action->handle($first), $action->handle($second));
     }
 
     public function test_fingerprint_changes_for_order_duplicate_removal_or_export_data(): void
     {
-        $action = new FingerprintPlaylist;
+        $action = new FingerprintPlaylistContent;
         $base = $this->playlist([['position' => 0, 'catalog_id' => 'a'], ['position' => 1, 'catalog_id' => 'b']]);
         $fingerprint = $action->handle($base);
 

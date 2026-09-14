@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\ExportMatchReview;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportDestinationType;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
@@ -203,7 +203,7 @@ class ExportReviewRouteTest extends TestCase
 
         return ExportReview::factory()->for($playlist->user)->for($playlist)->create([
             'status' => $status,
-            'source_fingerprint' => app(FingerprintPlaylist::class)->handle($playlist->load('items')),
+            'source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($playlist->load('items')),
             'target_account_id' => 'managed-spotify',
         ]);
     }

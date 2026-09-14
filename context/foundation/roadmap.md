@@ -217,10 +217,10 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
 | F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Zakończono i zarchiwizowano. |
 | S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | no | Zakończono i zarchiwizowano. |
-| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Implementacja zakończona po integracji z S-04; zmiana oczekuje na archiwizację. |
+| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Zakończono i zarchiwizowano. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
-| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Czeka na S-02. |
+| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Implementacja w toku po integracji S-02 i S-03. |
 | S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Czeka na S-05. |
 | S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 zakończone; czeka na S-05. |
 | S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | S-03 i S-04 zakończone; gotowe do `/10x-plan`. |

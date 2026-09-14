@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\ExportMatchReview;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
@@ -132,7 +132,7 @@ class ExportReviewPanelTest extends TestCase
             'status' => $status,
             'target_account_id' => 'managed-spotify',
             'started_at' => $startedAt ?? now(),
-            'source_fingerprint' => app(FingerprintPlaylist::class)->handle($playlist),
+            'source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($playlist),
         ]);
     }
 

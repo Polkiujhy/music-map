@@ -183,7 +183,7 @@ cel linked przy ponownej walidacji.
 **Pliki**: `app/Enums/ExportReviewStatus.php`,
 `app/Enums/ExportDestinationType.php`, `app/Enums/ExportMatchStatus.php`,
 `app/Enums/ExportReviewDecision.php`,
-`app/Actions/ExportReviews/FingerprintPlaylist.php`
+`app/Actions/Playlists/FingerprintPlaylistContent.php`
 
 **Cel**: Zamknąć język stanów i zapewnić porównywalny snapshot mimo reimportu,
 duplikatów i zmian kluczy głównych.

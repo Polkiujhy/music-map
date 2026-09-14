@@ -36,7 +36,6 @@ app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
 app/Actions/ExportReviews/ConfirmExportReview.php
-app/Actions/ExportReviews/FingerprintPlaylist.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
 app/Actions/ExportReviews/StartExportReview.php

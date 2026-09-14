@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\ExportMatchReview;
 
-use App\Actions\ExportReviews\FingerprintPlaylist;
 use App\Actions\ExportReviews\ResolvedExportDestination;
 use App\Actions\ExportReviews\StartExportReview;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportDestinationType;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewStatus;
@@ -344,7 +344,7 @@ class PrepareExportReviewTest extends TestCase
             app(SpotifyCatalogSearch::class),
             app(YouTubeCatalogSearch::class),
             app(YouTubeSearchBudget::class),
-            app(FingerprintPlaylist::class),
+            app(FingerprintPlaylistContent::class),
         );
     }
 

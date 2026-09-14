@@ -3,7 +3,7 @@
 namespace Tests\Feature\ExportMatchReview;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
-use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewStatus;
 use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
@@ -124,7 +124,7 @@ class ConfirmExportReviewTest extends TestCase
         $review = ExportReview::factory()->for($playlist->user)->for($playlist)->create([
             'status' => ExportReviewStatus::Ready,
             'target_account_id' => 'managed-spotify',
-            'source_fingerprint' => app(FingerprintPlaylist::class)->handle($playlist),
+            'source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($playlist),
         ]);
 
         foreach ($statuses as $position => $status) {
