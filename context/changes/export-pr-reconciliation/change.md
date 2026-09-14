@@ -36,3 +36,15 @@ publikacji, zdalnego merge, deploy ani live writes.
 2026-09-14: użytkownik następnie autoryzował commit dokumentacji, push gałęzi
 integracyjnej, otwarcie nowego PR-a i zamknięcie #59/#61/#62 jako zastąpionych
 z odnośnikiem do następcy. Nie autoryzował merge, deploy ani live smoke.
+
+2026-09-14: na polecenie samodzielnej weryfikacji wykonano lokalny przegląd
+i testy kandydata `13e8809`. Odhaczono 5.1; częściowe dowody i braki pozostałych
+bramek zapisano w [raporcie weryfikacji](reviews/manual-verification.md).
+Nie zaliczono live smoke ani pełnego odbioru. Na najnowsze polecenie użytkownika
+zmiany dokumentacji pozostają lokalnie, bez push i bez nowej prośby o review.
+
+Następnie użytkownik autoryzował publikację nowego PR-a z poprawką chwilowego
+braku świeżego celu YouTube oraz zebranymi dowodami. Zgoda nie obejmuje merge,
+włączenia timera, wdrożenia ani zmiany nieudanej operacji live. Bez nowej
+prośby o review. Regresja lokalna: 757 passed, 21 PostgreSQL-only skipped;
+Pint i source contract PASS.
