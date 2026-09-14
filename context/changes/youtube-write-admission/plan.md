@@ -563,10 +563,10 @@ zmiany i nowej decyzji produktowej.
 
 #### Automated
 
-- [x] 3.1 Wyścigi na PostgreSQL przechodzą
-- [x] 3.2 Pełny zestaw aplikacji przechodzi
-- [x] 3.3 Formatowanie i produkcyjny frontend przechodzą
-- [x] 3.4 Kontrakt źródła jest kompletny
+- [x] 3.1 Wyścigi na PostgreSQL przechodzą — 197e83f
+- [x] 3.2 Pełny zestaw aplikacji przechodzi — 197e83f
+- [x] 3.3 Formatowanie i produkcyjny frontend przechodzą — 197e83f
+- [x] 3.4 Kontrakt źródła jest kompletny — 197e83f
 
 #### Manual
 
