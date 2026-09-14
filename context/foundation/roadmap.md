@@ -39,10 +39,18 @@ milestone_status: open
 
 ## W skrócie
 
-Integracja lokalna S-06/S-07/S-08: `context/changes/export-pr-reconciliation/`.
-PR #59/#61/#62 współdzielą jeden lifecycle eksportu i admission; synchronizacja
-źródła pozostaje osobnym procesem. Statusy dostarczenia poniżej nie oznaczają
-wdrożenia tej integracji — live smoke oraz publikacja pozostają osobną bramką.
+**S-11 / `export-pr-reconciliation` zastępuje, scala i prowadzi do wspólnego
+domknięcia S-06, S-07 i S-08.** Ich wyniki oraz stabilne Change ID pozostają
+historycznym podziałem zakresu, nie trzema niezależnymi zadaniami do wykonania.
+Jedynym bieżącym planem wykonania i akceptacji jest plan S-11; przejmuje także
+wszystkie niewykonane kontrole ręczne z trzech wcześniejszych planów.
+To konsolidacja istniejącego zakresu, nie nowa funkcja ani rozszerzenie MVP.
+
+Implementacja PR #59/#61/#62 jest scalona i sprawdzona automatycznie lokalnie.
+`in-progress` nie oznacza wdrożenia ani wykonania testów na rzeczywistych kontach.
+S-06/S-07/S-08 domyka wspólna akceptacja S-11 i późniejsza archiwizacja z zachowaniem
+powiązań historycznych; nie otrzymują teraz statusu `done`. Publikacja, operacje
+na rzeczywistych kontach i ich sprzątanie wymagają odrębnej, odpowiedniej zgody.
 
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
@@ -53,10 +61,11 @@ wdrożenia tej integracji — live smoke oraz publikacja pozostają osobną bram
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | done |
-| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | planning |
-| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | F-02, S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
-| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | F-02, S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
-| S-10 | `safe-account-deletion` | usunąć konto po poznaniu skutków, zachowując playlisty należące do niego na platformach | S-04, S-06, S-07 | FR-015, NFR-003 | proposed |
+| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport; domknięcie przejęte przez S-11 | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | in-progress |
+| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik; domknięcie przejęte przez S-11 | F-02, S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | in-progress |
+| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu; domknięcie przejęte przez S-11 | F-02, S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | in-progress |
+| S-11 | `export-pr-reconciliation` | bezpiecznie przenosić playlistę na wybrane konto przy aktywnej synchronizacji źródła, zachowując właściciela, właściwy cel i jednoznaczny wynik | F-02, S-03, S-04, S-05 | US-01, US-02, FR-005, FR-009, FR-010, FR-011, NFR-001, NFR-002, NFR-003, NFR-004, NFR-006 | in-progress |
+| S-10 | `safe-account-deletion` | usunąć konto po poznaniu skutków, zachowując playlisty należące do niego na platformach | S-04, S-11 | FR-015, NFR-003 | proposed |
 
 ## Strumienie
 
@@ -65,9 +74,9 @@ Pomoc nawigacyjna — grupuje elementy, które współdzielą łańcuch wymagań
 | Strumień | Temat | Łańcuch | Uwaga |
 | ------ | ------------------ | ------------------------------ | --------------------------------------------------------- |
 | A | Prywatny bank | `S-01` → `S-02` → `S-03` | S-02 jest zaimplementowane; dalsza synchronizacja dołącza do Strumienia D po wspólnym dopuszczeniu zapisu. |
-| B | Dostęp do platform i własność eksportu | `F-01` → `S-04` → `S-07` → `S-10` | F-01 i S-04 usunęły główne ryzyko dostępu; w S-10 strumień łączy się ze Strumieniem C. |
-| C | Kontrola i eksport zarządzany | `S-05` → `S-06` | W S-05 łączy bank ze Strumienia A z dostępem ze Strumienia B i prowadzi do wybranego eksportu na konto techniczne. |
-| D | Dopuszczenie zapisu i synchronizacja | `F-02` → `S-08` | F-02 odblokowuje zapisy w Strumieniach B i C, a tutaj prowadzi do synchronizacji playlisty źródłowej z bankiem. |
+| B | Dostęp do platform i eksport na własne konto | `F-01` → `S-04` → `S-07` | Historyczny wynik S-07 jest objęty wspólną akceptacją S-11 w Strumieniu D; nie ma odrębnej ścieżki wykonania. |
+| C | Kontrola i eksport zarządzany | `S-05` → `S-06` | Historyczny wynik S-06 jest objęty wspólną akceptacją S-11 w Strumieniu D; nie ma odrębnej ścieżki wykonania. |
+| D | Spójne przenoszenie przy synchronizacji źródła | `F-02` → (`S-08` albo `S-11` → `S-10`) | Nawias rozdziela historyczną gałąź S-08 i bieżącą S-11, nie dwa plany wykonania; S-11 łączy Strumienie A–C oraz przejmuje akceptację S-06/S-07/S-08 bez zależności od ich osobnego zamknięcia. |
 
 ## Baza
 
@@ -79,6 +88,14 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Autoryzacja:** częściowy — istnieją sesyjny mechanizm autoryzacji, model użytkownika i tabele sesji/resetów (`config/auth.php`, migracja użytkowników), ale nie ma przepływów logowania, Google OAuth ani ochrony tras.
 - **Wdrożenie / infrastruktura:** częściowy — są obrazy produkcyjne, kontrole zdrowia i proces budowania obrazów (`Dockerfile`, `.github/workflows/ci.yml`), ale repozytorium nie zawiera konfiguracji docelowego wdrożenia ani infrastruktury jako kodu.
 - **Obserwowalność:** częściowy — logowanie do `stderr` i kontrole zdrowia istnieją (`config/logging.php`, `docker/nginx/default.conf`), ale brakuje śledzenia błędów, metryk i pulpitów.
+
+**Aktualizacja dla konsolidacji S-11:** późniejsza implementacja eksportu na oba
+typy kont oraz synchronizacji źródła jest scalona lokalnie. Automatyczna
+weryfikacja integracji potwierdza 764/764 testy PostgreSQL oraz 743 testy SQLite
+przy 21 pominięciach wymagających PostgreSQL. Historyczna baza powyżej opisuje
+punkt startowy kamienia milowego, nie aktualny brak tych funkcji. Dowody lokalne
+nie potwierdzają publikacji ani działania na rzeczywistych kontach; wspólna
+akceptacja ręczna i bezpieczne usunięcie danych testowych pozostają otwarte w S-11.
 
 ## Fundamenty
 
@@ -100,7 +117,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.
 - **Change ID:** `youtube-write-admission`
 - **Odniesienia do PRD:** NFR-006.
-- **Odblokowuje:** S-06, S-07 i S-08 oraz wspólną weryfikację globalnego limitu, braku częściowego zapisu i idempotentnego ponowienia operacji.
+- **Odblokowuje:** S-11 konsolidujące S-06, S-07 i S-08 oraz wspólną weryfikację globalnego limitu, braku częściowego zapisu i idempotentnego ponowienia operacji.
 - **Wymagania wstępne:** F-01.
 - **Równolegle z:** —
 - **Blokery:** —
@@ -174,44 +191,61 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 - **Wynik:** użytkownik bez powiązanego konta może utworzyć lub zaktualizować playlistę na koncie technicznym `music-map`, otrzymać stały link i informację o właścicielu oraz bezpiecznie ponowić przerwaną operację.
 - **Change ID:** `managed-account-export`
+- **Zastąpione przez:** S-11 / `export-pr-reconciliation` — przejmuje wykonanie i wszystkie niewykonane kontrole ręczne; historyczny wynik S-06 zostanie domknięty przy wspólnej akceptacji i archiwizacji, nie osobnym planem.
 - **Odniesienia do PRD:** US-01, FR-010, FR-011, NFR-006.
 - **Wymagania wstępne:** F-02, S-05.
-- **Równolegle z:** S-07.
+- **Równolegle z:** —
 - **Blokery:** prawo kont technicznych do tworzenia i aktualizowania playlist oraz ograniczenia widoczności narzucone przez platformy.
 - **Niewiadome:** —
 - **Ryzyko:** operacja musi uzyskać wspólne dopuszczenie przed pierwszym zapisem, a ponowienie po częściowym sukcesie użyć tej samej rezerwacji i zapisanego ID, inaczej zużyje limit ponownie lub utworzy duplikat.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-07: Eksport na powiązane konto użytkownika
 
 - **Wynik:** użytkownik może utworzyć lub zaktualizować playlistę na własnym powiązanym koncie, z właściwą widocznością oraz jednoznacznym statusem i linkiem.
 - **Change ID:** `linked-account-export`
+- **Zastąpione przez:** S-11 / `export-pr-reconciliation` — przejmuje wykonanie i wszystkie niewykonane kontrole ręczne; historyczny wynik S-07 zostanie domknięty przy wspólnej akceptacji i archiwizacji, nie osobnym planem.
 - **Odniesienia do PRD:** US-01, FR-009, FR-011, NFR-006.
 - **Wymagania wstępne:** F-02, S-04, S-05.
-- **Równolegle z:** S-06.
+- **Równolegle z:** —
 - **Blokery:** zakresy zapisu przyznane aplikacji przez użytkownika i ograniczenia widoczności playlist w API platform.
 - **Niewiadome:** —
 - **Ryzyko:** pominięcie wspólnego dopuszczenia albo rozpoznawanie celu inaczej niż po zapisanym ID grozi przekroczeniem globalnego limitu, utworzeniem kolejnych kopii lub zmianą niewłaściwej playlisty.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-08: Synchronizacja playlisty źródłowej
 
 - **Wynik:** użytkownik może ręcznie albo automatycznie synchronizować playlistę należącą do jego powiązanego konta, a w konflikcie bank przyjmuje wersję platformy źródłowej.
 - **Change ID:** `source-playlist-sync`
+- **Zastąpione przez:** S-11 / `export-pr-reconciliation` — przejmuje wykonanie i wszystkie niewykonane kontrole ręczne; historyczny wynik S-08 zostanie domknięty przy wspólnej akceptacji i archiwizacji, nie osobnym planem.
 - **Odniesienia do PRD:** US-02, FR-005, NFR-004, NFR-006.
 - **Wymagania wstępne:** F-02, S-03, S-04.
-- **Równolegle z:** S-05.
+- **Równolegle z:** —
 - **Blokery:** limity i dostępność cyklicznych odczytów oraz zapisów w API Spotify i YouTube.
 - **Niewiadome:** —
 - **Ryzyko:** tylko synchronizacja faktycznie zapisująca dane w YouTube może zużyć wspólne dopuszczenie; błędne wykrycie kierunku lub zmian mogłoby nadpisać edycję użytkownika i niepotrzebnie wykorzystać limit.
-- **Status:** proposed
+- **Status:** in-progress
+
+### S-11: Spójne przenoszenie playlist przy synchronizacji źródła
+
+- **Wynik:** użytkownik może bezpiecznie przenosić playlistę na wybrane konto przy aktywnej synchronizacji źródła, zachowując właściciela, właściwy cel i jednoznaczny wynik.
+- **Change ID:** `export-pr-reconciliation`
+- **Odniesienia do PRD:** US-01, US-02, FR-005, FR-009, FR-010, FR-011, NFR-001, NFR-002, NFR-003, NFR-004, NFR-006.
+- **Wymagania wstępne:** F-02, S-03, S-04, S-05.
+- **Równolegle z:** —
+- **Blokery:** zgoda na publikację i testy na wskazanych rzeczywistych kontach Spotify/YouTube, dostęp z prawem do wymaganych zapisów oraz potwierdzony publiczny kontrakt PaaS dla zapisu managed i rotacji poświadczeń.
+- **Niewiadome:** czy wspólna akceptacja potwierdzi zachowanie platform i odtwarzanie przerwanych operacji w opublikowanym środowisku? — Właściciel: zespół i właściciel kont testowych. Blokuje: nie (lokalna implementacja i plan są dostępne; wynik jest bramką domknięcia).
+- **Ryzyko:** oddzielna akceptacja eksportu i synchronizacji mogłaby przeoczyć zmianę niewłaściwej playlisty lub powielenie częściowo wykonanej operacji, dlatego istniejące wyniki wymagają jednej akceptacji łącznej.
+- **Status:** in-progress
+- **Zastępuje i scala:** S-06 / `managed-account-export`, S-07 / `linked-account-export`, S-08 / `source-playlist-sync`; to konsolidacja już zaimplementowanych pionowych przepływów i ich wspólnego odbioru, nie ponowna implementacja trzech funkcji ani nowy zakres MVP.
+- **Domyka, gdy:** wspólna lista kontroli ręcznych potwierdza oba typy kont na obu platformach, współdziałanie z synchronizacją, bezpieczne ponowienia, własność, poufność, komunikaty i dostępność interfejsu; publikacja oraz sprzątanie danych testowych mają bezpieczne dowody. Dopiero po tej akceptacji można archiwizować S-11 i powiązane historyczne wyniki S-06/S-07/S-08. S-09 pozostaje zaparkowane, a usunięcie konta należy do S-10.
 
 ### S-10: Bezpieczne usunięcie konta
 
 - **Wynik:** użytkownik może zobaczyć skutki, potwierdzić usunięcie konta i usunąć dane aplikacji oraz zarządzane kopie bez kasowania playlist należących do niego na Spotify lub YouTube.
 - **Change ID:** `safe-account-deletion`
 - **Odniesienia do PRD:** FR-015, NFR-003.
-- **Wymagania wstępne:** S-04, S-06, S-07.
+- **Wymagania wstępne:** S-04, S-11.
 - **Równolegle z:** —
 - **Blokery:** możliwość usuwania playlist z kont technicznych w granicach API platform.
 - **Niewiadome:** —
@@ -229,10 +263,11 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
 | S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Zakończono i zarchiwizowano. |
-| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | F-02 i S-05 zakończone; gotowe do `/10x-plan`. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | F-02, S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
-| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | F-02, S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
-| S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
+| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Historyczny zakres; wykonanie i domknięcie przejęte przez S-11. Nie uruchamiać osobnego planu. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | Historyczny zakres; wykonanie i domknięcie przejęte przez S-11. Nie uruchamiać osobnego planu. |
+| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | Historyczny zakres; wykonanie i domknięcie przejęte przez S-11. Nie uruchamiać osobnego planu. |
+| S-11 | `export-pr-reconciliation` | Potwierdź spójne przenoszenie playlist przy synchronizacji źródła | no | Plan istnieje; kontynuować wspólną akceptację i kontrole ręczne S-06/S-07/S-08, bez tworzenia czwartego niezależnego zakresu. |
+| S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na wspólną akceptację S-11 zastępującą oddzielne domknięcie S-06/S-07. |
 
 ## Otwarte pytania dotyczące mapy drogowej
 
@@ -240,7 +275,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zaparkowane
 
-- **Wykrywanie i naprawa rozbieżności (S-09 / `playlist-drift-recovery`)** — Dlaczego zaparkowane: decyzją właściciela FR-014 przeniesiono poza bieżący zakres MVP; wycinek może wrócić w przyszłym kamieniu milowym po S-07 i S-08.
+- **Wykrywanie i naprawa rozbieżności (S-09 / `playlist-drift-recovery`)** — Dlaczego zaparkowane: decyzją właściciela FR-014 przeniesiono poza bieżący zakres MVP; wycinek może wrócić w przyszłym kamieniu milowym po S-11, które przejmuje domknięcie S-07 i S-08.
 - **Ręczne tworzenie playlist od zera** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-003 oznaczone jako funkcja dodatkowa.
 - **Wizualna mapa autorów i utworów** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-012 poza zakresem MVP.
 - **Ręczny wybór zamienników z zewnętrznego katalogu** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-013 poza zakresem MVP.

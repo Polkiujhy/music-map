@@ -8,6 +8,13 @@ updated: 2026-09-14
 
 ## Notes
 
+2026-09-14: zastąpione wykonawczo przez S-11
+[`export-pr-reconciliation`](../export-pr-reconciliation/plan.md).
+Wspólna zmiana scala i prowadzi do domknięcia S-06/S-07/S-08; przejmuje manual
+checks z zachowaniem mapowania starych numerów. Status tego artefaktu opisuje
+historyczny PR, nie gotowość scalonego wydania. Nie uruchamiać osobnego planu
+ani odbioru; domknięcie nastąpi po akceptacji S-11 i późniejszej archiwizacji.
+
 Plan obejmuje wspólny silnik wykonawczy dla wycinków roadmapy S-07
 `linked-account-export` oraz S-06 `managed-account-export`, zgodnie z decyzją
 podjętą podczas planowania.

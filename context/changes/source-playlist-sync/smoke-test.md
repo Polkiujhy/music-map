@@ -1,5 +1,10 @@
 # Source playlist synchronization smoke test
 
+> Historical PR evidence/procedure. Current execution and acceptance belong to
+> [S-11 export-pr-reconciliation](../export-pr-reconciliation/plan.md), which supersedes
+> S-06/S-07/S-08. Preserve this record; do not maintain a second live checklist.
+> Its old results or optional scenarios do not satisfy the consolidated candidate gates.
+
 Run this checklist only against dedicated non-production provider accounts and
 playlists. Use unique names such as `music-map-sync-smoke-YYYYMMDD-HHMMSS` and
 keep every playlist at 20 positions or fewer. Never paste client secrets,

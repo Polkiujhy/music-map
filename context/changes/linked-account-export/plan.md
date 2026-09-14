@@ -1,5 +1,12 @@
 # Eksport na powiązane i zarządzane konto — plan implementacji
 
+> Plan historyczny PR: wykonanie i wspólną akceptację przejął S-11
+> [export-pr-reconciliation](../export-pr-reconciliation/plan.md), który zastępuje,
+> scala i domyka S-06/S-07/S-08 po zaliczeniu wspólnych bramek. Ten plan zachowuje
+> historyczne numery i wyniki, ale nie jest niezależną instrukcją wykonania.
+> Bieżące manual checks i mapowanie ich dawnych numerów są wyłącznie w planie S-11;
+> rozstrzygnięcia integracji zastępują kolidujące instrukcje poniżej.
+
 ## Przegląd
 
 Implementujemy jeden silnik eksportu dla wycinków S-07 i S-06. Po świadomym

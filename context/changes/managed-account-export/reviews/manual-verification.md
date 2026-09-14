@@ -1,5 +1,10 @@
 # Managed account export — manual release verification
 
+> Historical PR evidence/procedure. Current execution and acceptance belong to
+> [S-11 export-pr-reconciliation](../../export-pr-reconciliation/plan.md), which supersedes
+> S-06/S-07/S-08. Preserve this record; do not maintain a second live checklist.
+> Its old results or optional scenarios do not satisfy the consolidated candidate gates.
+
 Status: PENDING — controlled live smoke has not been run.
 
 This record is intentionally secret-free. Do not add account IDs, playlist IDs,
