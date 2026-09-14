@@ -4,7 +4,7 @@ version: 1
 status: draft
 created: 2026-09-11
 updated: 2026-09-14
-prd_version: 1
+prd_version: 2
 main_goal: speed
 top_blocker: external
 milestone_id: independent-playlist-bank
@@ -14,7 +14,7 @@ milestone_status: open
 
 # Mapa drogowa: music-map
 
-> Pochodzi z `context/foundation/prd.md` (v1) oraz automatycznie zbadanej bazy kodu.
+> Pochodzi z `context/foundation/prd.md` (v2) oraz automatycznie zbadanej bazy kodu.
 > Edytuj na miejscu; archiwizuj, gdy zostanie zastąpiona.
 > Wycinki poniżej są wymienione w kolejności zależności. Tabela „W skrócie” to indeks.
 
@@ -22,10 +22,10 @@ milestone_status: open
 
 **M-1: Niezależny bank i bezpieczne przenoszenie playlist** — Status: open
 
-- **Cel:** użytkownik zachowuje playlistę w prywatnym banku niezależnym od platformy, a następnie może bezpiecznie przenieść ją między Spotify i YouTube oraz utrzymywać powiązane kopie w zgodności.
-- **Materiały źródłowe:** `context/foundation/prd.md` (v1).
+- **Cel:** użytkownik zachowuje playlistę w prywatnym banku niezależnym od platformy, a następnie może bezpiecznie przenieść ją między Spotify i YouTube oraz synchronizować playlistę źródłową z bankiem.
+- **Materiały źródłowe:** `context/foundation/prd.md` (v2).
 - **Gotowe, gdy:** każdy F-NN i S-NN poniżej jest `done`, a przepływ dla playlisty do 20 utworów zachowuje świadome potwierdzenie, informację o właścicielu wyniku i możliwość bezpiecznego ponowienia operacji; aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.
-- **Kotwice zakresu:** FR-001–FR-002, FR-004–FR-011, FR-014–FR-015, US-01–US-02, NFR-001–NFR-006.
+- **Kotwice zakresu:** FR-001–FR-002, FR-004–FR-011, FR-015, US-01–US-02, NFR-001–NFR-006.
 
 ## Podsumowanie wizji
 
@@ -51,7 +51,6 @@ milestone_status: open
 | S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
 | S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | F-02, S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
 | S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | F-02, S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
-| S-09 | `playlist-drift-recovery` | zobaczyć rozbieżność powiązanych playlist i przywrócić zgodność bez tworzenia duplikatu | F-02, S-07, S-08 | US-02, FR-002, FR-014, NFR-006 | proposed |
 | S-10 | `safe-account-deletion` | usunąć konto po poznaniu skutków, zachowując playlisty należące do niego na platformach | S-04, S-06, S-07 | FR-015, NFR-003 | proposed |
 
 ## Strumienie
@@ -63,7 +62,7 @@ Pomoc nawigacyjna — grupuje elementy, które współdzielą łańcuch wymagań
 | A | Prywatny bank | `S-01` → `S-02` → `S-03` | S-02 jest zaimplementowane; dalsza synchronizacja dołącza do Strumienia D po wspólnym dopuszczeniu zapisu. |
 | B | Dostęp do platform i własność eksportu | `F-01` → `S-04` → `S-07` → `S-10` | F-01 i S-04 usunęły główne ryzyko dostępu; w S-10 strumień łączy się ze Strumieniem C. |
 | C | Kontrola i eksport zarządzany | `S-05` → `S-06` | W S-05 łączy bank ze Strumienia A z dostępem ze Strumienia B i prowadzi do wybranego eksportu na konto techniczne. |
-| D | Dopuszczenie zapisu i zgodność | `F-02` → `S-08` → `S-09` | F-02 odblokowuje zapisy w Strumieniach B i C, a tutaj prowadzi przez synchronizację do naprawy rozbieżności łączącej się ze Strumieniem B. |
+| D | Dopuszczenie zapisu i synchronizacja | `F-02` → `S-08` | F-02 odblokowuje zapisy w Strumieniach B i C, a tutaj prowadzi do synchronizacji playlisty źródłowej z bankiem. |
 
 ## Baza
 
@@ -96,7 +95,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.
 - **Change ID:** `youtube-write-admission`
 - **Odniesienia do PRD:** NFR-006.
-- **Odblokowuje:** S-06, S-07, S-08 i S-09 oraz wspólną weryfikację globalnego limitu, braku częściowego zapisu i idempotentnego ponowienia operacji.
+- **Odblokowuje:** S-06, S-07 i S-08 oraz wspólną weryfikację globalnego limitu, braku częściowego zapisu i idempotentnego ponowienia operacji.
 - **Wymagania wstępne:** F-01.
 - **Równolegle z:** —
 - **Blokery:** —
@@ -202,25 +201,13 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Ryzyko:** tylko synchronizacja faktycznie zapisująca dane w YouTube może zużyć wspólne dopuszczenie; błędne wykrycie kierunku lub zmian mogłoby nadpisać edycję użytkownika i niepotrzebnie wykorzystać limit.
 - **Status:** proposed
 
-### S-09: Wykrywanie i naprawa rozbieżności
-
-- **Wynik:** użytkownik może zobaczyć, która powiązana playlista jest nieaktualna, przejrzeć różnice i ponownie wyeksportować źródło do istniejącej playlisty bez tworzenia duplikatu.
-- **Change ID:** `playlist-drift-recovery`
-- **Odniesienia do PRD:** US-02, FR-002, FR-014, NFR-006.
-- **Wymagania wstępne:** F-02, S-07, S-08.
-- **Równolegle z:** S-10.
-- **Blokery:** —
-- **Niewiadome:** —
-- **Ryzyko:** status aktualności musi wynikać z właściwej relacji źródło–eksport, a ponowny eksport do YouTube przejść przez wspólne dopuszczenie, inaczej użytkownik naprawi niewłaściwą kopię albo operacja ominie globalny limit.
-- **Status:** proposed
-
 ### S-10: Bezpieczne usunięcie konta
 
 - **Wynik:** użytkownik może zobaczyć skutki, potwierdzić usunięcie konta i usunąć dane aplikacji oraz zarządzane kopie bez kasowania playlist należących do niego na Spotify lub YouTube.
 - **Change ID:** `safe-account-deletion`
 - **Odniesienia do PRD:** FR-015, NFR-003.
 - **Wymagania wstępne:** S-04, S-06, S-07.
-- **Równolegle z:** S-09.
+- **Równolegle z:** —
 - **Blokery:** możliwość usuwania playlist z kont technicznych w granicach API platform.
 - **Niewiadome:** —
 - **Ryzyko:** pomylenie własności playlisty może usunąć cudzy zasób albo pozostawić dane i aktywne poświadczenia po zamknięciu konta.
@@ -240,7 +227,6 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | F-02 i S-05 zakończone; gotowe do `/10x-plan`. |
 | S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | F-02, S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
 | S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | F-02, S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
-| S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | F-02 zakończone; czeka na S-07 i S-08. |
 | S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
 
 ## Otwarte pytania dotyczące mapy drogowej
@@ -249,6 +235,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zaparkowane
 
+- **Wykrywanie i naprawa rozbieżności (S-09 / `playlist-drift-recovery`)** — Dlaczego zaparkowane: decyzją właściciela FR-014 przeniesiono poza bieżący zakres MVP; wycinek może wrócić w przyszłym kamieniu milowym po S-07 i S-08.
 - **Ręczne tworzenie playlist od zera** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-003 oznaczone jako funkcja dodatkowa.
 - **Wizualna mapa autorów i utworów** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-012 poza zakresem MVP.
 - **Ręczny wybór zamienników z zewnętrznego katalogu** — Dlaczego zaparkowane: PRD §Non-Goals oraz FR-013 poza zakresem MVP.
