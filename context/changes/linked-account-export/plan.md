@@ -1058,10 +1058,10 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL
-- [x] 5.2 Pełny PHPUnit suite przechodzi
-- [x] 5.3 Pint i produkcyjny frontend build przechodzą
-- [x] 5.4 Source contract przechodzi dla worktree i tracked candidate
+- [x] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL — 716484b
+- [x] 5.2 Pełny PHPUnit suite przechodzi — 716484b
+- [x] 5.3 Pint i produkcyjny frontend build przechodzą — 716484b
+- [x] 5.4 Source contract przechodzi dla worktree i tracked candidate — 716484b
 
 #### Manual
 
