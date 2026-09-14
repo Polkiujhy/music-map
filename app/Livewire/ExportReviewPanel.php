@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
 use App\Enums\ExportMatchStatus;
+use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
+use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
 use App\Models\ExportReview;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,8 @@ final class ExportReviewPanel extends Component
 
     public string $status;
 
+    public ?string $operationStatus = null;
+
     public int $startedAt;
 
     public string $statusAnnouncement = '';
@@ -29,10 +33,14 @@ final class ExportReviewPanel extends Component
 
     public function mount(ExportReview $exportReview): void
     {
-        $review = $this->ownedReview((int) $exportReview->getKey())->load('items');
+        $review = $this->ownedReview((int) $exportReview->getKey())->load(['items', 'exportOperation']);
         $this->reviewId = (int) $review->getKey();
         $this->status = $review->status->value;
         $this->startedAt = ($review->started_at ?? $review->created_at)->getTimestamp();
+        $this->operationStatus = $review->exportOperation?->status->value;
+        if ($review->exportOperation !== null) {
+            $this->startedAt = ($review->exportOperation->started_at ?? $review->exportOperation->created_at)->getTimestamp();
+        }
 
         foreach ($review->items as $item) {
             if ($item->match_status === ExportMatchStatus::Matched) {
@@ -49,11 +57,14 @@ final class ExportReviewPanel extends Component
             return;
         }
 
-        $current = $this->ownedReview($this->reviewId)->status->value;
-        if ($current !== $this->status) {
+        $review = $this->ownedReview($this->reviewId)->load('exportOperation');
+        $current = $review->status->value;
+        $operation = $review->exportOperation?->status->value;
+        if ($current !== $this->status || $operation !== $this->operationStatus) {
             $this->status = $current;
-            $this->statusAnnouncement = $this->statusLabel;
+            $this->operationStatus = $operation;
             unset($this->isPolling);
+            $this->statusAnnouncement = $this->statusLabel;
         }
     }
 
@@ -130,6 +141,13 @@ final class ExportReviewPanel extends Component
 
     public function getIsPollingProperty(): bool
     {
+        if ($this->operationStatus !== null) {
+            return in_array($this->operationStatus, [
+                ExportOperationStatus::Queued->value,
+                ExportOperationStatus::Processing->value,
+            ], true);
+        }
+
         return in_array($this->status, [ExportReviewStatus::Queued->value, ExportReviewStatus::Processing->value], true);
     }
 
@@ -140,6 +158,18 @@ final class ExportReviewPanel extends Component
 
     public function getStatusLabelProperty(): string
     {
+        if ($this->operationStatus !== null) {
+            return match (ExportOperationStatus::from($this->operationStatus)) {
+                ExportOperationStatus::Queued,
+                ExportOperationStatus::Processing => 'W trakcie przenoszenia',
+                ExportOperationStatus::Succeeded => 'Przeniesiona — zarządzana przez music-map',
+                ExportOperationStatus::Failed => 'Nie przeniesiono',
+                ExportOperationStatus::PartialFailed,
+                ExportOperationStatus::ManualRecoveryRequired,
+                ExportOperationStatus::RecreateRequired => 'Nie udało się dokończyć przenoszenia',
+            };
+        }
+
         return match (ExportReviewStatus::from($this->status)) {
             ExportReviewStatus::Queued => 'Przegląd czeka na rozpoczęcie.',
             ExportReviewStatus::Processing => 'Trwa wyszukiwanie odpowiedników.',
@@ -150,9 +180,40 @@ final class ExportReviewPanel extends Component
         };
     }
 
+    public function getFailureMessageProperty(): ?string
+    {
+        $failure = $this->ownedReview($this->reviewId)->exportOperation?->failure_code;
+
+        return match ($failure) {
+            ManagedExportFailureCode::RateLimited => 'Platforma ograniczyła liczbę żądań.',
+            ManagedExportFailureCode::QuotaExceeded => 'Dzienny limit operacji YouTube został wykorzystany.',
+            ManagedExportFailureCode::AuthenticationRequired,
+            ManagedExportFailureCode::RequiredScopeMissing,
+            ManagedExportFailureCode::RefreshRotationRequired => 'Dostęp techniczny wymaga ponownej konfiguracji.',
+            ManagedExportFailureCode::TargetMissing => 'Nie znaleziono zapisanej playlisty docelowej.',
+            ManagedExportFailureCode::AmbiguousMutation => 'Platforma nie potwierdziła jednoznacznie wyniku zapisu.',
+            ManagedExportFailureCode::AccountMismatch,
+            ManagedExportFailureCode::TargetOwnerMismatch => 'Nie można potwierdzić właściciela playlisty docelowej.',
+            ManagedExportFailureCode::TargetMarkerMismatch,
+            ManagedExportFailureCode::TargetVisibilityMismatch => 'Playlista docelowa nie spełnia warunków bezpiecznego ponowienia.',
+            ManagedExportFailureCode::MetadataRejected,
+            ManagedExportFailureCode::ItemRejected => 'Platforma odrzuciła część wymaganych zmian.',
+            ManagedExportFailureCode::ConfigurationUnavailable,
+            ManagedExportFailureCode::TransportUnavailable,
+            ManagedExportFailureCode::InvalidResponse,
+            ManagedExportFailureCode::PersistenceFailure => 'Wystąpił tymczasowy problem techniczny.',
+            null => null,
+        };
+    }
+
     public function render()
     {
-        $review = $this->ownedReview($this->reviewId)->load(['items', 'playlist']);
+        $review = $this->ownedReview($this->reviewId)->load([
+            'items',
+            'playlist',
+            'exportOperation.playlistExport.targetAttempts',
+            'exportOperation.playlistExport.targetPlaylist',
+        ]);
 
         return view('livewire.export-review-panel', ['review' => $review]);
     }

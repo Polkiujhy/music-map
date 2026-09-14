@@ -24,6 +24,7 @@ final class PlaylistExportReviewController extends Controller
         StartExportReview $start,
     ): RedirectResponse {
         $ownedPlaylist = $this->playlist($request, $playlist);
+        abort_if($ownedPlaylist->isManagedTarget(), 404);
         $destination = $destinations->handle(
             $request->user(),
             $ownedPlaylist,

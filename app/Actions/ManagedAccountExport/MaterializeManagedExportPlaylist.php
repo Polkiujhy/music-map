@@ -57,7 +57,6 @@ final readonly class MaterializeManagedExportPlaylist
                     $boundTarget = Playlist::query()->whereKey($export->target_playlist_id)->lockForUpdate()->first();
                     if (! $boundTarget instanceof Playlist
                         || $boundTarget->source_provider !== $export->target_provider
-                        || ! hash_equals($boundTarget->source_playlist_id, $snapshot->reference->providerPlaylistId)
                         || $boundTarget->source_account_id === null
                         || ! hash_equals($boundTarget->source_account_id, $export->target_account_id)) {
                         return false;
@@ -70,6 +69,10 @@ final readonly class MaterializeManagedExportPlaylist
                     ->where('source_playlist_id', $snapshot->reference->providerPlaylistId)
                     ->lockForUpdate()
                     ->first();
+
+                if (! $target instanceof Playlist && isset($boundTarget)) {
+                    $target = $boundTarget;
+                }
 
                 if ($target instanceof Playlist) {
                     $ownedByThisExport = (string) $export->target_playlist_id === (string) $target->getKey();
@@ -103,6 +106,7 @@ final readonly class MaterializeManagedExportPlaylist
                 $target->forceFill([
                     'origin' => PlaylistOrigin::ManagedTarget,
                     'streaming_account_id' => null,
+                    'source_playlist_id' => $snapshot->reference->providerPlaylistId,
                     'source_account_id' => $export->target_account_id,
                     'canonical_source_url' => $snapshot->reference->canonicalUrl,
                     'provider_revision' => $snapshot->revision,

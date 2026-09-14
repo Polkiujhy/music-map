@@ -61,15 +61,17 @@
                 <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($playlists as $playlist)
                         @php
-                            $youtubeExpired = $playlist->source_provider === \App\Enums\StreamingProvider::YouTube
+                            $managedTarget = $playlist->isManagedTarget();
+                            $youtubeExpired = ! $managedTarget
+                                && $playlist->source_provider === \App\Enums\StreamingProvider::YouTube
                                 && $playlist->provider_metadata_refreshed_at->lte(now()->subDays(30));
                         @endphp
-                        <article class="rounded-2xl border border-ash-grey-900 bg-[#1d211e] p-6">
+                        <article id="playlist-{{ $playlist->id }}" class="rounded-2xl border border-ash-grey-900 bg-[#1d211e] p-6">
                             @if ($playlist->source_provider === \App\Enums\StreamingProvider::YouTube)
-                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">Źródło: YouTube</p>
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">{{ $managedTarget ? 'Cel zarządzany' : 'Źródło' }}: YouTube</p>
                             @else
                                 <div class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">
-                                    <span>Źródło:</span>
+                                    <span>{{ $managedTarget ? 'Cel zarządzany:' : 'Źródło:' }}</span>
                                     <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" aria-label="Otwórz playlistę w Spotify" class="-m-3 mt-1 inline-flex p-3">
                                         <img src="{{ asset('images/spotify-full-logo-white.svg') }}" alt="Spotify" width="88" height="24" class="h-auto w-[88px]">
                                     </a>
@@ -90,11 +92,18 @@
                                 </dl>
                             @endif
                             <div class="mt-5 flex flex-wrap gap-4">
-                                <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link">Otwórz źródło</a>
-                                <a href="{{ route('bank.playlists.edit', $playlist) }}" class="auth-link">Przeglądaj i edytuj</a>
+                                <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link">{{ $managedTarget ? 'Otwórz przeniesioną playlistę' : 'Otwórz źródło' }}</a>
+                                @if ($managedTarget)
+                                    <span class="text-sm text-ash-grey-400">Tylko do odczytu · edytuj playlistę źródłową w Music Map.</span>
+                                    @if ($playlist->managedExportTarget?->sourcePlaylist)
+                                        <a href="#playlist-{{ $playlist->managedExportTarget->source_playlist_id }}" class="auth-link">Przejdź do źródła</a>
+                                    @endif
+                                @else
+                                    <a href="{{ route('bank.playlists.edit', $playlist) }}" class="auth-link">Przeglądaj i edytuj</a>
+                                @endif
                             </div>
 
-                            @if (! $youtubeExpired && $playlist->items_count > 0)
+                            @if (! $managedTarget && ! $youtubeExpired && $playlist->items_count > 0)
                                 <section aria-labelledby="export-heading-{{ $playlist->id }}" class="mt-6 border-t border-ash-grey-900 pt-5">
                                     <h4 id="export-heading-{{ $playlist->id }}" class="font-semibold">Przygotuj eksport</h4>
                                     <p class="mt-1 text-sm leading-6 text-ash-grey-200/70">Najpierw sprawdzisz każde dopasowanie. Na tym etapie nic nie zostanie zapisane u providera.</p>
@@ -128,6 +137,28 @@
                                                         || $review->expires_at->isPast())
                                                 );
                                                 $providerName = $provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube';
+                                                $managedOperation = $playlist->managedOperations
+                                                    ->where('playlistExport.target_provider', $provider)
+                                                    ->first(fn ($operation) => in_array($operation->status, [
+                                                        \App\Enums\ExportOperationStatus::Queued,
+                                                        \App\Enums\ExportOperationStatus::Processing,
+                                                        \App\Enums\ExportOperationStatus::PartialFailed,
+                                                        \App\Enums\ExportOperationStatus::ManualRecoveryRequired,
+                                                        \App\Enums\ExportOperationStatus::RecreateRequired,
+                                                    ], true))
+                                                    ?? $playlist->managedOperations
+                                                        ->where('playlistExport.target_provider', $provider)
+                                                        ->sortByDesc('created_at')
+                                                        ->first();
+                                                $managedAttempt = $managedOperation?->playlistExport?->targetAttempts
+                                                    ?->where('status', '!=', \App\Models\PlaylistExportTargetAttempt::STATUS_ABANDONED)
+                                                    ->sortByDesc('generation')
+                                                    ->first();
+                                                $managedUrl = $managedAttempt?->canonical_url
+                                                    ?? $managedOperation?->playlistExport?->targetPlaylist?->canonical_source_url;
+                                                $sameManagedAccount = $managedOperation
+                                                    && $targetAccountId !== ''
+                                                    && hash_equals($managedOperation->playlistExport->target_account_id, $targetAccountId);
                                             @endphp
 
                                             <div class="rounded-xl border border-ash-grey-800 p-4">
@@ -141,7 +172,30 @@
                                                     <span class="rounded-full bg-ash-grey-900 px-2.5 py-1 text-xs">{{ $linked ? 'linked' : 'managed' }}</span>
                                                 </div>
 
-                                                @if ($sameSource)
+                                                @if ($managedOperation)
+                                                    @php
+                                                        $managedStatus = match ($managedOperation->status) {
+                                                            \App\Enums\ExportOperationStatus::Queued,
+                                                            \App\Enums\ExportOperationStatus::Processing => 'W trakcie przenoszenia',
+                                                            \App\Enums\ExportOperationStatus::Succeeded => 'Przeniesiona — zarządzana przez music-map',
+                                                            \App\Enums\ExportOperationStatus::Failed => 'Nie przeniesiono',
+                                                            default => 'Nie udało się dokończyć przenoszenia',
+                                                        };
+                                                    @endphp
+                                                    <p class="mt-3 text-sm font-semibold">{{ $managedStatus }}</p>
+                                                    <a href="{{ route('export-reviews.show', [$playlist, $managedOperation->export_review_id]) }}" class="auth-link mt-3 inline-block">Otwórz status</a>
+                                                    @if ($managedUrl)
+                                                        <a href="{{ $managedUrl }}" rel="noreferrer noopener" class="auth-link ml-4 mt-3 inline-block">Otwórz zapisany link</a>
+                                                    @endif
+                                                    @if (! $sameManagedAccount)
+                                                        <p class="mt-3 text-xs leading-5 text-ash-grey-400">
+                                                            Status i historyczny link pozostają dostępne po zmianie konta technicznego.
+                                                            @if (in_array($managedOperation->status, [\App\Enums\ExportOperationStatus::Failed, \App\Enums\ExportOperationStatus::PartialFailed, \App\Enums\ExportOperationStatus::ManualRecoveryRequired, \App\Enums\ExportOperationStatus::RecreateRequired], true))
+                                                                Ponowienie jest zablokowane do potwierdzenia tego samego konta technicznego.
+                                                            @endif
+                                                        </p>
+                                                    @endif
+                                                @elseif ($sameSource)
                                                     <p class="mt-3 text-sm text-ash-grey-400">Niedostępne: źródło i cel to to samo konto {{ $providerName }}.</p>
                                                 @elseif ($targetAccountId === '')
                                                     <p class="mt-3 text-sm text-ash-grey-400">Ten cel nie jest obecnie skonfigurowany.</p>

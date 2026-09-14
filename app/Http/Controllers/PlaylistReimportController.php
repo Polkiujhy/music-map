@@ -16,6 +16,8 @@ class PlaylistReimportController extends Controller
             ->whereKey($playlist)
             ->firstOrFail();
 
+        abort_if($playlist->isManagedTarget(), 404);
+
         $request->validate([
             'confirm_reimport' => ['accepted'],
         ], [

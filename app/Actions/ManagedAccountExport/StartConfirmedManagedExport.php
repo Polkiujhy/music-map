@@ -6,7 +6,6 @@ use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Integrations\ManagedAccountExport\ManagedExportMarker;
-use App\Jobs\RunManagedExport;
 use App\Models\ExportOperation;
 use App\Models\ExportReview;
 use App\Models\PlaylistExport;
@@ -15,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class StartConfirmedManagedExport
 {
+    public function __construct(private PublishManagedExport $publisher) {}
+
     public function handle(ExportReview $review, ConfirmedExportManifest $manifest): ?ExportOperation
     {
         if ($manifest->destinationType !== ExportDestinationType::Managed) {
@@ -86,7 +87,7 @@ final readonly class StartConfirmedManagedExport
             'status' => ExportOperationStatus::Queued,
         ]);
 
-        RunManagedExport::dispatch($operation->getKey())->afterCommit();
+        $this->publisher->afterCommit((string) $operation->getKey());
 
         return $operation;
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\ManagedExportController;
 use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistExportReviewController;
 use App\Http\Controllers\PlaylistImportController;
@@ -24,6 +25,19 @@ RateLimiter::for('export-review-retry', function (Request $request): Limit {
     $provider = $request->user()?->exportReviews()
         ->whereKey($request->route('exportReview'))
         ->value('target_provider');
+    $providerKey = $provider instanceof BackedEnum ? $provider->value : (string) ($provider ?? 'unknown');
+
+    return Limit::perMinute(3)->by(implode('|', [
+        (string) $request->user()?->getAuthIdentifier(),
+        $providerKey,
+    ]));
+});
+
+RateLimiter::for('managed-export-action', function (Request $request): Limit {
+    $provider = $request->user()?->exportOperations()
+        ->whereKey($request->route('exportOperation'))
+        ->with('playlistExport:id,target_provider')
+        ->first()?->playlistExport?->target_provider;
     $providerKey = $provider instanceof BackedEnum ? $provider->value : (string) ($provider ?? 'unknown');
 
     return Limit::perMinute(3)->by(implode('|', [
@@ -87,4 +101,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('export-reviews.retry');
     Route::post('/bank/playlists/{playlist}/export-reviews/{exportReview}/confirm', [PlaylistExportReviewController::class, 'confirm'])
         ->name('export-reviews.confirm');
+    Route::post('/bank/playlists/{playlist}/managed-exports/{exportOperation}/retry', [ManagedExportController::class, 'retry'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:managed-export-action')
+        ->name('managed-exports.retry');
+    Route::post('/bank/playlists/{playlist}/managed-exports/{exportOperation}/recreate', [ManagedExportController::class, 'recreate'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:managed-export-action')
+        ->name('managed-exports.recreate');
 });

@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Actions\ManagedAccountExport\RunManagedExport as RunManagedExportAction;
+use App\Enums\ExportOperationStatus;
+use App\Models\ExportOperation;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
@@ -20,7 +22,10 @@ final class RunManagedExport implements ShouldQueue
     /** @var list<int> */
     public array $backoff = [60, 300];
 
-    public function __construct(public readonly string $exportOperationId) {}
+    public function __construct(
+        public readonly string $exportOperationId,
+        public readonly int $retryGeneration = 0,
+    ) {}
 
     /** @return list<WithoutOverlapping> */
     public function middleware(): array
@@ -34,10 +39,28 @@ final class RunManagedExport implements ShouldQueue
 
     public function handle(RunManagedExportAction $run): void
     {
-        $retryAfter = $run->handle($this->exportOperationId);
+        $retryAfter = $run->handle($this->exportOperationId, $this->retryGeneration);
 
         if ($retryAfter !== null && $this->attempts() < $this->tries) {
             $this->release($retryAfter);
+
+            return;
+        }
+
+        $operation = ExportOperation::query()->find($this->exportOperationId);
+        if ($operation instanceof ExportOperation
+            && $operation->retry_generation === $this->retryGeneration
+            && in_array($operation->status, [
+                ExportOperationStatus::Succeeded,
+                ExportOperationStatus::Failed,
+                ExportOperationStatus::PartialFailed,
+                ExportOperationStatus::ManualRecoveryRequired,
+                ExportOperationStatus::RecreateRequired,
+            ], true)) {
+            SendManagedExportCompletedNotification::dispatch(
+                (string) $operation->getKey(),
+                $operation->retry_generation,
+            );
         }
     }
 }

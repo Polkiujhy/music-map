@@ -857,12 +857,12 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [x] 3.1 Zweryfikować atomowy start i idempotentne potwierdzenie
-- [x] 3.2 Zweryfikować admission-before-write i checkpoint locatora
-- [x] 3.3 Pokryć fault matrix create, scan, item write i retry
-- [x] 3.4 Udowodnić claim, CAS, canonical relation i F-02 na PostgreSQL
-- [x] 3.5 Uruchomić pełną regresję S-05 i F-02
-- [x] 3.8 Zweryfikować atomową i idempotentną materializację docelowej playlisty
+- [x] 3.1 Zweryfikować atomowy start i idempotentne potwierdzenie — acd71ff
+- [x] 3.2 Zweryfikować admission-before-write i checkpoint locatora — acd71ff
+- [x] 3.3 Pokryć fault matrix create, scan, item write i retry — acd71ff
+- [x] 3.4 Udowodnić claim, CAS, canonical relation i F-02 na PostgreSQL — acd71ff
+- [x] 3.5 Uruchomić pełną regresję S-05 i F-02 — acd71ff
+- [x] 3.8 Zweryfikować atomową i idempotentną materializację docelowej playlisty — acd71ff
 
 #### Manual
 
@@ -873,11 +873,11 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [ ] 4.1 Zweryfikować owner-scoped retry, recreate i blokadę drugiego startu
-- [ ] 4.2 Zweryfikować polling i dokładne komunikaty FR-011
-- [ ] 4.3 Zweryfikować bounded status operacji w banku
-- [ ] 4.4 Zweryfikować niezawodne powiadomienie per generation
-- [ ] 4.5 Zweryfikować odzyskanie utraconego dispatchu i stale processing
+- [x] 4.1 Zweryfikować owner-scoped retry, recreate i blokadę drugiego startu
+- [x] 4.2 Zweryfikować polling i dokładne komunikaty FR-011
+- [x] 4.3 Zweryfikować bounded status operacji w banku
+- [x] 4.4 Zweryfikować niezawodne powiadomienie per generation
+- [x] 4.5 Zweryfikować odzyskanie utraconego dispatchu i stale processing
 
 #### Manual
 

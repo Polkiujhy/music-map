@@ -4,7 +4,9 @@ namespace App\Actions\ExportReviews;
 
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
+use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
+use App\Enums\PlaylistOrigin;
 use App\Jobs\PrepareExportReview;
 use App\Models\ExportReview;
 use App\Models\Playlist;
@@ -25,6 +27,31 @@ final readonly class StartExportReview
 
         return DB::transaction(function () use ($user, $playlist, $destination): ExportReview {
             $lockedPlaylist = Playlist::query()->whereKey($playlist->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($lockedPlaylist->origin === PlaylistOrigin::ManagedTarget) {
+                throw ValidationException::withMessages([
+                    'playlist' => 'Zarządzana playlista docelowa jest tylko do odczytu.',
+                ]);
+            }
+
+            $blockedByOperation = $lockedPlaylist->managedExports()
+                ->where('target_provider', $destination->provider->value)
+                ->where('target_account_id', $destination->accountId)
+                ->whereHas('operations', fn ($query) => $query->whereIn('status', [
+                    ExportOperationStatus::Queued->value,
+                    ExportOperationStatus::Processing->value,
+                    ExportOperationStatus::PartialFailed->value,
+                    ExportOperationStatus::ManualRecoveryRequired->value,
+                    ExportOperationStatus::RecreateRequired->value,
+                ]))
+                ->exists();
+
+            if ($blockedByOperation) {
+                throw ValidationException::withMessages([
+                    'review' => 'Ten cel ma już aktywną lub niedokończoną operację eksportu.',
+                ]);
+            }
+
             $items = $lockedPlaylist->items()->get();
 
             if ($items->count() > 20) {

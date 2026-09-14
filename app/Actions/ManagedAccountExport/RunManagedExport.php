@@ -33,9 +33,9 @@ final readonly class RunManagedExport
     ) {}
 
     /** Return a bounded delay when the durable operation should be delivered again. */
-    public function handle(string $operationId): ?int
+    public function handle(string $operationId, ?int $retryGeneration = null): ?int
     {
-        $claim = $this->claim($operationId);
+        $claim = $this->claim($operationId, $retryGeneration);
         if ($claim === null) {
             return null;
         }
@@ -94,11 +94,14 @@ final readonly class RunManagedExport
     }
 
     /** @return null|array{ExportOperation, int} */
-    private function claim(string $operationId): ?array
+    private function claim(string $operationId, ?int $retryGeneration): ?array
     {
-        return DB::transaction(function () use ($operationId): ?array {
-            $operation = ExportOperation::query()
-                ->whereKey($operationId)
+        return DB::transaction(function () use ($operationId, $retryGeneration): ?array {
+            $query = ExportOperation::query()->whereKey($operationId);
+            if ($retryGeneration !== null) {
+                $query->where('retry_generation', $retryGeneration);
+            }
+            $operation = $query
                 ->with('playlistExport')
                 ->lockForUpdate()
                 ->first();
