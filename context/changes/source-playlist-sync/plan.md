@@ -536,7 +536,7 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Manual
 
-- [ ] 1.5 Schemat nie przechowuje sekretów ani szczegółów s-manager
+- [x] 1.5 Schemat nie przechowuje sekretów ani szczegółów s-manager
 
 ### Phase 2: Uwierzytelniony odczyt i aktywacja
 
@@ -550,8 +550,10 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Manual
 
-- [ ] 2.6 Podgląd pierwszej synchronizacji jasno pokazuje kierunek i skutek
+- [x] 2.6 Podgląd pierwszej synchronizacji jasno pokazuje kierunek i skutek
 - [ ] 2.7 Istniejące publiczne i prywatne Spotify przechodzą właściwą kwalifikację
+
+> [x] Krok 2.7 wymaga poświadczeń providerów i środowiska Managera po wdrożeniu aktualnej zmiany.
 
 ### Phase 3: Koordynator i adaptery zapisu
 
