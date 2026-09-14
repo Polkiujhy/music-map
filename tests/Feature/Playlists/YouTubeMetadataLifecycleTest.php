@@ -158,6 +158,23 @@ class YouTubeMetadataLifecycleTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_command_purges_every_expired_record_beyond_the_refresh_batch_limit(): void
+    {
+        Queue::fake();
+
+        for ($index = 0; $index < 101; $index++) {
+            $playlist = $this->playlistAt(now()->subDays(30), "Expired {$index}");
+        }
+
+        PlaylistItem::factory()->for($playlist)->create();
+
+        Artisan::call('playlists:refresh-youtube-metadata');
+
+        $this->assertSame(0, Playlist::query()->whereNotNull('name')->count());
+        $this->assertDatabaseMissing('playlist_items', ['playlist_id' => $playlist->id]);
+        Queue::assertNothingPushed();
+    }
+
     public function test_a_purged_shell_recovers_after_a_later_successful_refresh(): void
     {
         Queue::fake();

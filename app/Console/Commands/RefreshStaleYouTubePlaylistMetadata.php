@@ -22,19 +22,22 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
 
         Playlist::query()
             ->where('source_provider', StreamingProvider::YouTube->value)
+            ->where('provider_metadata_refreshed_at', '<=', $expireBefore)
+            ->chunkById(100, function ($playlists) use ($expireBefore): void {
+                $playlists->each(fn (Playlist $playlist) => $this->purgeExpiredMetadata(
+                    $playlist->getKey(),
+                    $expireBefore,
+                ));
+            });
+
+        Playlist::query()
+            ->where('source_provider', StreamingProvider::YouTube->value)
+            ->where('provider_metadata_refreshed_at', '>', $expireBefore)
             ->where('provider_metadata_refreshed_at', '<=', $refreshBefore)
             ->orderBy('id')
             ->limit(100)
             ->get()
-            ->each(function (Playlist $playlist) use ($expireBefore): void {
-                if ($playlist->provider_metadata_refreshed_at->lte($expireBefore)) {
-                    $this->purgeExpiredMetadata($playlist->getKey(), $expireBefore);
-
-                    return;
-                }
-
-                RefreshYouTubePlaylistMetadata::dispatch($playlist->getKey());
-            });
+            ->each(fn (Playlist $playlist) => RefreshYouTubePlaylistMetadata::dispatch($playlist->getKey()));
 
         return self::SUCCESS;
     }

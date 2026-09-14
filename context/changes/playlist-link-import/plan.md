@@ -517,12 +517,14 @@ playlist. It does not turn into generic source synchronization or write to YouTu
 
 **Purpose**: Refresh with margin and fail closed at the retention boundary.
 
-**Contract**: A daily command dispatches bounded batches approaching 28 days since
-the last confirmed refresh. At 30 days without success, API-derived name,
-description, stable owner and item rows are no longer displayed as current and are
-removed by an idempotent cleanup path; the user-owned shell and canonical link they
-submitted remain for reimport. A failed attempt does not advance freshness. Queue
-jobs contain no API key, canonical source URL or raw submitted URL.
+**Contract**: A daily command dispatches at most 100 refresh jobs for records
+approaching 28 days since the last confirmed refresh. Independently, it paginates
+through every record that has reached 30 days without success and removes its
+API-derived name, description, stable owner and item rows through an idempotent
+cleanup path; expired records cannot remain merely because the refresh dispatch
+batch is full. The user-owned shell and canonical link they submitted remain for
+reimport. A failed attempt does not advance freshness. Queue jobs contain no API
+key, canonical source URL or raw submitted URL.
 
 #### 3. Informacje o świeżości dla użytkownika
 
@@ -544,8 +546,9 @@ Phase 4. Exact stale-state copy receives owner review.
 
 **Contract**: Frozen-time tests cover records below 28 days, dispatch at the refresh
 threshold, successful refresh, rate/quota failure, duplicate dispatch, 29-day
-visibility, 30-day purge/hide and later recovery. They prove failure does not update
-freshness and logs/jobs do not carry secrets or source URLs.
+visibility, exhaustive 30-day purge beyond the 100-job refresh cap, and later
+recovery. They prove failure does not update freshness and logs/jobs do not carry
+secrets or source URLs.
 
 ### Kryteria sukcesu
 
@@ -616,6 +619,10 @@ the documented S-02 read subset;
 additional canonical S-04 read/write scopes are allowed. Then call fixed
 `/v1/playlists/{id}` and
 `/v1/playlists/{id}/items?limit=21&offset=0`. Use current `items[].item` shape.
+Under Spotify Development Mode, a successful items response is the authoritative
+proof that the linked account owns or collaborates on the playlist; metadata
+`public`, `owner` or `collaborative` fields are not treated as a substitute for
+that provider-enforced access decision.
 `total > 20`, a next link or 21st item refuses import. Tracks preserve order and
 duplicates; unavailable track occurrences become placeholders when safely
 representable. Episodes, local files and structurally unusable resources refuse
@@ -648,7 +655,8 @@ Manager in automated tests.
 **Contract**: Fake `WithStreamingAccess` covers missing connection,
 reauthorization, stale CAS, scope, account mismatch, rate/quota/unavailable and
 success. HTTP fakes cover
-owner/collaborator response, 0/1/20/21 positions, duplicates, placeholders,
+owner/collaborator response, metadata success followed by an items denial for an
+unrelated public playlist, 0/1/20/21 positions, duplicates, placeholders,
 episode/local/malformed item, 403/404/429/5xx and failed reimport. Tests assert no
 fallback to technical/tester credentials and no token, raw payload or full URL in
 database, logs, jobs, HTML or exceptions.
@@ -803,9 +811,11 @@ short database transaction. Readers request no more than 21 positions and do not
 follow pagination URLs or retry inside the web request. Indexes serve the per-user
 bank list and unique reimport key. No cache is required for the expected small scale.
 
-The compliance refresh uses bounded batches and unique jobs; it must stop or defer
-on rate/quota responses rather than create a retry storm. Provider `Retry-After` may
-inform scheduled retry outside the active request but is never an unbounded sleep.
+The compliance refresh dispatches at most 100 unique jobs per run, while separately
+paginating through every playlist whose provider metadata has reached the 30-day
+retention boundary. It must stop or defer refreshes on rate/quota responses rather
+than create a retry storm. Provider `Retry-After` may inform scheduled retry outside
+the active request but is never an unbounded sleep.
 
 ## Uwagi dotyczące migracji
 

@@ -50,6 +50,8 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
                 return ProviderImportFailureMapper::response($metadata);
             }
 
+            // In Spotify Development Mode, this endpoint succeeds only for a
+            // playlist the linked account owns or collaborates on.
             $items = $request->get(self::API_URL.'/playlists/'.$reference->providerPlaylistId.'/items', [
                 'limit' => 21,
                 'offset' => 0,

@@ -103,6 +103,23 @@ class SpotifyPlaylistReaderTest extends TestCase
         ];
     }
 
+    public function test_it_relies_on_the_items_endpoint_to_reject_an_unrelated_public_playlist(): void
+    {
+        Http::fakeSequence()
+            ->push($this->metadata(1) + [
+                'collaborative' => false,
+                'owner' => ['id' => 'unrelated-account'],
+                'public' => true,
+            ])
+            ->push([], 403);
+
+        $this->assertSame(
+            ImportFailureCode::PlaylistUnavailable,
+            $this->reader()->read($this->reference(), $this->access()),
+        );
+        Http::assertSentCount(2);
+    }
+
     public function test_it_requires_ephemeral_spotify_access_and_never_falls_back(): void
     {
         Http::fake();
