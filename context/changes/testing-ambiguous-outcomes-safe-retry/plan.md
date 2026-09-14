@@ -253,7 +253,7 @@ Brak zmian schematu. `migrate:fresh` może być uruchamiane wyłącznie na jawni
 
 #### Automatyczne
 
-- [x] 4.1 Sekcje cookbook §6.1, §6.2, §6.4 i §6.6 opisują dostarczone wzorce
-- [x] 4.2 Kryteria przyszłych S-06/S-07 zachowują niejednoznaczny create, ten sam cel i exact ordered read-back
-- [x] 4.3 Strategia §1–§5 pozostaje zamrożona poza statusem rollout
-- [x] 4.4 Pełne bramy repozytorium przechodzą
+- [x] 4.1 Sekcje cookbook §6.1, §6.2, §6.4 i §6.6 opisują dostarczone wzorce — 8b6d090
+- [x] 4.2 Kryteria przyszłych S-06/S-07 zachowują niejednoznaczny create, ten sam cel i exact ordered read-back — 8b6d090
+- [x] 4.3 Strategia §1–§5 pozostaje zamrożona poza statusem rollout — 8b6d090
+- [x] 4.4 Pełne bramy repozytorium przechodzą — 8b6d090
