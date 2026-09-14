@@ -60,17 +60,26 @@
                 <h2 id="saved-heading" class="text-2xl font-semibold">Zapisane playlisty</h2>
                 <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($playlists as $playlist)
+                        @php
+                            $youtubeExpired = $playlist->source_provider === \App\Enums\StreamingProvider::YouTube
+                                && $playlist->provider_metadata_refreshed_at->lte(now()->subDays(30));
+                        @endphp
                         <article class="rounded-2xl border border-ash-grey-900 bg-[#1d211e] p-6">
                             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">Źródło: {{ $playlist->source_provider === \App\Enums\StreamingProvider::YouTube ? 'YouTube' : 'Spotify' }}</p>
-                            <h3 class="mt-3 text-xl font-semibold">{{ $playlist->name ?? ($playlist->source_provider === \App\Enums\StreamingProvider::YouTube ? 'Playlista YouTube — dane wymagają odświeżenia' : 'Playlista Spotify — dane wymagają odświeżenia') }}</h3>
-                            @if ($playlist->description)
-                                <p class="mt-2 line-clamp-3 text-sm leading-6 text-ash-grey-200/70">{{ $playlist->description }}</p>
+                            @if ($youtubeExpired)
+                                <h3 class="mt-3 text-xl font-semibold">Playlista YouTube — dane wymagają odświeżenia</h3>
+                                <p class="mt-3 text-sm leading-6 text-ash-grey-200/70">Dane z YouTube wygasły i nie są teraz wyświetlane. Wklej link ponownie w formularzu powyżej, aby odzyskać aktualny snapshot.</p>
+                            @else
+                                <h3 class="mt-3 text-xl font-semibold">{{ $playlist->name ?? ($playlist->source_provider === \App\Enums\StreamingProvider::YouTube ? 'Playlista YouTube — dane wymagają odświeżenia' : 'Playlista Spotify — dane wymagają odświeżenia') }}</h3>
+                                @if ($playlist->description)
+                                    <p class="mt-2 line-clamp-3 text-sm leading-6 text-ash-grey-200/70">{{ $playlist->description }}</p>
+                                @endif
+                                <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
+                                    <div><dt class="text-ash-grey-400">Pozycje</dt><dd class="mt-1 font-semibold">{{ $playlist->items_count }}</dd></div>
+                                    <div><dt class="text-ash-grey-400">Niedostępne</dt><dd class="mt-1 font-semibold">{{ $playlist->unavailable_items_count }}</dd></div>
+                                    <div class="col-span-2"><dt class="text-ash-grey-400">Dane odświeżone</dt><dd class="mt-1 font-semibold"><time datetime="{{ $playlist->provider_metadata_refreshed_at->toIso8601String() }}">{{ $playlist->provider_metadata_refreshed_at->format('Y-m-d H:i') }}</time></dd></div>
+                                </dl>
                             @endif
-                            <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
-                                <div><dt class="text-ash-grey-400">Pozycje</dt><dd class="mt-1 font-semibold">{{ $playlist->items_count }}</dd></div>
-                                <div><dt class="text-ash-grey-400">Niedostępne</dt><dd class="mt-1 font-semibold">{{ $playlist->unavailable_items_count }}</dd></div>
-                                <div class="col-span-2"><dt class="text-ash-grey-400">Dane odświeżone</dt><dd class="mt-1 font-semibold"><time datetime="{{ $playlist->provider_metadata_refreshed_at->toIso8601String() }}">{{ $playlist->provider_metadata_refreshed_at->format('Y-m-d H:i') }}</time></dd></div>
-                            </dl>
                             <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link mt-5 inline-block">Otwórz źródło</a>
                         </article>
                     @endforeach

@@ -853,11 +853,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 1.1 Parser i czyste kontrakty przechodzą macierz poprawnych i wrogich wejść — 2f3caa9
-- [x] 1.2 Migracje stosują się i cofają na izolowanym SQLite — 2f3caa9
-- [x] 1.3 Własność, kolejność i atomowy zapis przechodzą testy persistence — 2f3caa9
-- [x] 1.4 Regresja modeli auth i dostępu do banku przechodzi — 2f3caa9
-- [x] 1.5 Formatowanie PHP i manifest źródła fazy przechodzą — 2f3caa9
+- [x] 1.1 Parser i czyste kontrakty przechodzą macierz poprawnych i wrogich wejść — 9798962
+- [x] 1.2 Migracje stosują się i cofają na izolowanym SQLite — 9798962
+- [x] 1.3 Własność, kolejność i atomowy zapis przechodzą testy persistence — 9798962
+- [x] 1.4 Regresja modeli auth i dostępu do banku przechodzi — 9798962
+- [x] 1.5 Formatowanie PHP i manifest źródła fazy przechodzą — 9798962
 
 #### Manual
 
@@ -868,12 +868,12 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 2.1 Reader YouTube przechodzi pełną macierz limitów, danych i odmów
-- [x] 2.2 Import, prywatny bank, limiter per user i correlation ID przechodzą testy feature
-- [x] 2.3 Niepoprawne wejścia wykonują zero requestów, a awarie wykonują zero zapisów
-- [x] 2.4 Produkcyjny frontend buduje się
-- [x] 2.5 Formatowanie PHP i manifest źródła fazy przechodzą
-- [x] 2.8 Publiczne polityki i jawna zgoda importu przechodzą testy bez sieci
+- [x] 2.1 Reader YouTube przechodzi pełną macierz limitów, danych i odmów — 601e346
+- [x] 2.2 Import, prywatny bank, limiter per user i correlation ID przechodzą testy feature — 601e346
+- [x] 2.3 Niepoprawne wejścia wykonują zero requestów, a awarie wykonują zero zapisów — 601e346
+- [x] 2.4 Produkcyjny frontend buduje się — 601e346
+- [x] 2.5 Formatowanie PHP i manifest źródła fazy przechodzą — 601e346
+- [x] 2.8 Publiczne polityki i jawna zgoda importu przechodzą testy bez sieci — 601e346
 
 #### Manual
 
@@ -886,11 +886,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [ ] 3.1 Cykl świeżości, unique job i granice 28/30 dni przechodzą testy
-- [ ] 3.2 Joby nie serializują sekretów, a awaria nie pozoruje świeżości
-- [ ] 3.3 Harmonogram zawiera dokładnie jedno codzienne uruchomienie cyklu
-- [ ] 3.4 Regresja importu i banku przechodzi
-- [ ] 3.5 Widoki, formatowanie i manifest źródła fazy przechodzą
+- [x] 3.1 Cykl świeżości, unique job i granice 28/30 dni przechodzą testy
+- [x] 3.2 Joby nie serializują sekretów, a awaria nie pozoruje świeżości
+- [x] 3.3 Harmonogram zawiera dokładnie jedno codzienne uruchomienie cyklu
+- [x] 3.4 Regresja importu i banku przechodzi
+- [x] 3.5 Widoki, formatowanie i manifest źródła fazy przechodzą
 
 #### Manual
 

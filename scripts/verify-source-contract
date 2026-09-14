@@ -27,7 +27,9 @@ app/Actions/Fortify/CreateNewUser.php
 app/Actions/Fortify/PasswordValidationRules.php
 app/Actions/Fortify/ResetUserPassword.php
 app/Actions/Playlists/ImportPlaylist.php
+app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
+app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
 app/Http/Controllers/Auth/GoogleAuthController.php
@@ -78,6 +80,7 @@ app/Integrations/PlatformAccess/SpotifyProbe.php
 app/Integrations/PlatformAccess/TechnicalConfiguration.php
 app/Integrations/PlatformAccess/TesterSession.php
 app/Integrations/PlatformAccess/YouTubeProbe.php
+app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Models/AuthIdentity.php
 app/Models/Playlist.php
 app/Models/PlaylistItem.php
@@ -164,6 +167,7 @@ tests/Feature/LandingPageTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php
 tests/Feature/Playlists/PlaylistImportTest.php
 tests/Feature/Playlists/PlaylistPersistenceTest.php
+tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php

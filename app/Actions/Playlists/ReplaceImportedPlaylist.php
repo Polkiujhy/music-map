@@ -6,13 +6,14 @@ use App\Integrations\PlaylistImport\Data\PlaylistItemSnapshot;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
 use App\Models\Playlist;
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 final class ReplaceImportedPlaylist
 {
-    public function handle(User $user, PlaylistSnapshot $snapshot): Playlist
+    public function handle(User $user, PlaylistSnapshot $snapshot, bool $markImported = true): Playlist
     {
-        return DB::transaction(function () use ($user, $snapshot): Playlist {
+        return DB::transaction(function () use ($user, $snapshot, $markImported): Playlist {
             $identity = [
                 'user_id' => $user->getKey(),
                 'source_provider' => $snapshot->provider->value,
@@ -22,7 +23,7 @@ final class ReplaceImportedPlaylist
             DB::table('playlists')->upsert(
                 [[
                     ...$identity,
-                    ...$this->playlistAttributes($snapshot),
+                    ...$this->playlistAttributes($snapshot, now()),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]],
@@ -36,7 +37,10 @@ final class ReplaceImportedPlaylist
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $playlist->update($this->playlistAttributes($snapshot));
+            $playlist->update($this->playlistAttributes(
+                $snapshot,
+                $markImported ? now() : $playlist->imported_at,
+            ));
             $playlist->items()->delete();
             $playlist->items()->createMany(array_map(
                 fn (PlaylistItemSnapshot $item): array => [
@@ -61,7 +65,7 @@ final class ReplaceImportedPlaylist
     /**
      * @return array<string, mixed>
      */
-    private function playlistAttributes(PlaylistSnapshot $snapshot): array
+    private function playlistAttributes(PlaylistSnapshot $snapshot, DateTimeInterface $importedAt): array
     {
         return [
             'source_account_id' => $snapshot->sourceAccountId,
@@ -70,7 +74,7 @@ final class ReplaceImportedPlaylist
             'name' => $snapshot->name,
             'description' => $snapshot->description,
             'provider_metadata_refreshed_at' => $snapshot->providerMetadataRefreshedAt,
-            'imported_at' => now(),
+            'imported_at' => $importedAt,
         ];
     }
 }
