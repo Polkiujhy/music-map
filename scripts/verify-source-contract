@@ -280,6 +280,9 @@ tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationMigrationTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationModelTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationActivationTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationFailureTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationPostgresTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationTest.php
 tests/Feature/PlaylistSync/RunPlaylistSynchronizationPostgresTest.php
 tests/Feature/PlaylistSync/RunPlaylistSynchronizationTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationJobTest.php
