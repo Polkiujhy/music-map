@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'provider_metadata_refreshed_at',
     'imported_at',
+    'bank_content_edited_at',
 ])]
 class Playlist extends Model
 {
@@ -62,6 +63,7 @@ class Playlist extends Model
             'source_provider' => StreamingProvider::class,
             'provider_metadata_refreshed_at' => 'immutable_datetime',
             'imported_at' => 'immutable_datetime',
+            'bank_content_edited_at' => 'immutable_datetime',
         ];
     }
 }

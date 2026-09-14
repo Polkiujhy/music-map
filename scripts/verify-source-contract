@@ -29,8 +29,11 @@ app/Actions/Fortify/CreateNewUser.php
 app/Actions/Fortify/PasswordValidationRules.php
 app/Actions/Fortify/ResetUserPassword.php
 app/Actions/Playlists/ImportPlaylist.php
+app/Actions/Playlists/FingerprintPlaylistContent.php
+app/Actions/Playlists/PlaylistEditConflict.php
 app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
+app/Actions/Playlists/UpdateBankPlaylistItems.php
 app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
@@ -132,6 +135,7 @@ database/migrations/2026_09_13_000000_create_streaming_accounts_table.php
 database/migrations/2026_09_13_010000_create_playlists_table.php
 database/migrations/2026_09_13_010100_create_playlist_items_table.php
 database/migrations/2026_09_13_010200_link_playlists_to_streaming_accounts.php
+database/migrations/2026_09_14_000000_add_bank_content_edited_at_to_playlists_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -175,6 +179,8 @@ tests/Feature/Playlists/PlaylistImportTest.php
 tests/Feature/Playlists/PlaylistPersistenceTest.php
 tests/Feature/Playlists/SpotifyPlaylistImportTest.php
 tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
+tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
+tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php
@@ -210,6 +216,7 @@ tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
 tests/Unit/RuntimeFilesystemContractTest.php
 tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
+tests/Unit/Playlists/FingerprintPlaylistContentTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'
 
