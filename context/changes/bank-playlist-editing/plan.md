@@ -622,13 +622,13 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [x] 4.1 Cykl wszystkich mutacji zmienia neutralny fingerprint, a no-op go zachowuje
-- [x] 4.2 Kontrakt fingerprintu jest gotowy do konsumpcji przez S-05 bez duplikatu
-- [x] 4.3 Pełne regresje playlist i integracji streamingowych przechodzą
-- [x] 4.4 Pełny zestaw Composer przechodzi
-- [x] 4.5 Laravel Pint i produkcyjny build przechodzą
-- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą
-- [x] 4.7 Macierz PostgreSQL przechodzi bez live providerów
+- [x] 4.1 Cykl wszystkich mutacji zmienia neutralny fingerprint, a no-op go zachowuje — 8acd1b5
+- [x] 4.2 Kontrakt fingerprintu jest gotowy do konsumpcji przez S-05 bez duplikatu — 8acd1b5
+- [x] 4.3 Pełne regresje playlist i integracji streamingowych przechodzą — 8acd1b5
+- [x] 4.4 Pełny zestaw Composer przechodzi — 8acd1b5
+- [x] 4.5 Laravel Pint i produkcyjny build przechodzą — 8acd1b5
+- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą — 8acd1b5
+- [x] 4.7 Macierz PostgreSQL przechodzi bez live providerów — 8acd1b5
 
 #### Manual
 
