@@ -1,10 +1,10 @@
 ---
 change_id: streaming-account-linking
 title: Powiązanie kont streamingowych
-status: impl_reviewed
+status: archived
 created: 2026-09-13
-updated: 2026-09-13
-archived_at: null
+updated: 2026-09-14
+archived_at: 2026-09-14T00:39:52Z
 ---
 
 ## Notes
