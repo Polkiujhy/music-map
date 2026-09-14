@@ -17,4 +17,5 @@ enum ImportFailureCode: string
     case QuotaLimited = 'quota-limited';
     case ProviderUnavailable = 'provider-unavailable';
     case InvalidResponse = 'invalid-response';
+    case LocalEditsConfirmationRequired = 'local_edits_confirmation_required';
 }

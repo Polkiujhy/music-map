@@ -31,6 +31,7 @@ app/Actions/Fortify/ResetUserPassword.php
 app/Actions/Playlists/ImportPlaylist.php
 app/Actions/Playlists/FingerprintPlaylistContent.php
 app/Actions/Playlists/PlaylistEditConflict.php
+app/Actions/Playlists/ReconcileEditedYouTubePlaylist.php
 app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
@@ -42,6 +43,7 @@ app/Http/Controllers/BankController.php
 app/Http/Controllers/Controller.php
 app/Http/Controllers/PlaylistEditingController.php
 app/Http/Controllers/PlaylistImportController.php
+app/Http/Controllers/PlaylistReimportController.php
 app/Http/Controllers/StreamingAccountController.php
 app/Http/Controllers/StreamingAccountOAuthController.php
 app/Http/Middleware/NormalizeAuthEmail.php
@@ -185,6 +187,8 @@ tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
 tests/Feature/PlaylistEditing/PlaylistEditorTest.php
+tests/Feature/PlaylistEditing/EditedPlaylistReimportTest.php
+tests/Feature/PlaylistEditing/YouTubeEditedPlaylistRefreshTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
 tests/Feature/StreamingAccounts/StreamingAccountModelTest.php

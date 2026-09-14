@@ -48,6 +48,7 @@ class PlaylistImportController extends Controller
             ImportFailureCode::QuotaLimited => "Limit {$providerName} został wyczerpany. Spróbuj ponownie później.",
             ImportFailureCode::UnsupportedItem => 'Playlista zawiera nieobsługiwaną pozycję. Wybierz inną playlistę.',
             ImportFailureCode::InvalidResponse => "{$providerName} zwrócił nieprawidłowe dane. Spróbuj ponownie później.",
+            ImportFailureCode::LocalEditsConfirmationRequired => 'Ta playlista zawiera lokalne zmiany. Otwórz jej właścicielski edytor i użyj świadomego reimportu.',
             ImportFailureCode::ProviderUnavailable, null => "{$providerName} jest chwilowo niedostępny. Spróbuj ponownie później.",
         };
 

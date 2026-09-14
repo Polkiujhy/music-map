@@ -588,12 +588,12 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [x] 2.1 Trasa i mutacje egzekwują auth, verified i owner-scoped 404
-- [x] 2.2 Livewire obsługuje szkic, granice ruchów, usunięcia i pojedynczy zapis
-- [x] 2.3 Pusta lista wymaga jawnego potwierdzenia
-- [x] 2.4 Stary szkic kończy się konfliktem bez częściowego zapisu
-- [x] 2.5 Bank zachowuje prywatność i minimalne wejście do edytora
-- [x] 2.6 Frontend, formatowanie i manifest źródła fazy przechodzą
+- [x] 2.1 Trasa i mutacje egzekwują auth, verified i owner-scoped 404 — a4470f8
+- [x] 2.2 Livewire obsługuje szkic, granice ruchów, usunięcia i pojedynczy zapis — a4470f8
+- [x] 2.3 Pusta lista wymaga jawnego potwierdzenia — a4470f8
+- [x] 2.4 Stary szkic kończy się konfliktem bez częściowego zapisu — a4470f8
+- [x] 2.5 Bank zachowuje prywatność i minimalne wejście do edytora — a4470f8
+- [x] 2.6 Frontend, formatowanie i manifest źródła fazy przechodzą — a4470f8
 
 #### Manual
 
@@ -605,12 +605,12 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [ ] 3.1 Refresh zachowuje lokalną kolejność i usunięcia po occurrence ID
-- [ ] 3.2 Zniknięte pozycje stają się placeholderami, a nowe nie są dopisywane
-- [ ] 3.3 Nietknięty snapshot nadal przechodzi pełny atomowy replacement
-- [ ] 3.4 Jawny reimport wymaga potwierdzenia, zastępuje snapshot i zeruje znacznik
-- [ ] 3.5 Cleanup retencji usuwa dane i znacznik w jednej transakcji
-- [ ] 3.6 Regresje importu i cyklu YouTube przechodzą bez live requestów
+- [x] 3.1 Refresh zachowuje lokalną kolejność i usunięcia po occurrence ID
+- [x] 3.2 Zniknięte pozycje stają się placeholderami, a nowe nie są dopisywane
+- [x] 3.3 Nietknięty snapshot nadal przechodzi pełny atomowy replacement
+- [x] 3.4 Jawny reimport wymaga potwierdzenia, zastępuje snapshot i zeruje znacznik
+- [x] 3.5 Cleanup retencji usuwa dane i znacznik w jednej transakcji
+- [x] 3.6 Regresje importu i cyklu YouTube przechodzą bez live requestów
 
 #### Manual
 

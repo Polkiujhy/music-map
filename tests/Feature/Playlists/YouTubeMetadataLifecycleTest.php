@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Playlists;
 
+use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Actions\Playlists\RefreshYouTubePlaylistMetadata as RefreshMetadata;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Jobs\RefreshYouTubePlaylistMetadata;
@@ -138,6 +139,8 @@ class YouTubeMetadataLifecycleTest extends TestCase
         $user = User::factory()->create();
         $playlist = $this->playlistAt(now()->subDays(30), 'Expired provider name', $user);
         PlaylistItem::factory()->for($playlist)->create();
+        $playlist->update(['bank_content_edited_at' => now()->subDay()]);
+        $fingerprintBeforePurge = app(FingerprintPlaylistContent::class)->handle($playlist->load('items'));
         $canonicalUrl = $playlist->canonical_source_url;
 
         $this->actingAs($user)->get(route('bank.index'))
@@ -153,8 +156,13 @@ class YouTubeMetadataLifecycleTest extends TestCase
         $this->assertNull($playlist->description);
         $this->assertNull($playlist->source_account_id);
         $this->assertNull($playlist->provider_revision);
+        $this->assertNull($playlist->bank_content_edited_at);
         $this->assertSame($canonicalUrl, $playlist->canonical_source_url);
         $this->assertDatabaseMissing('playlist_items', ['playlist_id' => $playlist->id]);
+        $this->assertNotSame(
+            $fingerprintBeforePurge,
+            app(FingerprintPlaylistContent::class)->handle($playlist->load('items')),
+        );
         Queue::assertNothingPushed();
     }
 

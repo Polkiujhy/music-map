@@ -12,6 +12,7 @@ use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\StreamingAccessFailure;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -24,13 +25,26 @@ final readonly class ImportPlaylist
         private WithStreamingAccess $withStreamingAccess,
     ) {}
 
-    public function handle(User $user, string $submittedUrl): ImportResult
+    public function handle(User $user, string $submittedUrl, bool $localEditsConfirmed = false): ImportResult
     {
         $correlationId = (string) Str::uuid();
         $reference = $this->parser->parse($submittedUrl);
 
         if ($reference instanceof ImportFailureCode) {
             return $this->failure($reference, null, $correlationId);
+        }
+
+        $existingPlaylist = $user->playlists()
+            ->where('source_provider', $reference->provider->value)
+            ->where('source_playlist_id', $reference->providerPlaylistId)
+            ->first();
+
+        if (! $localEditsConfirmed && $existingPlaylist?->bank_content_edited_at !== null) {
+            return $this->failure(
+                ImportFailureCode::LocalEditsConfirmationRequired,
+                $reference->provider,
+                $correlationId,
+            );
         }
 
         $streamingAccountId = null;
@@ -85,15 +99,39 @@ final readonly class ImportPlaylist
             return $this->failure($snapshot, $reference->provider, $correlationId);
         }
 
-        $wasImported = $user->playlists()
-            ->where('source_provider', $reference->provider->value)
-            ->where('source_playlist_id', $reference->providerPlaylistId)
-            ->exists();
-        $playlist = $this->replace->handle(
+        $wasImported = $existingPlaylist !== null;
+        $playlist = DB::transaction(function () use (
             $user,
             $snapshot,
-            streamingAccountId: $streamingAccountId,
-        );
+            $streamingAccountId,
+            $localEditsConfirmed,
+        ) {
+            $currentPlaylist = $user->playlists()
+                ->where('source_provider', $snapshot->provider->value)
+                ->where('source_playlist_id', $snapshot->providerPlaylistId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $localEditsConfirmed && $currentPlaylist?->bank_content_edited_at !== null) {
+                return ImportFailureCode::LocalEditsConfirmationRequired;
+            }
+
+            $playlist = $this->replace->handle(
+                $user,
+                $snapshot,
+                streamingAccountId: $streamingAccountId,
+            );
+
+            if ($localEditsConfirmed) {
+                $playlist->update(['bank_content_edited_at' => null]);
+            }
+
+            return $playlist->refresh()->load('items');
+        });
+
+        if ($playlist instanceof ImportFailureCode) {
+            return $this->failure($playlist, $reference->provider, $correlationId);
+        }
 
         return $wasImported
             ? ImportResult::refreshed($playlist->getKey(), $correlationId)

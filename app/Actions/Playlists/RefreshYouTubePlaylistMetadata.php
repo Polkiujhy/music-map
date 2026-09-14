@@ -12,7 +12,7 @@ final readonly class RefreshYouTubePlaylistMetadata
 {
     public function __construct(
         private YouTubePlaylistReader $reader,
-        private ReplaceImportedPlaylist $replace,
+        private ReconcileEditedYouTubePlaylist $reconcile,
     ) {}
 
     public function handle(int $playlistId): Playlist|ImportFailureCode|null
@@ -37,6 +37,6 @@ final readonly class RefreshYouTubePlaylistMetadata
             return $snapshot;
         }
 
-        return $this->replace->handle($playlist->user, $snapshot, markImported: false);
+        return $this->reconcile->handle($playlist->getKey(), $snapshot);
     }
 }

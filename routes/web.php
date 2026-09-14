@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistImportController;
+use App\Http\Controllers\PlaylistReimportController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
 use Illuminate\Support\Facades\Route;
@@ -49,4 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/bank/import', [PlaylistImportController::class, 'store'])
         ->middleware('throttle:playlist-import')
         ->name('playlists.import');
+    Route::post('/bank/playlists/{playlist}/reimport', PlaylistReimportController::class)
+        ->whereNumber('playlist')
+        ->middleware('throttle:playlist-import')
+        ->name('bank.playlists.reimport');
 });
