@@ -244,16 +244,16 @@ Brak zmian schematu. `migrate:fresh` może być uruchamiane wyłącznie na jawni
 
 #### Automatyczne
 
-- [x] 3.1 Kontrakty admission przechodzą
-- [x] 3.2 Deterministyczny zestaw admission przechodzi
-- [x] 3.3 Celowany zestaw PostgreSQL lub odpowiadający job CI przechodzi
-- [x] 3.4 Nie dodano zduplikowanego wyścigu prymitywu
+- [x] 3.1 Kontrakty admission przechodzą — 1af3d08
+- [x] 3.2 Deterministyczny zestaw admission przechodzi — 1af3d08
+- [x] 3.3 Celowany zestaw PostgreSQL lub odpowiadający job CI przechodzi — 1af3d08
+- [x] 3.4 Nie dodano zduplikowanego wyścigu prymitywu — 1af3d08
 
 ### Faza 4: Podręcznik dostarczonych wzorców
 
 #### Automatyczne
 
-- [ ] 4.1 Sekcje cookbook §6.1, §6.2, §6.4 i §6.6 opisują dostarczone wzorce
-- [ ] 4.2 Kryteria przyszłych S-06/S-07 zachowują niejednoznaczny create, ten sam cel i exact ordered read-back
-- [ ] 4.3 Strategia §1–§5 pozostaje zamrożona poza statusem rollout
-- [ ] 4.4 Pełne bramy repozytorium przechodzą
+- [x] 4.1 Sekcje cookbook §6.1, §6.2, §6.4 i §6.6 opisują dostarczone wzorce
+- [x] 4.2 Kryteria przyszłych S-06/S-07 zachowują niejednoznaczny create, ten sam cel i exact ordered read-back
+- [x] 4.3 Strategia §1–§5 pozostaje zamrożona poza statusem rollout
+- [x] 4.4 Pełne bramy repozytorium przechodzą

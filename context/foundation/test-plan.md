@@ -65,7 +65,7 @@ write scenarios become acceptance criteria when those roadmap slices land.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
-| 1 | Ambiguous outcomes and safe retry | Prove atomicity, idempotency, and truthful states around timeouts and partial effects without testing nonexistent export code. | #1, #2, #5, #7 | contract + integration + PostgreSQL | planned | `testing-ambiguous-outcomes-safe-retry` |
+| 1 | Ambiguous outcomes and safe retry | Prove atomicity, idempotency, and truthful states around timeouts and partial effects without testing nonexistent export code. | #1, #2, #5, #7 | contract + integration + PostgreSQL | complete | `testing-ambiguous-outcomes-safe-retry` |
 | 2 | Decision integrity and access boundaries | Prove confirmed content, ownership, and credential confidentiality across application flows. | #3, #4, #6 | unit + feature + integration | not started | — |
 | 3 | Provider realism and quality gates | Add the smallest live-provider smoke needed for ambiguous outcomes and lock deterministic regression gates. | #1–#7 cross-cutting | contract smoke + gates | not started | — |
 
@@ -109,11 +109,35 @@ phases ship.
 
 ### 6.1 Testing ambiguous provider outcomes and retry
 
-- TBD — see §3 Phase 1 for the timeout, partial-effect, idempotency, and reconciliation pattern.
+- Model provider state independently from the response stream. A fake must be
+  able to apply an effect and then lose its acknowledgement; scripted responses
+  alone are not evidence of what the provider now contains.
+- Before the first mutation, persist a stable logical operation identity and
+  reuse it on every retry. A known provider destination must remain tied to that
+  operation. If an ambiguous create returns no destination ID, use
+  provider-supported idempotency, deterministic discovery, or an explicit
+  manual-recovery state that forbids blind recreation.
+- Resume partial work against the same destination by observing and reconciling
+  provider state. Report final success only after an independent read-back
+  exactly matches the confirmed ordered target, including duplicate
+  occurrences. These are acceptance criteria for S-06/S-07 until their writers
+  exist; probe cleanup is not proof of product-export retry safety.
 
 ### 6.2 Testing persistence and concurrency
 
-- TBD — see §3 Phase 1 for choosing SQLite versus disposable PostgreSQL and proving rollback boundaries.
+- Use SQLite for deterministic transaction gating, rollback, failure mapping,
+  and stored-state invariants. For imports, fake only provider HTTP, complete
+  the entire read before persistence, and compare the saved parent, freshness,
+  and ordered children before and after a failed atomic replacement.
+- Use a disposable PostgreSQL database for `FOR UPDATE`, inter-process races,
+  lock timeouts, SQLSTATE retry, Pacific reset timing under contention, and
+  ambiguous commit acknowledgement. The existing
+  `YouTubeWriteAdmissionPostgresTest` is the canonical primitive race package;
+  do not duplicate it with a SQLite or second primitive race.
+- When the first writer lands, add one consumer-level race proving that the
+  same durable operation identity carries one admission into fail-closed,
+  retry-safe orchestration. Binding the admission port alone does not prove a
+  consumer cannot bypass it.
 
 ### 6.3 Testing authorization and confirmed decisions
 
@@ -121,7 +145,17 @@ phases ship.
 
 ### 6.4 Testing a provider contract
 
-- TBD — see §3 Phase 3 for deterministic HTTP-edge tests and the narrow live-provider smoke exception.
+- Fake only the external Laravel HTTP boundary; keep readers, actions,
+  transactions, and persistence real. Assert semantic payload contracts, not
+  merely HTTP status or request count: malformed HTTP 200 data is an invalid
+  response, while an empty playlist succeeds only when metadata count, page
+  total, and `items = []` consistently report zero.
+- Use independently captured persisted state as the oracle for failed reads.
+  Provider errors, transport failures, and incomplete payloads must not publish
+  partial children or advance freshness.
+- Keep the controlled live-provider contract smoke reserved for §3 Phase 3,
+  after deterministic tests have covered every representable response and
+  state transition.
 
 ### 6.5 Adding an e2e test
 
@@ -129,6 +163,18 @@ phases ship.
 
 ### 6.6 Per-rollout-phase notes
 
+- Phase 1 delivered an explicit YouTube reader contract for malformed HTTP 200
+  versus a consistent zero-item snapshot, plus a Feature test in
+  `PlaylistImportTest` proving that transport loss after valid metadata leaves
+  the complete previous snapshot and freshness unchanged.
+- Phase 1 retained the existing PostgreSQL admission package as the canonical
+  proof for limit, retry, reset, locking, races, SQLSTATE failures, and lost
+  commit acknowledgement; no duplicate primitive race was added.
+- Executable tests for risks #1 and #2 remain deferred until S-06/S-07 provide
+  writers and durable export state. Those slices must cover ambiguous create
+  through provider idempotency, deterministic discovery, or explicit
+  manual-recovery; resume the same destination; and declare final success only
+  after exact ordered provider read-back.
 - Each rollout phase appends only reusable findings that changed how future tests should be written.
 
 ## 7. What We Deliberately Don't Test
