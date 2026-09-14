@@ -184,6 +184,35 @@ class PlaylistImportTest extends TestCase
         $this->assertSame($before, Playlist::query()->with('items')->firstOrFail()->toArray());
     }
 
+    public function test_transport_failure_after_valid_metadata_leaves_the_previous_snapshot_and_freshness_unchanged(): void
+    {
+        $user = User::factory()->create();
+        Http::fakeSequence()
+            ->push($this->metadata('Original', 2))
+            ->push($this->items(['video-first', 'video-second']))
+            ->push($this->metadata('Replacement', 2))
+            ->pushFailedConnection('provider transport failed');
+
+        $this->travelTo('2026-09-14 10:00:00');
+        $this->actingAs($user)->post(route('playlists.import'), $this->form())
+            ->assertSessionHas('status', 'Playlista została dodana do Twojego banku.');
+
+        $before = Playlist::query()->with('items')->firstOrFail()->toArray();
+        $requestsBeforeReimport = Http::recorded()->count();
+
+        $this->travelTo('2026-09-15 10:00:00');
+        $this->actingAs($user)->post(route('playlists.import'), $this->form())
+            ->assertSessionHas(
+                'error',
+                fn (string $message): bool => str_contains($message, 'YouTube jest chwilowo niedostępny'),
+            );
+
+        $after = Playlist::query()->with('items')->firstOrFail()->toArray();
+
+        $this->assertSame($requestsBeforeReimport + 2, Http::recorded()->count());
+        $this->assertSame($before, $after);
+    }
+
     public function test_bank_never_displays_another_users_playlist(): void
     {
         $owner = User::factory()->create();
