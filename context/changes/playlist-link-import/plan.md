@@ -916,12 +916,12 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 5.1 Pełny PHPUnit przechodzi
-- [x] 5.2 Formatowanie PHP przechodzi
-- [x] 5.3 Produkcyjny frontend buduje się
-- [x] 5.4 Manifest źródła przechodzi dla worktree
-- [x] 5.5 Audyty przypiętych zależności przechodzą
-- [x] 5.6 PostgreSQL CI wykonuje krytyczną macierz S-02 bez sieci i sekretów
+- [x] 5.1 Pełny PHPUnit przechodzi — 0507435
+- [x] 5.2 Formatowanie PHP przechodzi — 0507435
+- [x] 5.3 Produkcyjny frontend buduje się — 0507435
+- [x] 5.4 Manifest źródła przechodzi dla worktree — 0507435
+- [x] 5.5 Audyty przypiętych zależności przechodzą — 0507435
+- [x] 5.6 PostgreSQL CI wykonuje krytyczną macierz S-02 bez sieci i sekretów — 0507435
 
 #### Manual
 
