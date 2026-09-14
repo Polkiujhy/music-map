@@ -18,25 +18,6 @@ For this MVP, the existing host wins after context weighting: it supports the re
 
 The decision reflects these interview constraints: persistent processes are required; cost and developer experience have equal weight; there is no existing platform familiarity to break ties; one European region is sufficient; and co-located services are preferred.
 
-### Managed-export credential boundary
-
-Managed account exports depend on the separate, versioned
-`music-map.managed-export.v1` PaaS capability. Only the persistent queue worker
-receives its Unix-socket locator. Manager owns the technical OAuth grant,
-refresh exchange, replacement-token adoption and operator recovery; Music Map
-owns export jobs, provider mutations, retry policy and product idempotency. The
-application receives only a short-lived access token and keeps it in memory for
-the current provider operation, with no fallback to probe credentials or
-technical tokens in its environment.
-
-The consumer accepts only the exact versioned response schema and performs no
-provider mutation after a malformed or failure response. Transport failures are
-not retry authorization. A retry is permitted only when a validated broker
-error document explicitly contains `retryable: true`; replacement refresh
-tokens never cross the PaaS boundary into Music Map. The v1 transport bounds a
-newline-terminated request at 4,096 bytes and a newline-terminated response at
-16,384 bytes; exceeding either published limit fails closed.
-
 ## Platform Comparison
 
 Scoring uses `Pass = 2`, `Partial = 1`, and `Fail = 0`. The score measures agent-friendly operations; runtime incompatibility remains a hard filter regardless of the score.
