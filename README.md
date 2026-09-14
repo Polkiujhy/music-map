@@ -147,6 +147,27 @@ does not include application-user streaming OAuth described above. Never pass
 probe credentials on the command line or write their values to source,
 application storage, output, or logs.
 
+## Managed-export access
+
+Asynchronous exports use the separate public PaaS contract
+`music-map.managed-export.v1`. The queue role connects to the Unix stream socket
+selected by `MUSIC_MAP_MANAGED_EXPORT_SOCKET` and sends one closed JSON request
+containing only the protocol, `spotify|youtube` provider and a nonsecret UUIDv4
+operation ID. It accepts an access token only from the exact success response.
+
+Manager owns the technical refresh grant and guarantees that any replacement
+refresh token is durably adopted before success is returned. Music Map never
+receives that refresh token on this path and has no fallback to the probe
+configuration. The returned access token is used only in memory for the current
+provider operation; it must not enter a job payload, database, cache, exception,
+log or telemetry field. A failure response prevents provider mutation.
+
+`rotation-recovery-required`, `reauthorization-required`, `scope-mismatch` and
+`credential-unavailable` require operator resolution. Ordinary acquisition
+retry is permitted only when the closed response explicitly contains
+`retryable: true`. Playlist creation and retry idempotency remain application
+responsibilities and are not delegated to Manager.
+
 ## YouTube write admission
 
 Every future export or synchronization that writes to YouTube must first persist
