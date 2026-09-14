@@ -25,6 +25,7 @@ class PlaylistFactory extends Factory
             'description' => 'Non-production fixture data.',
             'provider_metadata_refreshed_at' => now(),
             'imported_at' => now(),
+            'bank_content_edited_at' => null,
         ];
     }
 }

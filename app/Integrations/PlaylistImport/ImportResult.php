@@ -48,7 +48,25 @@ final readonly class ImportResult
             return null;
         }
 
-        return "Nie udało się zaimportować playlisty. Identyfikator błędu: {$this->correlationId}.";
+        $providerName = $this->provider === StreamingProvider::Spotify ? 'Spotify' : 'YouTube';
+        $message = match ($this->failureCode) {
+            ImportFailureCode::InvalidUrl,
+            ImportFailureCode::UnsupportedProvider => 'Podaj prawidłowy link HTTPS do playlisty Spotify lub YouTube.',
+            ImportFailureCode::LinkedAccountRequired => 'Połącz konto Spotify i spróbuj ponownie.',
+            ImportFailureCode::ReauthorizationRequired => 'Połącz ponownie konto streamingowe i spróbuj jeszcze raz.',
+            ImportFailureCode::InsufficientScope => 'Połącz konto ponownie, udzielając wymaganych uprawnień.',
+            ImportFailureCode::PlaylistUnavailable => 'Playlista jest prywatna lub niedostępna. Sprawdź jej widoczność.',
+            ImportFailureCode::PlaylistNotFound => 'Nie znaleziono playlisty. Sprawdź link i spróbuj ponownie.',
+            ImportFailureCode::TooManyItems => 'Playlista ma więcej niż 20 pozycji. Wybierz krótszą playlistę.',
+            ImportFailureCode::RateLimited => "{$providerName} ograniczył liczbę żądań. Spróbuj ponownie później.",
+            ImportFailureCode::QuotaLimited => "Limit {$providerName} został wyczerpany. Spróbuj ponownie później.",
+            ImportFailureCode::UnsupportedItem => 'Playlista zawiera nieobsługiwaną pozycję. Wybierz inną playlistę.',
+            ImportFailureCode::InvalidResponse => "{$providerName} zwrócił nieprawidłowe dane. Spróbuj ponownie później.",
+            ImportFailureCode::LocalEditsConfirmationRequired => 'Ta playlista zawiera lokalne zmiany. Otwórz jej właścicielski edytor i użyj świadomego reimportu.',
+            ImportFailureCode::ProviderUnavailable, null => "{$providerName} jest chwilowo niedostępny. Spróbuj ponownie później.",
+        };
+
+        return "{$message} Identyfikator błędu: {$this->correlationId}.";
     }
 
     private static function success(int $playlistId, bool $refreshed, ?string $correlationId): self

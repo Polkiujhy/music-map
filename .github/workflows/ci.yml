@@ -150,6 +150,7 @@ jobs:
           tests/Feature/Playlists/PlaylistImportTest.php
           tests/Feature/Playlists/SpotifyPlaylistImportTest.php
           tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
+          tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 
   source-security:
     runs-on: ubuntu-24.04

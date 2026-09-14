@@ -70,6 +70,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
                 'provider_revision' => null,
                 'name' => null,
                 'description' => null,
+                'bank_content_edited_at' => null,
             ]);
         });
     }

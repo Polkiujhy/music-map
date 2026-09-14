@@ -24,11 +24,13 @@ class PlaylistMigrationTest extends TestCase
         $users = require database_path('migrations/0001_01_01_000000_create_users_table.php');
         $playlists = require database_path('migrations/2026_09_13_010000_create_playlists_table.php');
         $items = require database_path('migrations/2026_09_13_010100_create_playlist_items_table.php');
+        $bankEditing = require database_path('migrations/2026_09_14_000000_add_bank_content_edited_at_to_playlists_table.php');
 
         try {
             $users->up();
             $playlists->up();
             $items->up();
+            $bankEditing->up();
 
             $this->assertTrue(Schema::hasColumns('playlists', [
                 'user_id',
@@ -41,6 +43,7 @@ class PlaylistMigrationTest extends TestCase
                 'description',
                 'provider_metadata_refreshed_at',
                 'imported_at',
+                'bank_content_edited_at',
             ]));
             $this->assertTrue(Schema::hasColumns('playlist_items', [
                 'playlist_id',
@@ -51,6 +54,9 @@ class PlaylistMigrationTest extends TestCase
                 'creators',
                 'is_available',
             ]));
+
+            $bankEditing->down();
+            $this->assertFalse(Schema::hasColumn('playlists', 'bank_content_edited_at'));
 
             $items->down();
             $playlists->down();

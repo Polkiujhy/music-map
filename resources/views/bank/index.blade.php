@@ -89,7 +89,10 @@
                                     <div class="col-span-2"><dt class="text-ash-grey-400">Dane odświeżone</dt><dd class="mt-1 font-semibold"><time datetime="{{ $playlist->provider_metadata_refreshed_at->toIso8601String() }}">{{ $playlist->provider_metadata_refreshed_at->format('Y-m-d H:i') }}</time></dd></div>
                                 </dl>
                             @endif
-                            <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link mt-5 inline-block">Otwórz źródło</a>
+                            <div class="mt-5 flex flex-wrap gap-4">
+                                <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link">Otwórz źródło</a>
+                                <a href="{{ route('bank.playlists.edit', $playlist) }}" class="auth-link">Przeglądaj i edytuj</a>
+                            </div>
                         </article>
                     @endforeach
                 </div>
