@@ -66,7 +66,7 @@ class ExportOperationPostgresTest extends TestCase
             );
         } finally {
             DB::purge();
-            $this->cleanUserFixtures($review->user_id);
+            $this->cleanUserFixtures($review->user_id, $review->playlist_id);
         }
     }
 
@@ -101,7 +101,7 @@ class ExportOperationPostgresTest extends TestCase
                 ->count());
         } finally {
             DB::purge();
-            $this->cleanUserFixtures($first->user_id);
+            $this->cleanUserFixtures($first->user_id, $first->playlist_id);
         }
     }
 
@@ -157,14 +157,17 @@ class ExportOperationPostgresTest extends TestCase
             $this->assertNull($operation->fresh()->streaming_account_id);
         } finally {
             DB::purge();
-            $this->cleanUserFixtures($review->user_id);
+            $this->cleanUserFixtures($review->user_id, $review->playlist_id);
         }
     }
 
-    private function cleanUserFixtures(int $userId): void
+    private function cleanUserFixtures(int $userId, int $playlistId): void
     {
+        Playlist::query()->whereKey($playlistId)->delete();
         Playlist::query()->where('user_id', $userId)->delete();
         User::query()->whereKey($userId)->delete();
+
+        $this->assertDatabaseMissing('playlists', ['id' => $playlistId]);
     }
 
     private function readyReview(?Playlist $playlist = null, ?User $user = null): ExportReview

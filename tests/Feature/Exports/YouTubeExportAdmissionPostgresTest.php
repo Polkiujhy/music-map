@@ -272,11 +272,15 @@ class YouTubeExportAdmissionPostgresTest extends TestCase
 
     private function cleanOperation(ExportOperation $operation): void
     {
+        $playlistId = $operation->source_playlist_id;
         DB::purge();
         YouTubeWriteAdmission::query()->where('operation_id', $operation->operation_id)->delete();
         $this->resetQuota();
+        Playlist::query()->whereKey($playlistId)->delete();
         Playlist::query()->where('user_id', $operation->user_id)->delete();
         User::query()->whereKey($operation->user_id)->delete();
+
+        $this->assertDatabaseMissing('playlists', ['id' => $playlistId]);
     }
 }
 
