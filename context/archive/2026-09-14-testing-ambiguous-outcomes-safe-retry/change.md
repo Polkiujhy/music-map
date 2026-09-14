@@ -1,10 +1,10 @@
 ---
 change_id: testing-ambiguous-outcomes-safe-retry
 title: Test ambiguous outcomes and safe retries
-status: implemented
+status: archived
 created: 2026-09-14
 updated: 2026-09-14
-archived_at: null
+archived_at: 2026-09-14T18:30:40Z
 ---
 
 ## Notes
