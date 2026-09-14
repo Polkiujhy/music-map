@@ -16,6 +16,23 @@ class ManagedAccountAccessTest extends TestCase
 {
     private const OPERATION_ID = '123e4567-e89b-42d3-a456-426614174000';
 
+    public function test_expiry_must_cover_the_write_budget_before_callback(): void
+    {
+        config()->set('services.managed_export.providers.spotify', [
+            'account_id' => 'technical-owner', 'scopes' => StreamingProvider::Spotify->exportScopes(),
+        ]);
+        $broker = \Mockery::mock(ManagedExportAccessBroker::class);
+        $broker->shouldReceive('acquire')->once()->andReturn(new ManagedExportAccess(
+            'spotify', 'secret-access-canary', now()->addSeconds(120)->toDateTimeImmutable(), self::OPERATION_ID,
+        ));
+        $this->app->instance(ManagedExportAccessBroker::class, $broker);
+        $result = app(WithManagedAccountAccessContract::class)->handle(StreamingProvider::Spotify,
+            self::OPERATION_ID, 'technical-owner', StreamingProvider::Spotify->exportScopes(),
+            fn () => $this->fail('Short-lived token must not reach writer.'));
+        $this->assertSame(ManagedExportFailureCode::TransportUnavailable, $result->failure);
+        $this->assertTrue($result->retryable);
+    }
+
     public function test_access_is_exposed_only_inside_callback_after_exact_identity_and_scope_validation(): void
     {
         config()->set('services.managed_export.providers.spotify', [
@@ -140,6 +157,6 @@ final class FakeBroker implements ManagedExportAccessBroker
             throw new ManagedExportAccessException($this->failure, $this->retryable, $this->retryAfter);
         }
 
-        return new ManagedExportAccess($provider, 'secret-access-canary', new DateTimeImmutable('+5 minutes'), $operationId);
+        return new ManagedExportAccess($provider, 'secret-access-canary', new DateTimeImmutable('+1 hour'), $operationId);
     }
 }

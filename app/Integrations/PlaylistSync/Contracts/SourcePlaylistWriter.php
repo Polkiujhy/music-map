@@ -5,6 +5,7 @@ namespace App\Integrations\PlaylistSync\Contracts;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
+use App\Integrations\PlaylistSync\SourceSyncMutationGuard;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Models\PlaylistSyncRun;
 
@@ -19,5 +20,6 @@ interface SourcePlaylistWriter
         array $desiredItems,
         StreamingAccessContext $access,
         ?PlaylistSyncRun $run = null,
+        ?SourceSyncMutationGuard $guard = null,
     ): SourcePlaylistSnapshot|SourceSyncFailure;
 }

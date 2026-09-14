@@ -39,8 +39,10 @@ final readonly class ConfirmExportReview
             }
 
             if ($locked->status === ExportReviewStatus::Confirmed) {
+                if ($locked->exportOperation()->doesntExist()) {
+                    $this->invalid('review', 'Historyczny przegląd nie uruchamia eksportu. Przygotuj nowy przegląd.');
+                }
                 $manifest = ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
-                $this->startManagedExport->handle($locked, $manifest);
 
                 return $manifest;
             }
@@ -64,6 +66,7 @@ final readonly class ConfirmExportReview
             }
 
             $playlist->load('items');
+            $playlist->assertSource();
             if (! hash_equals($locked->source_fingerprint, $this->fingerprint->handle($playlist))) {
                 $locked->forceFill([
                     'status' => ExportReviewStatus::Failed,

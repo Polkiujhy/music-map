@@ -19,6 +19,7 @@ final readonly class RefreshYouTubePlaylistMetadata
     public function handle(int $playlistId): Playlist|ImportFailureCode|null
     {
         $playlist = Playlist::query()
+            ->sourceOnly()
             ->whereKey($playlistId)
             ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)

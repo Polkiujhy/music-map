@@ -3,6 +3,8 @@
 namespace App\Integrations\ManagedAccountExport\Data;
 
 use App\Enums\StreamingProvider;
+use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
+use Closure;
 use DateTimeImmutable;
 use LogicException;
 
@@ -15,7 +17,25 @@ final readonly class ManagedAccessContext
         public string $accessToken,
         public DateTimeImmutable $expiresAt,
         public string $operationId,
+        private ?Closure $mutationGuard = null,
+        public bool $requireTargetMarker = true,
     ) {}
+
+    public function mutationFailure(): ?ManagedExportFailureCode
+    {
+        if ($this->expiresAt <= now()->addSeconds(30)) {
+            return ManagedExportFailureCode::AuthenticationRequired;
+        }
+
+        return $this->mutationGuard === null ? null : ($this->mutationGuard)();
+    }
+
+    public function withMutationGuard(Closure $guard): self
+    {
+        return new self($this->provider, $this->providerAccountId, $this->accessToken,
+            $this->expiresAt, $this->operationId,
+            fn (): ?ManagedExportFailureCode => $this->mutationFailure() ?? $guard(), $this->requireTargetMarker);
+    }
 
     public function __serialize(): array
     {

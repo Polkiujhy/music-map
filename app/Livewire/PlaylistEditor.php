@@ -147,6 +147,7 @@ class PlaylistEditor extends Component
         }
 
         return $this->owner()->playlists()
+            ->sourceOnly()
             ->whereKey($this->playlistId)
             ->with('items')
             ->firstOrFail();

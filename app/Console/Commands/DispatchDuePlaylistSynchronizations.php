@@ -21,6 +21,7 @@ final class DispatchDuePlaylistSynchronizations extends Command
     {
         $limit = max(1, (int) config('playlist-sync.dispatch_batch_size', 50));
         $dueIds = PlaylistSynchronization::query()
+            ->whereHas('playlist', fn ($query) => $query->sourceOnly())
             ->where('status', PlaylistSyncStatus::Enabled->value)
             ->where('automatic_enabled', true)
             ->where('next_check_at', '<=', now())

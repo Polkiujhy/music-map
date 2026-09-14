@@ -11,8 +11,9 @@ final readonly class ManagedPlaylistMetadata
         public string $title,
         public string $description,
         public string $marker,
+        bool $requireMarker = true,
     ) {
-        if ($title === '' || ! ManagedExportMarker::appearsExactlyOnce($description, $marker)) {
+        if ($title === '' || ($requireMarker && ! ManagedExportMarker::appearsExactlyOnce($description, $marker))) {
             throw new InvalidArgumentException('Managed playlist metadata requires a title and one final marker line.');
         }
     }

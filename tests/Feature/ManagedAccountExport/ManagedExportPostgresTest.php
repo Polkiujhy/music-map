@@ -7,9 +7,11 @@ use App\Actions\ManagedAccountExport\ReconcileManagedExport;
 use App\Actions\ManagedAccountExport\RetryManagedExport;
 use App\Actions\ManagedAccountExport\RunManagedExport;
 use App\Actions\Playlists\FingerprintPlaylistContent;
+use App\Actions\Playlists\ReplaceImportedPlaylist;
 use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\ManagedAccountExport\Contracts\ManagedPlaylistGateway;
 use App\Integrations\ManagedAccountExport\Contracts\WithManagedAccountAccess;
@@ -22,8 +24,11 @@ use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistReconciliationResu
 use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistReference;
 use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistSnapshot;
 use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
+use App\Integrations\ManagedAccountExport\ManagedExportMarker;
 use App\Integrations\ManagedAccountExport\ManagedPlaylistGatewayRegistry;
 use App\Integrations\ManagedAccountExport\ManagedProviderFailure;
+use App\Integrations\ManagedAccountExport\WithLinkedAccountExportAccess;
+use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
 use App\Integrations\YouTubeWriteAdmission\Actions\ReserveYouTubeWrite;
 use App\Integrations\YouTubeWriteAdmission\Contracts\AdmitYouTubeWrite;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
@@ -52,6 +57,87 @@ use Throwable;
 
 class ManagedExportPostgresTest extends TestCase
 {
+    public function test_import_commit_precedes_recovered_export_checkpoint_and_prevents_target_mutation(): void
+    {
+        $this->requirePostgresConcurrency();
+        $operation = $this->managedOperation(StreamingProvider::Spotify);
+        $stage = sys_get_temp_dir().'/music-map-import-checkpoint-'.Str::uuid();
+        File::ensureDirectoryExists($stage, 0700);
+        $applicationName = 'music-map-checkpoint-'.Str::uuid();
+
+        try {
+            $outcomes = $this->runConcurrently(2, 'import-checkpoint', function (int $index) use ($operation, $stage, $applicationName): string {
+                if ($index === 0) {
+                    return DB::transaction(function () use ($operation, $stage, $applicationName): string {
+                        $user = User::query()->whereKey($operation->user_id)->lock('FOR NO KEY UPDATE')->firstOrFail();
+                        $import = app(ReplaceImportedPlaylist::class)->handle($user, new PlaylistSnapshot(
+                            StreamingProvider::Spotify,
+                            'postgres-managed-target',
+                            'postgres-managed-owner',
+                            'https://open.spotify.com/playlist/postgres-managed-target',
+                            'import-revision',
+                            'Independent source import',
+                            'Preserve this source',
+                            new DateTimeImmutable,
+                            [],
+                        ));
+                        if (! $import instanceof Playlist) {
+                            throw new RuntimeException('The import must acquire the identity before the target locator is published.');
+                        }
+
+                        touch($stage.'/import-uncommitted');
+                        $this->waitForDatabaseLock($applicationName);
+                        $published = PlaylistExportTargetAttempt::query()
+                            ->where('playlist_export_id', $operation->playlist_export_id)
+                            ->whereNotNull('provider_playlist_id')->exists();
+                        if ($published) {
+                            throw new RuntimeException('The target checkpoint became visible before the source import committed.');
+                        }
+
+                        return 'import-committed';
+                    });
+                }
+
+                $this->waitForFile($stage.'/import-uncommitted');
+                DB::select("select set_config('application_name', ?, false)", [$applicationName]);
+                $gateway = new PostgresManagedPlaylistGateway(StreamingProvider::Spotify, recoverExisting: true);
+                $action = new RunManagedExport(
+                    app(AdmitYouTubeWrite::class),
+                    new PostgresManagedAccess,
+                    new ManagedPlaylistGatewayRegistry($gateway),
+                    app(ReconcileManagedExport::class),
+                    app(WithLinkedAccountExportAccess::class),
+                );
+                $action->handle($operation->id);
+
+                if ($gateway->mutationCount !== 0) {
+                    throw new RuntimeException('Export must not mutate a target represented by an independent source import.');
+                }
+
+                return ExportOperation::query()->findOrFail($operation->id)->failure_code?->value ?? 'unexpected-success';
+            });
+
+            $this->assertSame(['import-committed', ManagedExportFailureCode::PersistenceFailure->value], $outcomes);
+            $import = Playlist::query()->where('user_id', $operation->user_id)
+                ->where('source_provider', StreamingProvider::Spotify->value)
+                ->where('source_playlist_id', 'postgres-managed-target')->sole();
+            $this->assertSame(PlaylistOrigin::Imported, $import->origin);
+            $this->assertSame('Independent source import', $import->name);
+            $this->assertSame('import-revision', $import->provider_revision);
+            $this->assertSame(ExportOperationStatus::PartialFailed, $operation->fresh()->status);
+            $this->assertNull($operation->playlistExport->fresh()->target_playlist_id);
+            $this->assertSame('postgres-managed-target', $operation->playlistExport->targetAttempts()->sole()->provider_playlist_id);
+        } finally {
+            DB::purge();
+            Playlist::query()->where('user_id', $operation->user_id)
+                ->where('origin', PlaylistOrigin::Imported->value)
+                ->where('source_provider', StreamingProvider::Spotify->value)
+                ->where('source_playlist_id', 'postgres-managed-target')->delete();
+            $this->deleteOperationGraph($operation);
+            File::deleteDirectory($stage);
+        }
+    }
+
     public function test_parallel_confirmations_and_retries_serialize_to_one_transition(): void
     {
         $this->requirePostgresConcurrency();
@@ -120,6 +206,7 @@ class ManagedExportPostgresTest extends TestCase
                     new PostgresManagedAccess,
                     new ManagedPlaylistGatewayRegistry($gateway),
                     app(ReconcileManagedExport::class),
+                    app(WithLinkedAccountExportAccess::class),
                 );
                 $action->handle($operation->id);
 
@@ -199,6 +286,7 @@ class ManagedExportPostgresTest extends TestCase
                     new PostgresManagedAccess,
                     new ManagedPlaylistGatewayRegistry($gateway),
                     app(ReconcileManagedExport::class),
+                    app(WithLinkedAccountExportAccess::class),
                 );
                 $action->handle($operation->id);
 
@@ -404,6 +492,10 @@ class ManagedExportPostgresTest extends TestCase
                 $error = is_file("{$barrier}/error-{$index}")
                     ? file_get_contents("{$barrier}/error-{$index}")
                     : 'No child error was recorded.';
+                $otherErrors = glob("{$barrier}/error-*") ?: [];
+                if ($otherErrors !== []) {
+                    $error .= "\nAll contender errors:\n".implode("\n", array_map('file_get_contents', $otherErrors));
+                }
                 $this->assertTrue(pcntl_wifexited($status), $error);
                 $this->assertSame(0, pcntl_wexitstatus($status), $error);
             }
@@ -574,6 +666,24 @@ class ManagedExportPostgresTest extends TestCase
             usleep(1000);
         }
     }
+
+    private function waitForDatabaseLock(string $applicationName): void
+    {
+        $deadline = microtime(true) + 10;
+        do {
+            DB::select('select pg_stat_clear_snapshot()');
+            $waiting = DB::selectOne(
+                "select count(*) as waiting from pg_stat_activity where application_name = ? and wait_event_type = 'Lock'",
+                [$applicationName],
+            );
+            if ((int) $waiting->waiting > 0) {
+                return;
+            }
+            usleep(1000);
+        } while (microtime(true) < $deadline);
+
+        throw new RuntimeException('The export checkpoint did not wait for the uncommitted source import.');
+    }
 }
 
 final class PostgresManagedAccess implements WithManagedAccountAccess
@@ -603,7 +713,9 @@ final class PostgresManagedPlaylistGateway implements ManagedPlaylistGateway
 {
     private ?ManagedPlaylistMetadata $metadata = null;
 
-    public function __construct(private StreamingProvider $streamingProvider) {}
+    public int $mutationCount = 0;
+
+    public function __construct(private StreamingProvider $streamingProvider, private bool $recoverExisting = false) {}
 
     public function provider(): StreamingProvider
     {
@@ -612,11 +724,18 @@ final class PostgresManagedPlaylistGateway implements ManagedPlaylistGateway
 
     public function findByMarker(ManagedAccessContext $access, string $marker): ManagedMarkerLookup|ManagedProviderFailure
     {
+        if ($this->recoverExisting) {
+            $this->metadata = new ManagedPlaylistMetadata('Recovered playlist', ManagedExportMarker::line($marker), $marker);
+
+            return ManagedMarkerLookup::one($this->reference($access->providerAccountId));
+        }
+
         return ManagedMarkerLookup::none();
     }
 
     public function create(ManagedAccessContext $access, ManagedPlaylistMetadata $metadata): ManagedPlaylistReference|ManagedProviderFailure
     {
+        $this->mutationCount++;
         $this->metadata = $metadata;
 
         return $this->reference($access->providerAccountId);
@@ -637,6 +756,11 @@ final class PostgresManagedPlaylistGateway implements ManagedPlaylistGateway
         ManagedPlaylistMetadata $metadata,
         array $catalogItems,
     ): ManagedPlaylistReconciliationResult|ManagedProviderFailure {
+        if (($failure = $access->mutationFailure()) !== null) {
+            return new ManagedProviderFailure($failure);
+        }
+        $this->mutationCount++;
+
         return ManagedPlaylistReconciliationResult::exact($this->snapshot($reference, $metadata));
     }
 

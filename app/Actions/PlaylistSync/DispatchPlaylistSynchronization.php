@@ -24,7 +24,8 @@ final class DispatchPlaylistSynchronization
 
             if (! $sync instanceof PlaylistSynchronization
                 || $sync->status !== PlaylistSyncStatus::Enabled
-                || $sync->streaming_account_id === null) {
+                || $sync->streaming_account_id === null
+                || ! $sync->playlist()->sourceOnly()->exists()) {
                 return null;
             }
 

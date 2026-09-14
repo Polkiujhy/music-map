@@ -49,12 +49,8 @@ final readonly class ImportPlaylist
             );
         }
 
-        if ($user->playlists()
-            ->where('origin', PlaylistOrigin::ManagedTarget->value)
-            ->where('source_provider', $reference->provider->value)
-            ->where('source_playlist_id', $reference->providerPlaylistId)
-            ->exists()) {
-            return $this->failure(ImportFailureCode::InvalidResponse, $reference->provider, $correlationId);
+        if ($this->replace->isKnownExportTarget($user, $reference->provider, $reference->providerPlaylistId)) {
+            return $this->failure(ImportFailureCode::ExportTargetConflict, $reference->provider, $correlationId);
         }
 
         $streamingAccountId = null;
@@ -116,6 +112,7 @@ final readonly class ImportPlaylist
             $streamingAccountId,
             $localEditsConfirmed,
         ) {
+            User::query()->whereKey($user->getKey())->lock(DB::getDriverName() === 'pgsql' ? 'for no key update' : true)->firstOrFail();
             $currentPlaylist = $user->playlists()
                 ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', $snapshot->provider->value)
@@ -132,6 +129,10 @@ final readonly class ImportPlaylist
                 $snapshot,
                 streamingAccountId: $streamingAccountId,
             );
+
+            if ($playlist instanceof ImportFailureCode) {
+                return $playlist;
+            }
 
             if ($localEditsConfirmed) {
                 $playlist->update(['bank_content_edited_at' => null]);

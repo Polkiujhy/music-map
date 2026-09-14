@@ -105,6 +105,9 @@ final class SpotifyManagedPlaylistGateway implements ManagedPlaylistGateway
             return new ManagedProviderFailure(ManagedExportFailureCode::MetadataRejected);
         }
         try {
+            if (($failure = $access->mutationFailure()) !== null) {
+                return new ManagedProviderFailure($failure);
+            }
             $response = $this->request($access)->post(
                 self::API_URL.'/me/playlists',
                 ['name' => $metadata->title, 'description' => $metadata->description, 'public' => false, 'collaborative' => false],
@@ -162,7 +165,7 @@ final class SpotifyManagedPlaylistGateway implements ManagedPlaylistGateway
         $description = $metadata['description'] ?? null;
         $title = $metadata['name'] ?? null;
         $marker = $this->markerFrom($description);
-        if (! is_string($title) || $title === '' || ! is_string($description) || $marker === null) {
+        if (! is_string($title) || $title === '' || ! is_string($description) || ($access->requireTargetMarker && $marker === null)) {
             return new ManagedProviderFailure(ManagedExportFailureCode::TargetMarkerMismatch);
         }
         $items = $this->items($access, $reference);
@@ -172,7 +175,7 @@ final class SpotifyManagedPlaylistGateway implements ManagedPlaylistGateway
 
         return new ManagedPlaylistSnapshot(
             $actual,
-            new ManagedPlaylistMetadata($title, $description, $marker),
+            new ManagedPlaylistMetadata($title, $description, $marker ?? '', $access->requireTargetMarker),
             'private',
             $items,
             is_string($metadata['snapshot_id'] ?? null) ? $metadata['snapshot_id'] : null,
@@ -189,10 +192,13 @@ final class SpotifyManagedPlaylistGateway implements ManagedPlaylistGateway
         if ($snapshot instanceof ManagedProviderFailure) {
             return $snapshot;
         }
-        if ($snapshot->metadata->marker !== $metadata->marker) {
+        if ($access->requireTargetMarker && $snapshot->metadata->marker !== $metadata->marker) {
             return new ManagedProviderFailure(ManagedExportFailureCode::TargetMarkerMismatch);
         }
         try {
+            if (($failure = $access->mutationFailure()) !== null) {
+                return new ManagedProviderFailure($failure);
+            }
             $metadataResponse = $this->request($access)->put(self::API_URL.'/playlists/'.rawurlencode($reference->providerPlaylistId), [
                 'name' => $metadata->title,
                 'description' => $metadata->description,
@@ -203,6 +209,9 @@ final class SpotifyManagedPlaylistGateway implements ManagedPlaylistGateway
                 return $metadataResponse->serverError()
                     ? ManagedProviderFailureMapper::transport(true)
                     : ManagedProviderFailureMapper::response($metadataResponse, ManagedExportFailureCode::MetadataRejected);
+            }
+            if (($failure = $access->mutationFailure()) !== null) {
+                return new ManagedProviderFailure($failure);
             }
             $itemsResponse = $this->request($access)->put(
                 self::API_URL.'/playlists/'.rawurlencode($reference->providerPlaylistId).'/items',

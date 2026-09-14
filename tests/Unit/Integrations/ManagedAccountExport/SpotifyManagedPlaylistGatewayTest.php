@@ -20,6 +20,37 @@ class SpotifyManagedPlaylistGatewayTest extends TestCase
 {
     private const MARKER = '01234567-89ab-cdef-0123-456789abcdef';
 
+    public function test_linked_known_target_restores_metadata_after_marker_was_removed(): void
+    {
+        $items = ['spotify:track:a'];
+        Http::fakeSequence('api.spotify.com/*')
+            ->push($this->playlist(['name' => 'External name', 'description' => 'External description']))
+            ->push($this->spotifyItems([]))->push([], 200)->push(['snapshot_id' => 'revision-2'])
+            ->push($this->playlist(['snapshot_id' => 'revision-2']))->push($this->spotifyItems($items));
+        $original = $this->access();
+        $access = new ManagedAccessContext($original->provider, $original->providerAccountId,
+            $original->accessToken, $original->expiresAt, $original->operationId, requireTargetMarker: false);
+        $result = (new SpotifyManagedPlaylistGateway)->reconcile($access, $this->reference(), $this->metadata(), $items);
+        $this->assertNotInstanceOf(ManagedProviderFailure::class, $result);
+        $this->assertTrue($result->exact);
+        $this->assertSame($this->metadata()->description, $result->snapshot->metadata->description);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+    }
+
+    public function test_revoked_guard_stops_between_metadata_and_item_mutations(): void
+    {
+        Http::fakeSequence('api.spotify.com/*')
+            ->push($this->playlist())->push($this->spotifyItems([]))->push([], 200);
+        $checks = 0;
+        $access = $this->access()->withMutationGuard(function () use (&$checks): ?ManagedExportFailureCode {
+            return ++$checks > 1 ? ManagedExportFailureCode::AuthenticationRequired : null;
+        });
+        $result = (new SpotifyManagedPlaylistGateway)->reconcile($access, $this->reference(), $this->metadata(), ['spotify:track:a']);
+        $this->assertSame(ManagedExportFailureCode::AuthenticationRequired, $result->code);
+        Http::assertSentCount(3);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'PUT' && str_ends_with($request->url(), '/items'));
+    }
+
     public function test_create_is_private_non_collaborative_and_returns_certain_owner_reference(): void
     {
         Http::fake(['api.spotify.com/*' => Http::response($this->playlist(), 201)]);

@@ -22,7 +22,7 @@ final readonly class DispatchDuePlaylistSynchronizationsAfterLogin
         PlaylistSynchronization::query()
             ->where('status', PlaylistSyncStatus::Enabled->value)
             ->where('automatic_enabled', true)
-            ->whereHas('playlist', fn ($query) => $query->where('user_id', $event->user->getAuthIdentifier()))
+            ->whereHas('playlist', fn ($query) => $query->sourceOnly()->where('user_id', $event->user->getAuthIdentifier()))
             ->where(function ($query) use ($threshold): void {
                 $query->whereNull('last_checked_at')->orWhere('last_checked_at', '<=', $threshold);
             })

@@ -6,6 +6,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistSync\Contracts\SourcePlaylistWriter;
 use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
+use App\Integrations\PlaylistSync\SourceSyncMutationGuard;
 use App\Integrations\PlaylistSync\YouTube\PlanYouTubePlaylistMutations;
 use App\Integrations\PlaylistSync\YouTube\YouTubePlaylistMutation;
 use App\Integrations\PlaylistSync\YouTubeSourceSyncFailureMapper;
@@ -33,7 +34,7 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
         return StreamingProvider::YouTube;
     }
 
-    public function write(string $providerPlaylistId, SourcePlaylistSnapshot $current, array $desiredItems, StreamingAccessContext $access, ?PlaylistSyncRun $run = null): SourcePlaylistSnapshot|SourceSyncFailure
+    public function write(string $providerPlaylistId, SourcePlaylistSnapshot $current, array $desiredItems, StreamingAccessContext $access, ?PlaylistSyncRun $run = null, ?SourceSyncMutationGuard $guard = null): SourcePlaylistSnapshot|SourceSyncFailure
     {
         if ($access->provider !== StreamingProvider::YouTube || $providerPlaylistId === '' || $run === null || count($desiredItems) > 20) {
             return SourceSyncFailure::InvalidResponse;
@@ -63,6 +64,9 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
             $snapshot = $current;
 
             if ($mutations !== [] && $this->admission !== null) {
+                if (($failure = $guard?->failure()) !== null) {
+                    return $failure;
+                }
                 $admission = $this->admission->admit(
                     YouTubeWriteOperationType::SourceSync,
                     $run->operation_id,
@@ -89,6 +93,9 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
                     return SourceSyncFailure::ExternalDrift;
                 }
 
+                if (($failure = $guard?->failure()) !== null) {
+                    return $failure;
+                }
                 $failure = $this->mutate($providerPlaylistId, $mutation, $access);
                 if ($failure !== null) {
                     return $failure;

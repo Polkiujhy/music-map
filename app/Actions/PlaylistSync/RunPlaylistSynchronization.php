@@ -9,6 +9,7 @@ use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourcePlaylistReaderRegistry;
 use App\Integrations\PlaylistSync\SourcePlaylistWriterRegistry;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
+use App\Integrations\PlaylistSync\SourceSyncMutationGuard;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\StreamingAccessFailure;
@@ -39,6 +40,11 @@ final readonly class RunPlaylistSynchronization
         }
         $sync = $identity->synchronization;
         $playlist = $sync->playlist;
+        if (! $sync->playlist()->sourceOnly()->exists()) {
+            $this->fail->handle($runId, 'invalid-source-role');
+
+            return null;
+        }
         $account = StreamingAccount::query()->find($sync->streaming_account_id);
         $owner = User::query()->find($playlist->user_id);
         $reader = $this->readers->readerFor($playlist->source_provider);
@@ -54,7 +60,14 @@ final readonly class RunPlaylistSynchronization
             $owner,
             $account,
             $playlist->source_provider->requiredScopes(),
-            function (StreamingAccessContext $access) use ($runId, $reader, $playlist, $accountId, &$outcome): void {
+            function (StreamingAccessContext $access) use ($runId, $reader, $playlist, $account, $accountId, &$outcome): void {
+                $guard = new SourceSyncMutationGuard(
+                    $runId,
+                    $accountId,
+                    (int) $playlist->user_id,
+                    $access->credentialVersion ?? (int) $account->credential_version,
+                    $access,
+                );
                 $source = $reader->read($playlist->source_playlist_id, $access);
                 if (! $source instanceof SourcePlaylistSnapshot) {
                     $outcome = $source;
@@ -74,7 +87,8 @@ final readonly class RunPlaylistSynchronization
                     }
                     $sync = $run->synchronization()->lockForUpdate()->firstOrFail();
                     if ($sync->status !== PlaylistSyncStatus::Enabled
-                        || (int) $sync->streaming_account_id !== $accountId) {
+                        || (int) $sync->streaming_account_id !== $accountId
+                        || ! $sync->playlist()->sourceOnly()->exists()) {
                         $run->update(['state' => 'cancelled']);
 
                         return ['skip' => true];
@@ -156,7 +170,7 @@ final readonly class RunPlaylistSynchronization
 
                     return;
                 }
-                $written = $writer->write($playlist->source_playlist_id, $source, $prepared['items'], $access, $prepared['run']);
+                $written = $writer->write($playlist->source_playlist_id, $source, $prepared['items'], $access, $prepared['run'], $guard);
                 if ($written === SourceSyncFailure::ExternalDrift) {
                     $fresh = $reader->read($playlist->source_playlist_id, $access);
                     $outcome = $fresh instanceof SourcePlaylistSnapshot

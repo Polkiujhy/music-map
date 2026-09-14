@@ -53,6 +53,7 @@ final class SendManagedExportCompletedNotification implements ShouldBeUnique, Sh
             (int) $operation->exportReview->playlist_id,
             $operation->playlistExport->target_provider,
             $operation->status,
+            $operation->playlistExport->destination_type,
         ));
 
         // This checkpoint follows transport acceptance. A worker crash between

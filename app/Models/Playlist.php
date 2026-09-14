@@ -6,6 +6,7 @@ use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use Database\Factories\PlaylistFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -78,6 +79,21 @@ class Playlist extends Model
     public function isManagedTarget(): bool
     {
         return $this->origin === PlaylistOrigin::ManagedTarget;
+    }
+
+    public function isExportTarget(): bool
+    {
+        return $this->isManagedTarget();
+    }
+
+    public function assertSource(): void
+    {
+        abort_if($this->isExportTarget(), 404);
+    }
+
+    public function scopeSourceOnly(Builder $query): Builder
+    {
+        return $query->where('origin', PlaylistOrigin::Imported->value);
     }
 
     /** @return HasOne<PlaylistSynchronization, $this> */

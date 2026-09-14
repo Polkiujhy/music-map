@@ -8,6 +8,7 @@ use App\Integrations\PlaylistImport\Data\PlaylistItemSnapshot;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Models\Playlist;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ReconcileEditedYouTubePlaylist
@@ -19,7 +20,13 @@ final readonly class ReconcileEditedYouTubePlaylist
     public function handle(int $playlistId, PlaylistSnapshot $snapshot): Playlist|ImportFailureCode|null
     {
         return DB::transaction(function () use ($playlistId, $snapshot): Playlist|ImportFailureCode|null {
+            $ownerId = Playlist::query()->whereKey($playlistId)->value('user_id');
+            if ($ownerId === null) {
+                return null;
+            }
+            User::query()->whereKey($ownerId)->lock(DB::getDriverName() === 'pgsql' ? 'for no key update' : true)->firstOrFail();
             $playlist = Playlist::query()
+                ->sourceOnly()
                 ->whereKey($playlistId)
                 ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', StreamingProvider::YouTube->value)

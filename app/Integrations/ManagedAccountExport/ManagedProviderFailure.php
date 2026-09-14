@@ -27,6 +27,8 @@ final readonly class ManagedProviderFailure
             ManagedExportFailureCode::MetadataRejected,
             ManagedExportFailureCode::ItemRejected,
             ManagedExportFailureCode::AmbiguousMutation,
+            // Application fencing can deny a gateway mutation before any HTTP write.
+            ManagedExportFailureCode::PersistenceFailure,
         ], true)) {
             throw new InvalidArgumentException('Failure code is outside the managed provider taxonomy.');
         }

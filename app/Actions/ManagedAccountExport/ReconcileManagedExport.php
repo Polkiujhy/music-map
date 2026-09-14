@@ -34,16 +34,19 @@ final readonly class ReconcileManagedExport
             return ManagedExportFailureCode::PersistenceFailure;
         }
 
-        $source = $export->sourcePlaylist;
         $metadata = $this->metadata->make(
             $export->target_provider,
-            $source->name ?? 'Playlista',
-            $source->description,
+            $operation->playlist_name ?? 'Playlista',
+            $operation->playlist_description,
             $attempt->marker,
         );
         $reference = $this->targets->handle($operation, $generation, $access, $gateway, $metadata);
         if ($reference instanceof ManagedProviderFailure || $reference instanceof ManagedExportFailureCode) {
             return $reference;
+        }
+
+        if (($failure = $access->mutationFailure()) !== null) {
+            return $failure;
         }
 
         $manifest = ConfirmedExportManifest::fromConfirmedReview($operation->exportReview);

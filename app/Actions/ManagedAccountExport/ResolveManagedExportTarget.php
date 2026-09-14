@@ -12,6 +12,7 @@ use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
 use App\Integrations\ManagedAccountExport\ManagedProviderFailure;
 use App\Models\ExportOperation;
 use App\Models\PlaylistExportTargetAttempt;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ResolveManagedExportTarget
@@ -46,7 +47,7 @@ final readonly class ResolveManagedExportTarget
             );
             $inspected = $gateway->inspect($access, $reference);
 
-            if (! $inspected instanceof ManagedProviderFailure
+            if ($access->requireTargetMarker && ! $inspected instanceof ManagedProviderFailure
                 && $inspected->metadata->marker !== $attempt->marker) {
                 return new ManagedProviderFailure(ManagedExportFailureCode::TargetMarkerMismatch);
             }
@@ -87,6 +88,10 @@ final readonly class ResolveManagedExportTarget
         if ($attempt->status !== PlaylistExportTargetAttempt::STATUS_PENDING
             || $attempt->create_started_at !== null) {
             return new ManagedProviderFailure(ManagedExportFailureCode::AmbiguousMutation, true, 300);
+        }
+
+        if (($failure = $access->mutationFailure()) !== null) {
+            return $failure;
         }
 
         $marked = DB::transaction(function () use ($operation, $attempt, $attemptGeneration): bool {
@@ -144,6 +149,8 @@ final readonly class ResolveManagedExportTarget
         ManagedPlaylistReference $reference,
     ): bool {
         return DB::transaction(function () use ($operation, $attempt, $generation, $reference): bool {
+            // Serialize locator publication with imports of the same user's provider URL.
+            User::query()->whereKey($operation->user_id)->lock(DB::getDriverName() === 'pgsql' ? 'for no key update' : true)->firstOrFail();
             $active = ExportOperation::query()
                 ->whereKey($operation->getKey())
                 ->where('attempt_generation', $generation)

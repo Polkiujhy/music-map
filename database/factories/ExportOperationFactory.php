@@ -15,6 +15,11 @@ class ExportOperationFactory extends Factory
     public function configure(): static
     {
         return $this->afterMaking(function (ExportOperation $operation): void {
+            $source = $operation->playlistExport?->sourcePlaylist;
+            if (! array_key_exists('playlist_name', $operation->getAttributes())) {
+                $operation->playlist_name = $source?->name;
+                $operation->playlist_description = $source?->description;
+            }
             if ($operation->export_review_id !== null && $operation->user_id === null) {
                 $operation->user_id = ExportReview::query()->findOrFail($operation->export_review_id)->user_id;
             }

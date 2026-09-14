@@ -78,6 +78,8 @@ final readonly class WithStreamingAccess implements WithStreamingAccessContract
             $snapshot->provider,
             $snapshot->provider_account_id,
             $grant->accessToken,
+            $grant->expiresAt,
+            $credentialVersion + ($grant->refreshToken === null ? 0 : 1),
         );
 
         try {

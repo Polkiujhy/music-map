@@ -2,6 +2,7 @@
 
 namespace App\Actions\ManagedAccountExport;
 
+use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Enums\StreamingProvider;
 use App\Integrations\ManagedAccountExport\Contracts\WithManagedAccountAccess;
@@ -11,11 +12,13 @@ use App\Integrations\ManagedAccountExport\ManagedPlaylistGatewayRegistry;
 use App\Integrations\ManagedAccountExport\ManagedProviderFailure;
 use App\Integrations\ManagedAccountExport\Providers\SpotifyManagedPlaylistGateway;
 use App\Integrations\ManagedAccountExport\Providers\YouTubeManagedPlaylistGateway;
+use App\Integrations\ManagedAccountExport\WithLinkedAccountExportAccess;
 use App\Integrations\YouTubeWriteAdmission\Contracts\AdmitYouTubeWrite;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionUnavailable;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
 use App\Models\ExportOperation;
+use App\Models\Playlist;
 use App\Models\PlaylistExportTargetAttempt;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +33,7 @@ final readonly class RunManagedExport
         private WithManagedAccountAccess $access,
         private ManagedPlaylistGatewayRegistry $gateways,
         private ReconcileManagedExport $reconcile,
+        private WithLinkedAccountExportAccess $linkedAccess,
     ) {}
 
     /** Return a bounded delay when the durable operation should be delivered again. */
@@ -46,7 +50,8 @@ final readonly class RunManagedExport
         if ($export->target_provider === StreamingProvider::YouTube) {
             try {
                 $admission = $this->youtubeAdmission->admit(
-                    YouTubeWriteOperationType::ManagedExport,
+                    $export->destination_type === ExportDestinationType::Linked
+                        ? YouTubeWriteOperationType::LinkedExport : YouTubeWriteOperationType::ManagedExport,
                     $operation->getKey(),
                 );
             } catch (YouTubeWriteAdmissionUnavailable) {
@@ -60,25 +65,24 @@ final readonly class RunManagedExport
 
         $gateway = $this->gateways->for($export->target_provider);
         $failure = null;
-        $result = $this->access->handle(
-            $export->target_provider,
-            $operation->getKey(),
-            $export->target_account_id,
-            $this->requiredScopes($export->target_provider),
-            function (ManagedAccessContext $context) use ($operation, $generation, $gateway, &$failure): ?ManagedExportFailureCode {
-                $outcome = $this->reconcile->handle($operation, $generation, $context, $gateway);
-                if ($outcome instanceof ManagedProviderFailure) {
-                    $failure = $outcome;
+        $callback = function (ManagedAccessContext $context) use ($operation, $generation, $gateway, &$failure): ?ManagedExportFailureCode {
+            $context = $context->withMutationGuard(fn (): ?ManagedExportFailureCode => $this->mutationFailure($operation, $generation));
+            $outcome = $this->reconcile->handle($operation, $generation, $context, $gateway);
+            if ($outcome instanceof ManagedProviderFailure) {
+                $failure = $outcome;
 
-                    return $outcome->code;
-                }
-                if ($outcome instanceof ManagedExportFailureCode) {
-                    return $outcome;
-                }
+                return $outcome->code;
+            }
+            if ($outcome instanceof ManagedExportFailureCode) {
+                return $outcome;
+            }
 
-                return null;
-            },
-        );
+            return null;
+        };
+        $result = $export->destination_type === ExportDestinationType::Linked
+            ? $this->linkedAccess->handle($operation, $callback)
+            : $this->access->handle($export->target_provider, $operation->getKey(),
+                $export->target_account_id, $this->requiredScopes($export->target_provider), $callback);
 
         if ($result->successful) {
             return null;
@@ -94,6 +98,34 @@ final readonly class RunManagedExport
             $retryable,
             $failure?->retryAfter ?? $result->retryAfter,
         );
+    }
+
+    private function mutationFailure(ExportOperation $operation, int $generation): ?ManagedExportFailureCode
+    {
+        if (! ExportOperation::query()->whereKey($operation->getKey())
+            ->where('attempt_generation', $generation)
+            ->where('status', ExportOperationStatus::Processing->value)->exists()) {
+            return ManagedExportFailureCode::PersistenceFailure;
+        }
+
+        $export = $operation->playlistExport;
+        $providerId = $export->targetAttempts()->where('generation', $export->target_generation)
+            ->value('provider_playlist_id');
+        if ($providerId === null) {
+            return null;
+        }
+
+        // An import may have won the race before the create locator was known.
+        // Never reconcile that independent source, even if provider ownership matches.
+        $local = Playlist::query()->where('user_id', $operation->user_id)
+            ->where('source_provider', $export->target_provider->value)
+            ->where('source_playlist_id', $providerId)->first();
+        if ($local !== null && (! $local->isExportTarget()
+            || (int) $local->getKey() !== (int) $export->target_playlist_id)) {
+            return ManagedExportFailureCode::PersistenceFailure;
+        }
+
+        return null;
     }
 
     /** @return null|array{ExportOperation, int} */

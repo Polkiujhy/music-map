@@ -76,12 +76,7 @@ final readonly class MaterializeManagedExportPlaylist
 
                 if ($target instanceof Playlist) {
                     $ownedByThisExport = (string) $export->target_playlist_id === (string) $target->getKey();
-                    $adoptableImport = $target->origin === PlaylistOrigin::Imported
-                        && $target->source_account_id !== null
-                        && hash_equals($target->source_account_id, $export->target_account_id)
-                        && $target->managedExportTarget()->doesntExist();
-
-                    if (! $ownedByThisExport && ! $adoptableImport) {
+                    if (! $ownedByThisExport || ! $target->isExportTarget()) {
                         return false;
                     }
                     if ($export->target_playlist_id !== null

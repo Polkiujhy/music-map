@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
     'user_id',
     'export_review_id',
     'playlist_export_id',
+    'playlist_name',
+    'playlist_description',
     'status',
     'failure_code',
     'attempt_generation',

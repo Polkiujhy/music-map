@@ -39,6 +39,11 @@ milestone_status: open
 
 ## W skrócie
 
+Integracja lokalna S-06/S-07/S-08: `context/changes/export-pr-reconciliation/`.
+PR #59/#61/#62 współdzielą jeden lifecycle eksportu i admission; synchronizacja
+źródła pozostaje osobnym procesem. Statusy dostarczenia poniżej nie oznaczają
+wdrożenia tej integracji — live smoke oraz publikacja pozostają osobną bramką.
+
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
 | F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |

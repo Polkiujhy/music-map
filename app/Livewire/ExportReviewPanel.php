@@ -3,12 +3,14 @@
 namespace App\Livewire;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
+use App\Enums\ExportDestinationType;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
 use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
 use App\Models\ExportReview;
+use App\Models\StreamingAccount;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -24,6 +26,9 @@ final class ExportReviewPanel extends Component
 
     public ?string $operationStatus = null;
 
+    #[Locked]
+    public string $destinationType;
+
     public int $startedAt;
 
     public string $statusAnnouncement = '';
@@ -36,6 +41,7 @@ final class ExportReviewPanel extends Component
         $review = $this->ownedReview((int) $exportReview->getKey())->load(['items', 'exportOperation']);
         $this->reviewId = (int) $review->getKey();
         $this->status = $review->status->value;
+        $this->destinationType = $review->exportOperation?->playlistExport?->destination_type->value ?? $review->destination_type->value;
         $this->startedAt = ($review->started_at ?? $review->created_at)->getTimestamp();
         $this->operationStatus = $review->exportOperation?->status->value;
         if ($review->exportOperation !== null) {
@@ -162,7 +168,9 @@ final class ExportReviewPanel extends Component
             return match (ExportOperationStatus::from($this->operationStatus)) {
                 ExportOperationStatus::Queued,
                 ExportOperationStatus::Processing => 'W trakcie przenoszenia',
-                ExportOperationStatus::Succeeded => 'Przeniesiona — zarządzana przez music-map',
+                ExportOperationStatus::Succeeded => $this->destinationType === ExportDestinationType::Linked->value
+                    ? 'Przeniesiona — na Twoje połączone konto'
+                    : 'Przeniesiona — zarządzana przez music-map',
                 ExportOperationStatus::Failed => 'Nie przeniesiono',
                 ExportOperationStatus::PartialFailed,
                 ExportOperationStatus::ManualRecoveryRequired,
@@ -189,7 +197,9 @@ final class ExportReviewPanel extends Component
             ManagedExportFailureCode::QuotaExceeded => 'Dzienny limit operacji YouTube został wykorzystany.',
             ManagedExportFailureCode::AuthenticationRequired,
             ManagedExportFailureCode::RequiredScopeMissing,
-            ManagedExportFailureCode::RefreshRotationRequired => 'Dostęp techniczny wymaga ponownej konfiguracji.',
+            ManagedExportFailureCode::RefreshRotationRequired => $this->destinationType === ExportDestinationType::Linked->value
+                ? 'Połącz ponownie to samo konto docelowe i nadaj wymagane uprawnienia.'
+                : 'Dostęp techniczny wymaga ponownej konfiguracji.',
             ManagedExportFailureCode::TargetMissing => 'Nie znaleziono zapisanej playlisty docelowej.',
             ManagedExportFailureCode::AmbiguousMutation => 'Platforma nie potwierdziła jednoznacznie wyniku zapisu.',
             ManagedExportFailureCode::AccountMismatch,
@@ -210,12 +220,33 @@ final class ExportReviewPanel extends Component
     {
         $review = $this->ownedReview($this->reviewId)->load([
             'items',
-            'playlist',
+            'playlist.synchronization',
             'exportOperation.playlistExport.targetAttempts',
             'exportOperation.playlistExport.targetPlaylist',
         ]);
 
-        return view('livewire.export-review-panel', ['review' => $review]);
+        $export = $review->exportOperation?->playlistExport;
+        $linked = $export?->destination_type === ExportDestinationType::Linked;
+        $account = $linked ? StreamingAccount::query()
+            ->where('user_id', Auth::id())
+            ->where('provider', $export->target_provider->value)
+            ->where('provider_account_id', $export->target_account_id)
+            ->whereNotNull('refresh_token')
+            ->first() : null;
+        $currentAccountId = $linked
+            ? ($account?->connectionState() === StreamingAccount::STATE_CONNECTED
+                && (int) $account->user_id === (int) Auth::id()
+                && $account->provider === $export->target_provider
+                && array_diff($export->target_provider->exportScopes(), $account->scopes ?? []) === [] ? $account->provider_account_id : '')
+            : ($export ? (string) config("services.managed_export.providers.{$export->target_provider->value}.account_id") : '');
+
+        return view('livewire.export-review-panel', [
+            'review' => $review,
+            'linkedOperation' => $linked,
+            'canUseHistoricalAccount' => $export !== null
+                && $currentAccountId !== ''
+                && hash_equals($export->target_account_id, $currentAccountId),
+        ]);
     }
 
     private function ownedReview(int $id): ExportReview

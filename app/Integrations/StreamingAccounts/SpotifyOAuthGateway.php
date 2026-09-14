@@ -116,17 +116,24 @@ final readonly class SpotifyOAuthGateway implements StreamingOAuthGateway
         $accessToken = $response->json('access_token');
         $replacement = $response->json('refresh_token');
         $scope = $response->json('scope');
+        $expiresIn = $response->json('expires_in');
 
         if (! $this->secret($accessToken)
             || ($replacement !== null && ! $this->secret($replacement))
             || (! $refresh && ! $this->secret($replacement))
-            || ! is_string($scope)) {
+            || ! is_string($scope)
+            || ($expiresIn !== null && (! is_int($expiresIn) || $expiresIn <= 0))) {
             return StreamingOAuthFailure::InvalidResponse;
         }
 
         $scopes = $this->scopes($scope);
 
-        return new StreamingGrant($accessToken, $replacement, $scopes);
+        return new StreamingGrant(
+            $accessToken,
+            $replacement,
+            $scopes,
+            $expiresIn === null ? null : now()->addSeconds($expiresIn)->toDateTimeImmutable(),
+        );
     }
 
     private function responseFailure(Response $response, bool $refresh): StreamingOAuthFailure

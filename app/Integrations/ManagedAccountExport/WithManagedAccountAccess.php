@@ -60,6 +60,9 @@ final readonly class WithManagedAccountAccess implements WithManagedAccountAcces
         if ($access->provider !== $provider->value || $access->operationId !== $operationId) {
             return ManagedAccessResult::failure(ManagedExportFailureCode::InvalidResponse);
         }
+        if ($access->expiresAt < now()->addSeconds(390)) {
+            return ManagedAccessResult::failure(ManagedExportFailureCode::TransportUnavailable, true);
+        }
 
         $context = new ManagedAccessContext(
             $provider,

@@ -36,6 +36,7 @@ final readonly class PreparePlaylistSynchronization
     public function handle(User $user, Playlist $playlist): array
     {
         $playlist = $user->playlists()->whereKey($playlist->getKey())->with('items')->firstOrFail();
+        $playlist->assertSource();
         $account = $user->streamingAccounts()
             ->where('provider', $playlist->source_provider->value)
             ->first();

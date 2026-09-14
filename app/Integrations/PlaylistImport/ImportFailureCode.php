@@ -18,4 +18,5 @@ enum ImportFailureCode: string
     case ProviderUnavailable = 'provider-unavailable';
     case InvalidResponse = 'invalid-response';
     case LocalEditsConfirmationRequired = 'local_edits_confirmation_required';
+    case ExportTargetConflict = 'export-target-conflict';
 }

@@ -86,7 +86,7 @@ class ManagedExportWorkflowTest extends TestCase
 
         $import = app(ImportPlaylist::class)->handle($review->user, $target->canonical_source_url);
         $this->assertFalse($import->successful);
-        $this->assertSame(ImportFailureCode::InvalidResponse, $import->failureCode);
+        $this->assertSame(ImportFailureCode::ExportTargetConflict, $import->failureCode);
         $this->assertSame(1, Playlist::query()->where('origin', PlaylistOrigin::ManagedTarget->value)->count());
 
         if ($provider === StreamingProvider::YouTube) {

@@ -2,9 +2,13 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistOrigin;
+use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\Data\PlaylistItemSnapshot;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
+use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Models\Playlist;
+use App\Models\PlaylistExportTargetAttempt;
 use App\Models\User;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
@@ -16,23 +20,39 @@ final class ReplaceImportedPlaylist
         PlaylistSnapshot $snapshot,
         bool $markImported = true,
         ?int $streamingAccountId = null,
-    ): Playlist {
-        return DB::transaction(function () use ($user, $snapshot, $markImported, $streamingAccountId): Playlist {
+    ): Playlist|ImportFailureCode {
+        return DB::transaction(function () use ($user, $snapshot, $markImported, $streamingAccountId): Playlist|ImportFailureCode {
+            // Serialize bank insertion with the export target locator checkpoint.
+            // Both operations know the user even before a local target row exists.
+            User::query()->whereKey($user->getKey())->lock(DB::getDriverName() === 'pgsql' ? 'for no key update' : true)->firstOrFail();
+            if ($this->isKnownExportTarget($user, $snapshot->provider, $snapshot->providerPlaylistId)) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
+
             $identity = [
                 'user_id' => $user->getKey(),
                 'source_provider' => $snapshot->provider->value,
                 'source_playlist_id' => $snapshot->providerPlaylistId,
             ];
 
-            DB::table('playlists')->upsert(
-                [[
+            $existing = $user->playlists()
+                ->where('source_provider', $snapshot->provider->value)
+                ->where('source_playlist_id', $snapshot->providerPlaylistId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing?->isExportTarget()) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
+
+            DB::table('playlists')->insertOrIgnore(
+                [
                     ...$identity,
+                    'origin' => PlaylistOrigin::Imported->value,
                     ...$this->playlistAttributes($snapshot, now(), $streamingAccountId),
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]],
-                ['user_id', 'source_provider', 'source_playlist_id'],
-                ['updated_at'],
+                ],
             );
 
             $playlist = $user->playlists()
@@ -40,6 +60,10 @@ final class ReplaceImportedPlaylist
                 ->where('source_playlist_id', $snapshot->providerPlaylistId)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($playlist->isExportTarget()) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
 
             $playlist->update($this->playlistAttributes(
                 $snapshot,
@@ -65,6 +89,20 @@ final class ReplaceImportedPlaylist
 
             return $playlist->refresh()->load('items');
         });
+    }
+
+    public function isKnownExportTarget(User $user, StreamingProvider $provider, string $providerPlaylistId): bool
+    {
+        return $user->playlists()
+            ->where('origin', PlaylistOrigin::ManagedTarget->value)
+            ->where('source_provider', $provider->value)
+            ->where('source_playlist_id', $providerPlaylistId)
+            ->exists()
+            || PlaylistExportTargetAttempt::query()
+                ->where('target_provider', $provider->value)
+                ->where('provider_playlist_id', $providerPlaylistId)
+                ->whereHas('playlistExport.sourcePlaylist', fn ($query) => $query->where('user_id', $user->getKey()))
+                ->exists();
     }
 
     /**

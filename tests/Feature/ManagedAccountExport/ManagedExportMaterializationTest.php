@@ -41,7 +41,7 @@ class ManagedExportMaterializationTest extends TestCase
         $this->assertSame(1, Playlist::query()->where('source_playlist_id', 'provider-target')->count());
     }
 
-    public function test_compatible_import_is_adopted_only_for_the_same_technical_owner(): void
+    public function test_even_same_owner_import_is_never_reclassified_as_an_export_target(): void
     {
         [$operation, $metadata, $snapshot] = $this->fixture();
         $import = Playlist::factory()->for($operation->user)->create([
@@ -51,10 +51,10 @@ class ManagedExportMaterializationTest extends TestCase
             'source_account_id' => 'managed-owner',
         ]);
 
-        $this->assertTrue(app(MaterializeManagedExportPlaylist::class)->handle($operation->id, 1, $metadata, $snapshot));
+        $this->assertFalse(app(MaterializeManagedExportPlaylist::class)->handle($operation->id, 1, $metadata, $snapshot));
 
-        $this->assertSame($import->id, $operation->playlistExport->fresh()->target_playlist_id);
-        $this->assertSame(PlaylistOrigin::ManagedTarget, $import->fresh()->origin);
+        $this->assertNull($operation->playlistExport->fresh()->target_playlist_id);
+        $this->assertSame(PlaylistOrigin::Imported, $import->fresh()->origin);
     }
 
     public function test_owner_collision_fails_closed_without_overwriting_the_import(): void

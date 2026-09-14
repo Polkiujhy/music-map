@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Enums\StreamingProvider;
 use Illuminate\Bus\Queueable;
@@ -19,6 +20,7 @@ final class ManagedExportCompleted extends Notification implements ShouldQueue
         public readonly int $playlistId,
         public readonly StreamingProvider $provider,
         public readonly ExportOperationStatus $status,
+        public readonly ExportDestinationType $destinationType = ExportDestinationType::Managed,
     ) {}
 
     /** @return list<string> */
@@ -34,7 +36,9 @@ final class ManagedExportCompleted extends Notification implements ShouldQueue
             ->markdown('mail.managed-export-completed', [
                 'platform' => $this->provider === StreamingProvider::Spotify ? 'Spotify' : 'YouTube',
                 'statusLabel' => match ($this->status) {
-                    ExportOperationStatus::Succeeded => 'Przeniesiona — zarządzana przez music-map',
+                    ExportOperationStatus::Succeeded => $this->destinationType === ExportDestinationType::Linked
+                        ? 'Przeniesiona — na Twoje połączone konto'
+                        : 'Przeniesiona — zarządzana przez music-map',
                     ExportOperationStatus::Failed => 'Nie przeniesiono',
                     ExportOperationStatus::PartialFailed,
                     ExportOperationStatus::ManualRecoveryRequired,
@@ -42,6 +46,7 @@ final class ManagedExportCompleted extends Notification implements ShouldQueue
                     default => 'W trakcie przenoszenia',
                 },
                 'successful' => $this->status === ExportOperationStatus::Succeeded,
+                'linked' => $this->destinationType === ExportDestinationType::Linked,
                 'url' => route('export-reviews.show', [
                     'playlist' => $this->playlistId,
                     'exportReview' => $this->reviewId,

@@ -12,6 +12,7 @@ final class ApplySourcePlaylistToBank
     {
         return DB::transaction(function () use ($playlistId, $source): Playlist {
             $playlist = Playlist::query()->whereKey($playlistId)->lockForUpdate()->firstOrFail();
+            $playlist->assertSource();
             $streamingAccountId = $playlist->streaming_account_id;
 
             $playlist->items()->delete();

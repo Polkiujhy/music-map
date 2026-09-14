@@ -6,6 +6,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistSync\Contracts\SourcePlaylistWriter;
 use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
+use App\Integrations\PlaylistSync\SourceSyncMutationGuard;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Models\PlaylistSyncRun;
 use Illuminate\Http\Client\Response;
@@ -23,7 +24,7 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
         return StreamingProvider::Spotify;
     }
 
-    public function write(string $providerPlaylistId, SourcePlaylistSnapshot $current, array $desiredItems, StreamingAccessContext $access, ?PlaylistSyncRun $run = null): SourcePlaylistSnapshot|SourceSyncFailure
+    public function write(string $providerPlaylistId, SourcePlaylistSnapshot $current, array $desiredItems, StreamingAccessContext $access, ?PlaylistSyncRun $run = null, ?SourceSyncMutationGuard $guard = null): SourcePlaylistSnapshot|SourceSyncFailure
     {
         if ($access->provider !== StreamingProvider::Spotify || $providerPlaylistId === '' || count($desiredItems) > 20) {
             return SourceSyncFailure::InvalidResponse;
@@ -49,6 +50,9 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
         $uris = array_column($writableItems, 'catalog_uri');
 
         try {
+            if (($failure = $guard?->failure()) !== null) {
+                return $failure;
+            }
             $response = Http::withToken($access->accessToken)->acceptJson()->connectTimeout(5)->timeout(10)
                 ->put(self::API_URL.'/playlists/'.$providerPlaylistId.'/items', ['uris' => $uris]);
             if (! $response->successful()) {

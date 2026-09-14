@@ -2,7 +2,6 @@
 
 namespace App\Actions\ManagedAccountExport;
 
-use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Models\ExportOperation;
 use App\Models\User;
@@ -11,7 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class RetryManagedExport
 {
-    public function __construct(private PublishManagedExport $publisher) {}
+    public function __construct(
+        private PublishManagedExport $publisher,
+        private GuardHistoricalExportAccount $accountGuard,
+    ) {}
 
     public function handle(User $user, ExportOperation $operation): ExportOperation
     {
@@ -23,7 +25,7 @@ final readonly class RetryManagedExport
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $this->guardManagedAccount($locked);
+            $this->accountGuard->handle($user, $locked->playlistExport);
 
             if (! in_array($locked->status, [ExportOperationStatus::Failed, ExportOperationStatus::PartialFailed], true)) {
                 throw ValidationException::withMessages([
@@ -56,19 +58,5 @@ final readonly class RetryManagedExport
         });
 
         return $operation->refresh();
-    }
-
-    private function guardManagedAccount(ExportOperation $operation): void
-    {
-        $export = $operation->playlistExport;
-        $currentAccount = (string) config("services.managed_export.providers.{$export->target_provider->value}.account_id");
-
-        if ($export->destination_type !== ExportDestinationType::Managed
-            || $currentAccount === ''
-            || ! hash_equals($export->target_account_id, $currentAccount)) {
-            throw ValidationException::withMessages([
-                'operation' => 'Nie można potwierdzić dostępu do historycznego konta docelowego.',
-            ]);
-        }
     }
 }

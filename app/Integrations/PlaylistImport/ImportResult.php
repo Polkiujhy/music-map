@@ -63,6 +63,7 @@ final readonly class ImportResult
             ImportFailureCode::UnsupportedItem => 'Playlista zawiera nieobsługiwaną pozycję. Wybierz inną playlistę.',
             ImportFailureCode::InvalidResponse => "{$providerName} zwrócił nieprawidłowe dane. Spróbuj ponownie później.",
             ImportFailureCode::LocalEditsConfirmationRequired => 'Ta playlista zawiera lokalne zmiany. Otwórz jej właścicielski edytor i użyj świadomego reimportu.',
+            ImportFailureCode::ExportTargetConflict => 'Ta playlista jest celem eksportu i nie może zostać zaimportowana do banku jako źródło.',
             ImportFailureCode::ProviderUnavailable, null => "{$providerName} jest chwilowo niedostępny. Spróbuj ponownie później.",
         };
 

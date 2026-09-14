@@ -39,6 +39,7 @@ final readonly class ConfirmPlaylistSynchronization
         );
 
         $playlist = $user->playlists()->whereKey($playlist->getKey())->with('items')->firstOrFail();
+        $playlist->assertSource();
         $account = $user->streamingAccounts()
             ->whereKey($preview['streaming_account_id'] ?? null)
             ->where('provider', $playlist->source_provider->value)
@@ -79,6 +80,7 @@ final readonly class ConfirmPlaylistSynchronization
 
         $run = DB::transaction(function () use ($user, $playlist, $account, $preview, $sourceFingerprint): PlaylistSyncRun {
             $locked = Playlist::query()->whereKey($playlist->getKey())->lockForUpdate()->with('items')->firstOrFail();
+            $locked->assertSource();
             if ((int) $locked->user_id !== (int) $user->getKey()
                 || ! hash_equals((string) $preview['bank_fingerprint'], $this->bankFingerprint->handle($locked))) {
                 $this->stale();

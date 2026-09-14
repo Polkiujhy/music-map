@@ -421,6 +421,23 @@ tests/Unit/SourceContractTest.php
 tests/Fixtures/music-map-managed-export-failure.json
 tests/Fixtures/music-map-managed-export-request.json
 tests/Fixtures/music-map-managed-export-success.json
+database/migrations/2026_09_14_020000_freeze_export_operation_metadata.php
+database/migrations/2026_09_11_190000_add_created_at_index_to_users_table.php
+database/migrations/2026_09_14_000400_create_playlist_synchronizations_table.php
+database/migrations/2026_09_14_000500_create_playlist_sync_runs_table.php
+database/factories/AuthIdentityFactory.php
+database/factories/PlaylistSyncRunFactory.php
+database/factories/PlaylistSynchronizationFactory.php
+app/Integrations/ManagedAccountExport/WithLinkedAccountExportAccess.php
+app/Integrations/PlaylistSync/SourceSyncMutationGuard.php
+app/Actions/ManagedAccountExport/GuardHistoricalExportAccount.php
+tests/Feature/ManagedAccountExport/LinkedExportUiTest.php
+tests/Feature/ManagedAccountExport/LinkedExportWorkflowTest.php
+tests/Feature/PlaylistSync/ExportIntegrationBoundaryTest.php
+tests/Feature/ManagedAccountExport/LinkedExportRecoveryTest.php
+tests/Feature/ManagedAccountExport/ExportMetadataMigrationTest.php
+tests/Feature/ManagedAccountExport/ExportTargetBoundaryTest.php
+tests/Feature/ManagedAccountExport/DurableExportTargetImportTest.php
 vite.config.js'
 
 printf '%s\n' "$required_paths" | while IFS= read -r path; do

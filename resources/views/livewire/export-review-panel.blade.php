@@ -6,12 +6,6 @@
             ->sortByDesc('generation')
             ->first();
         $targetUrl = $targetAttempt?->canonical_url ?? $operation?->playlistExport?->targetPlaylist?->canonical_source_url;
-        $currentManagedAccount = $operation
-            ? (string) config("services.managed_export.providers.{$operation->playlistExport->target_provider->value}.account_id")
-            : null;
-        $canUseHistoricalAccount = $operation
-            && $currentManagedAccount !== ''
-            && hash_equals($operation->playlistExport->target_account_id, $currentManagedAccount);
     @endphp
     <a href="{{ route('bank.index') }}" class="auth-link">← Wróć do banku</a>
 
@@ -56,8 +50,8 @@
             </div>
         @elseif ($operation?->status === \App\Enums\ExportOperationStatus::Succeeded)
             <div class="mt-8 rounded-2xl border border-ash-grey-700 p-6">
-                <h2 class="text-xl font-semibold">Przeniesiona — zarządzana przez music-map</h2>
-                <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Właściciel: konto zarządzane przez music-map.</p>
+                <h2 class="text-xl font-semibold">{{ $this->statusLabel }}</h2>
+                <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">{{ $linkedOperation ? 'Właściciel: Twoje połączone konto.' : 'Właściciel: konto zarządzane przez music-map.' }}</p>
                 <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Zmiany wykonuj w playliście źródłowej w Music Map. Playlista docelowa w banku jest osobnym snapshotem tylko do odczytu.</p>
                 @if ($targetUrl)
                     <a href="{{ $targetUrl }}" rel="noreferrer noopener" class="auth-link mt-5 inline-block">Otwórz przeniesioną playlistę</a>
@@ -77,7 +71,7 @@
                         <button type="submit" class="primary-button">Spróbuj ponownie</button>
                     </form>
                 @else
-                    <p class="mt-3 text-sm text-ash-grey-400">Ponowienie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.</p>
+                    <p class="mt-3 text-sm text-ash-grey-400">{{ $linkedOperation ? 'Połącz ponownie to samo konto docelowe, aby ponowić eksport.' : 'Ponowienie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.' }}</p>
                 @endif
             </div>
         @elseif ($operation?->status === \App\Enums\ExportOperationStatus::PartialFailed)
@@ -95,7 +89,7 @@
                         <button type="submit" class="primary-button">Ponów na tej samej playliście</button>
                     </form>
                 @else
-                    <p class="mt-3 text-sm text-ash-grey-400">Ponowienie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.</p>
+                    <p class="mt-3 text-sm text-ash-grey-400">{{ $linkedOperation ? 'Połącz ponownie to samo konto docelowe, aby ponowić eksport.' : 'Ponowienie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.' }}</p>
                 @endif
             </div>
         @elseif (in_array($operation?->status, [\App\Enums\ExportOperationStatus::ManualRecoveryRequired, \App\Enums\ExportOperationStatus::RecreateRequired], true))
@@ -115,7 +109,7 @@
                         <button type="submit" class="primary-button">Odtwórz cel z nowym linkiem</button>
                     </form>
                 @else
-                    <p class="mt-3 text-sm text-ash-grey-400">Odtworzenie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.</p>
+                    <p class="mt-3 text-sm text-ash-grey-400">{{ $linkedOperation ? 'Połącz ponownie to samo konto docelowe, aby odtworzyć cel.' : 'Odtworzenie jest zablokowane, dopóki dostęp techniczny nie potwierdzi tego samego konta.' }}</p>
                 @endif
             </div>
         @elseif (in_array($review->status, [\App\Enums\ExportReviewStatus::Failed, \App\Enums\ExportReviewStatus::Expired], true))
@@ -203,7 +197,10 @@
 
             <div class="mt-8 rounded-2xl border border-ash-grey-700 p-5">
                 <h2 class="text-lg font-semibold">Świadome potwierdzenie</h2>
-                <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Potwierdzenie atomowo zastosuje zaznaczone usunięcia i zamrozi dokładne ID docelowe. Nie zapisuje jeszcze playlisty na platformie.</p>
+                <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Potwierdzenie zastosuje zaznaczone usunięcia, zamrozi wynik i rozpocznie eksport playlisty w tle.</p>
+                @if ($review->playlist->synchronization?->automatic_enabled)
+                    <p role="note" class="mt-3 text-sm leading-6 text-amber-200">Automatyczna synchronizacja źródła jest włączona. Pozycje usunięte z banku przy potwierdzeniu mogą zostać usunięte także z oryginalnej playlisty na platformie podczas kolejnej synchronizacji.</p>
+                @endif
                 <button type="button" wire:click="confirm" wire:loading.attr="disabled" class="primary-button mt-5">Potwierdź decyzje i zamroź manifest</button>
             </div>
         @elseif ($review->status === \App\Enums\ExportReviewStatus::Confirmed)

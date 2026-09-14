@@ -56,6 +56,10 @@ final class PrepareExportReview implements ShouldQueue
             return;
         }
 
+        if ($review->playlist->isExportTarget()) {
+            return;
+        }
+
         if (in_array($review->status, [ExportReviewStatus::Ready, ExportReviewStatus::Failed], true)) {
             $this->queueNotificationIfLong($review);
 
@@ -123,6 +127,10 @@ final class PrepareExportReview implements ShouldQueue
             $current = ExportReview::query()->whereKey($review->getKey())->lockForUpdate()->first();
             if (! $current instanceof ExportReview
                 || $current->status !== ExportReviewStatus::Processing) {
+                return 'inactive';
+            }
+
+            if ($current->playlist->isExportTarget()) {
                 return 'inactive';
             }
 

@@ -26,7 +26,7 @@ class ResolveExportDestinationTest extends TestCase
     {
         $user = User::factory()->create();
         $playlist = Playlist::factory()->for($user)->create();
-        $account = StreamingAccount::factory()->for($user)->spotify()->create(['market' => 'GB']);
+        $account = StreamingAccount::factory()->for($user)->spotify()->create(['market' => 'GB', 'scopes' => StreamingProvider::Spotify->exportScopes()]);
 
         $destination = $this->resolver()->handle($user, $playlist, StreamingProvider::Spotify, ExportDestinationType::Linked, $account->id);
 
@@ -53,7 +53,7 @@ class ResolveExportDestinationTest extends TestCase
     {
         Http::fake(['https://api.spotify.com/v1/me' => Http::response(['id' => 'spotify-canary', 'display_name' => 'Canary', 'country' => 'de'])]);
         $user = User::factory()->create();
-        $account = StreamingAccount::factory()->for($user)->spotify()->create(['provider_account_id' => 'spotify-canary', 'market' => null]);
+        $account = StreamingAccount::factory()->for($user)->spotify()->create(['provider_account_id' => 'spotify-canary', 'market' => null, 'scopes' => StreamingProvider::Spotify->exportScopes()]);
 
         $destination = $this->resolver()->handle($user, Playlist::factory()->for($user)->create(), StreamingProvider::Spotify, ExportDestinationType::Linked, $account->id);
 

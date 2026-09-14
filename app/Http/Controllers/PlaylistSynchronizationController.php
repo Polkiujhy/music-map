@@ -150,7 +150,7 @@ final class PlaylistSynchronizationController extends Controller
     {
         abort_unless(ctype_digit($playlist) && (int) $playlist > 0, 404);
 
-        return $request->user()->playlists()->whereKey($playlist)->firstOrFail();
+        return $request->user()->playlists()->sourceOnly()->whereKey($playlist)->firstOrFail();
     }
 
     private function displayState(?PlaylistSynchronization $synchronization): string

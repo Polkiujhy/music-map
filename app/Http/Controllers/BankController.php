@@ -105,9 +105,8 @@ class BankController extends Controller
             ->join('playlist_exports', 'playlist_exports.id', '=', 'export_operations.playlist_export_id')
             ->where('export_operations.user_id', $user->getKey())
             ->whereIn('playlist_exports.source_playlist_id', $sourceIds)
-            ->where('playlist_exports.destination_type', ExportDestinationType::Managed->value)
             ->whereIn('export_operations.status', array_map(fn (ExportOperationStatus $status): string => $status->value, $statuses))
-            ->selectRaw('export_operations.id, ROW_NUMBER() OVER (PARTITION BY playlist_exports.source_playlist_id, playlist_exports.target_provider ORDER BY export_operations.created_at DESC, export_operations.id DESC) AS operation_rank');
+            ->selectRaw('export_operations.id, ROW_NUMBER() OVER (PARTITION BY playlist_exports.source_playlist_id, playlist_exports.target_provider, playlist_exports.destination_type ORDER BY export_operations.created_at DESC, export_operations.id DESC) AS operation_rank');
 
         return collect(DB::query()->fromSub($ranked, 'ranked_operations')
             ->where('operation_rank', 1)

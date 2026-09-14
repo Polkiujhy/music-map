@@ -59,6 +59,9 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
             return new ManagedProviderFailure(ManagedExportFailureCode::MetadataRejected);
         }
         try {
+            if (($failure = $access->mutationFailure()) !== null) {
+                return new ManagedProviderFailure($failure);
+            }
             $response = $this->request($access)->post(self::API_URL.'/playlists?part=snippet,status', [
                 'snippet' => ['title' => $metadata->title, 'description' => $metadata->description],
                 'status' => ['privacyStatus' => 'unlisted'],
@@ -127,7 +130,7 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
         $title = $metadata['snippet']['title'] ?? null;
         $description = $metadata['snippet']['description'] ?? null;
         $marker = $this->markerFrom($description);
-        if (! is_string($title) || $title === '' || ! is_string($description) || $marker === null) {
+        if (! is_string($title) || $title === '' || ! is_string($description) || ($access->requireTargetMarker && $marker === null)) {
             return new ManagedProviderFailure(ManagedExportFailureCode::TargetMarkerMismatch);
         }
         $items = $this->items($access, $reference);
@@ -137,7 +140,7 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
 
         return new ManagedPlaylistSnapshot(
             $actual,
-            new ManagedPlaylistMetadata($title, $description, $marker),
+            new ManagedPlaylistMetadata($title, $description, $marker ?? '', $access->requireTargetMarker),
             'unlisted',
             $items,
             is_string($metadata['etag'] ?? null) ? $metadata['etag'] : null,
@@ -154,7 +157,7 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
         if ($first instanceof ManagedProviderFailure) {
             return $first;
         }
-        if ($first->metadata->marker !== $metadata->marker) {
+        if ($access->requireTargetMarker && $first->metadata->marker !== $metadata->marker) {
             return new ManagedProviderFailure(ManagedExportFailureCode::TargetMarkerMismatch);
         }
         $second = $this->inspect($access, $reference);
@@ -166,6 +169,9 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
         }
 
         try {
+            if (($failure = $access->mutationFailure()) !== null) {
+                return new ManagedProviderFailure($failure);
+            }
             $metadataResponse = $this->request($access)->put(self::API_URL.'/playlists?part=snippet,status', [
                 'id' => $reference->providerPlaylistId,
                 'snippet' => ['title' => $metadata->title, 'description' => $metadata->description],
@@ -180,23 +186,9 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
                 : ManagedProviderFailureMapper::response($metadataResponse, ManagedExportFailureCode::MetadataRejected);
         }
 
-        $current = array_map(fn (ManagedPlaylistItem $item): string => $item->catalogId, $second->items);
-        if ($current !== array_values($catalogItems)) {
-            foreach (array_reverse($second->items) as $item) {
-                if ($item->occurrenceId === null) {
-                    return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
-                }
-                $failure = $this->deleteItem($access, $item->occurrenceId);
-                if ($failure !== null) {
-                    return $failure;
-                }
-            }
-            foreach (array_values($catalogItems) as $position => $videoId) {
-                $failure = $this->insertItem($access, $reference->providerPlaylistId, $videoId, $position);
-                if ($failure !== null) {
-                    return $failure;
-                }
-            }
+        $failure = $this->reconcileItems($access, $reference->providerPlaylistId, $second->items, array_values($catalogItems));
+        if ($failure !== null) {
+            return $failure;
         }
 
         $verified = $this->inspect($access, $reference);
@@ -323,6 +315,9 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
 
     private function deleteItem(ManagedAccessContext $access, string $occurrenceId): ?ManagedProviderFailure
     {
+        if (($failure = $access->mutationFailure()) !== null) {
+            return new ManagedProviderFailure($failure);
+        }
         try {
             $response = $this->request($access)
                 ->withQueryParameters(['id' => $occurrenceId])
@@ -340,8 +335,11 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
             ));
     }
 
-    private function insertItem(ManagedAccessContext $access, string $playlistId, string $videoId, int $position): ?ManagedProviderFailure
+    private function insertItem(ManagedAccessContext $access, string $playlistId, string $videoId, int $position): string|ManagedProviderFailure
     {
+        if (($failure = $access->mutationFailure()) !== null) {
+            return new ManagedProviderFailure($failure);
+        }
         try {
             $response = $this->request($access)->post(self::API_URL.'/playlistItems?part=snippet', [
                 'snippet' => [
@@ -354,13 +352,164 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
             return ManagedProviderFailureMapper::transport(true);
         }
 
-        return $response->successful() ? null : ($response->serverError()
+        if ($response->successful()) {
+            $id = $response->json('id');
+
+            return is_string($id) && $id !== '' && strlen($id) <= 255
+                ? $id : ManagedProviderFailureMapper::transport(true);
+        }
+
+        return $response->serverError()
             ? ManagedProviderFailureMapper::transport(true)
             : ManagedProviderFailureMapper::response(
                 $response,
                 ManagedExportFailureCode::ItemRejected,
                 ManagedExportFailureCode::ItemRejected,
-            ));
+            );
+    }
+
+    /** @param list<ManagedPlaylistItem> $items
+     * @param  list<string>  $desired
+     */
+    private function reconcileItems(ManagedAccessContext $access, string $playlistId, array $items, array $desired): ?ManagedProviderFailure
+    {
+        $current = [];
+        foreach ($items as $item) {
+            if ($item->occurrenceId === null || in_array($item->occurrenceId, array_column($current, 'id'), true)) {
+                return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
+            }
+            $current[] = ['id' => $item->occurrenceId, 'video' => $item->catalogId];
+        }
+        // Keep a longest common subsequence untouched, then reuse remaining
+        // occurrences for moves. Identical videos still have distinct IDs.
+        $pairs = $this->lcsPairs(array_column($current, 'video'), $desired);
+        $retained = [];
+        $target = array_fill(0, count($desired), null);
+        foreach ($pairs as [$sourceIndex, $targetIndex]) {
+            $retained[$current[$sourceIndex]['id']] = true;
+            $target[$targetIndex] = $current[$sourceIndex];
+        }
+        $available = [];
+        foreach ($current as $item) {
+            if (! isset($retained[$item['id']])) {
+                $available[$item['video']][] = $item;
+            }
+        }
+        foreach ($target as $index => $item) {
+            if ($item === null && ($available[$desired[$index]] ?? []) !== []) {
+                $target[$index] = array_shift($available[$desired[$index]]);
+            }
+        }
+        $used = array_column(array_filter($target), 'id');
+        for ($index = count($current) - 1; $index >= 0; $index--) {
+            if (in_array($current[$index]['id'], $used, true)) {
+                continue;
+            }
+            if (($failure = $this->deleteItem($access, $current[$index]['id'])) !== null) {
+                return $failure;
+            }
+            array_splice($current, $index, 1);
+        }
+        $steps = 0;
+        for ($position = 0; $position < count($target);) {
+            if (++$steps > 80) {
+                return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
+            }
+            if ($target[$position] === null) {
+                $id = $this->insertItem($access, $playlistId, $desired[$position], $position);
+                if ($id instanceof ManagedProviderFailure) {
+                    return $id;
+                }
+                if (in_array($id, array_column($current, 'id'), true)) {
+                    return ManagedProviderFailureMapper::transport(true);
+                }
+                $target[$position] = ['id' => $id, 'video' => $desired[$position]];
+                array_splice($current, $position, 0, [$target[$position]]);
+                $position++;
+
+                continue;
+            }
+            if (($current[$position]['id'] ?? null) === $target[$position]['id']) {
+                $position++;
+
+                continue;
+            }
+            $desiredId = $target[$position]['id'];
+            $from = array_search($desiredId, array_column($current, 'id'), true);
+            if ($from === false) {
+                return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
+            }
+            $destination = $position;
+            if (isset($retained[$desiredId])) {
+                $from = $position;
+                $destination = null;
+                foreach ($target as $index => $item) {
+                    if (($item['id'] ?? null) === $current[$from]['id']) {
+                        $destination = $index;
+                        break;
+                    }
+                }
+                if ($destination === null) {
+                    return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
+                }
+                // Missing occurrences have not been inserted yet; positions
+                // sent to the provider must address the current playlist.
+                $destination -= count(array_filter(array_slice($target, 0, $destination), fn ($item): bool => $item === null));
+            }
+            $moving = $current[$from];
+            if (($failure = $this->moveItem($access, $playlistId, $moving, $destination)) !== null) {
+                return $failure;
+            }
+            array_splice($current, $from, 1);
+            array_splice($current, $destination, 0, [$moving]);
+        }
+
+        return null;
+    }
+
+    /** @return list<array{int, int}> */
+    private function lcsPairs(array $current, array $desired): array
+    {
+        $lengths = array_fill(0, count($current) + 1, array_fill(0, count($desired) + 1, 0));
+        for ($i = count($current) - 1; $i >= 0; $i--) {
+            for ($j = count($desired) - 1; $j >= 0; $j--) {
+                $lengths[$i][$j] = $current[$i] === $desired[$j]
+                    ? 1 + $lengths[$i + 1][$j + 1]
+                    : max($lengths[$i + 1][$j], $lengths[$i][$j + 1]);
+            }
+        }
+        $pairs = [];
+        for ($i = 0, $j = 0; $i < count($current) && $j < count($desired);) {
+            if ($current[$i] === $desired[$j]) {
+                $pairs[] = [$i++, $j++];
+            } elseif ($lengths[$i + 1][$j] >= $lengths[$i][$j + 1]) {
+                $i++;
+            } else {
+                $j++;
+            }
+        }
+
+        return $pairs;
+    }
+
+    private function moveItem(ManagedAccessContext $access, string $playlistId, array $item, int $position): ?ManagedProviderFailure
+    {
+        if (($failure = $access->mutationFailure()) !== null) {
+            return new ManagedProviderFailure($failure);
+        }
+        try {
+            $response = $this->request($access)->put(self::API_URL.'/playlistItems?part=snippet', [
+                'id' => $item['id'],
+                'snippet' => ['playlistId' => $playlistId, 'position' => $position,
+                    'resourceId' => ['kind' => 'youtube#video', 'videoId' => $item['video']]],
+            ]);
+        } catch (Throwable) {
+            return ManagedProviderFailureMapper::transport(true);
+        }
+
+        return $response->successful() ? null : ($response->serverError()
+            ? ManagedProviderFailureMapper::transport(true)
+            : ManagedProviderFailureMapper::response($response, ManagedExportFailureCode::ItemRejected, ManagedExportFailureCode::ItemRejected));
     }
 
     private function request(ManagedAccessContext $access): PendingRequest

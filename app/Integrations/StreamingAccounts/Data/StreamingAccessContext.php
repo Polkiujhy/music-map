@@ -3,6 +3,7 @@
 namespace App\Integrations\StreamingAccounts\Data;
 
 use App\Enums\StreamingProvider;
+use DateTimeImmutable;
 use LogicException;
 
 final readonly class StreamingAccessContext
@@ -11,6 +12,8 @@ final readonly class StreamingAccessContext
         public StreamingProvider $provider,
         public string $providerAccountId,
         public string $accessToken,
+        public ?DateTimeImmutable $expiresAt = null,
+        public ?int $credentialVersion = null,
     ) {}
 
     public function __serialize(): array

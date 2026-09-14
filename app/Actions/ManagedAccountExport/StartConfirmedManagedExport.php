@@ -2,7 +2,6 @@
 
 namespace App\Actions\ManagedAccountExport;
 
-use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Integrations\ManagedAccountExport\ManagedExportMarker;
@@ -16,11 +15,10 @@ final readonly class StartConfirmedManagedExport
 {
     public function __construct(private PublishManagedExport $publisher) {}
 
-    public function handle(ExportReview $review, ConfirmedExportManifest $manifest): ?ExportOperation
+    public function handle(ExportReview $review, ConfirmedExportManifest $manifest): ExportOperation
     {
-        if ($manifest->destinationType !== ExportDestinationType::Managed) {
-            return null;
-        }
+        $review->playlist->assertSource();
+        abort_unless((int) $review->playlist->user_id === (int) $review->user_id, 404);
 
         $existing = ExportOperation::query()
             ->where('export_review_id', $review->getKey())
@@ -54,6 +52,14 @@ final readonly class StartConfirmedManagedExport
                     'review' => 'Ten cel ma już aktywną lub niedokończoną operację eksportu.',
                 ]);
             }
+
+            if ($playlistExport->destination_type !== $manifest->destinationType) {
+                throw ValidationException::withMessages(['destination' => 'Ten cel jest przypisany do innego typu konta.']);
+            }
+            $playlistExport->forceFill([
+                'streaming_account_id' => $review->streaming_account_id,
+                'target_market' => $manifest->targetMarket,
+            ])->save();
         } else {
             $playlistExport = PlaylistExport::query()->create([
                 'source_playlist_id' => $manifest->playlistId,
@@ -85,6 +91,8 @@ final readonly class StartConfirmedManagedExport
             'export_review_id' => $review->getKey(),
             'playlist_export_id' => $playlistExport->getKey(),
             'status' => ExportOperationStatus::Queued,
+            'playlist_name' => $manifest->playlistName ?? $review->playlist->name,
+            'playlist_description' => $manifest->playlistDescription,
         ]);
 
         $this->publisher->afterCommit((string) $operation->getKey());

@@ -6,7 +6,7 @@ Platforma docelowa: {{ $platform }}
 Status: {{ $statusLabel }}
 
 @if ($successful)
-Kopia należy do konta zarządzanego przez music-map. Otwórz status, aby przejść do bezpiecznie zapisanego linku.
+{{ $linked ? 'Kopia należy do Twojego połączonego konta.' : 'Kopia należy do konta zarządzanego przez music-map.' }} Otwórz status, aby przejść do bezpiecznie zapisanego linku.
 @else
 W Music Map znajdziesz bezpieczną przyczynę oraz dostępne dalsze kroki. Wiadomość nie zawiera danych technicznego konta ani sekretów.
 @endif

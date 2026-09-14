@@ -7,6 +7,7 @@ use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportDestinationType;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
+use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Jobs\RunManagedExport;
 use App\Models\ExportOperation;
 use App\Models\ExportReview;
@@ -17,6 +18,7 @@ use App\Models\PlaylistItem;
 use App\Models\StreamingAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class StartManagedExportTest extends TestCase
@@ -47,15 +49,49 @@ class StartManagedExportTest extends TestCase
         Queue::assertPushed(RunManagedExport::class, 1);
     }
 
-    public function test_linked_confirmation_remains_a_handoff_without_managed_operation(): void
+    public function test_linked_confirmation_uses_the_same_durable_operation_lifecycle(): void
     {
         $review = $this->readyReview(ExportDestinationType::Linked);
 
         app(ConfirmExportReview::class)->handle($review->user, $review, []);
 
+        $this->assertDatabaseCount('export_operations', 1);
+        $this->assertDatabaseCount('playlist_exports', 1);
+        $this->assertSame(ExportDestinationType::Linked, PlaylistExport::firstOrFail()->destination_type);
+        Queue::assertPushed(RunManagedExport::class, 1);
+    }
+
+    public function test_historical_confirmation_does_not_start_a_new_export(): void
+    {
+        $review = $this->readyReview(ExportDestinationType::Linked);
+        $review->forceFill(['status' => ExportReviewStatus::Confirmed, 'confirmed_at' => now()])->save();
+
+        try {
+            app(ConfirmExportReview::class)->handle($review->user, $review, []);
+            $this->fail('Historical confirmation must be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('review', $exception->errors());
+        }
         $this->assertDatabaseCount('export_operations', 0);
-        $this->assertDatabaseCount('playlist_exports', 0);
         Queue::assertNothingPushed();
+    }
+
+    public function test_metadata_and_manifest_are_frozen_when_the_source_changes_after_confirmation(): void
+    {
+        $review = $this->readyReview(ExportDestinationType::Linked);
+        $review->playlist->forceFill(['name' => 'Frozen title', 'description' => 'Frozen description'])->save();
+        $review->forceFill(['source_fingerprint' => app(FingerprintPlaylistContent::class)->handle($review->playlist->fresh('items'))])->save();
+        app(ConfirmExportReview::class)->handle($review->user, $review, []);
+        $review->playlist->forceFill(['name' => 'Changed by sync', 'description' => null])->save();
+        $review->playlist->items()->delete();
+
+        $operation = $review->exportOperation()->firstOrFail();
+        $this->assertSame('Frozen title', $operation->playlist_name);
+        $this->assertSame('Frozen description', $operation->playlist_description);
+        $manifest = ConfirmedExportManifest::fromConfirmedReview($review->fresh());
+        $this->assertSame('target-one', $manifest->items[0]['catalog_id']);
+        $this->assertSame('Frozen title', $manifest->playlistName);
+        $this->assertSame('Frozen description', $manifest->playlistDescription);
     }
 
     private function readyReview(ExportDestinationType $destination): ExportReview
@@ -67,6 +103,7 @@ class StartManagedExportTest extends TestCase
         $account = $destination === ExportDestinationType::Linked
             ? StreamingAccount::factory()->youtube()->for($playlist->user)->create([
                 'provider_account_id' => 'linked-youtube',
+                'scopes' => StreamingProvider::YouTube->exportScopes(),
             ])
             : null;
         PlaylistItem::factory()->for($playlist)->create([
