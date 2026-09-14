@@ -44,6 +44,7 @@ class ConfirmExportReviewTest extends TestCase
         $this->assertInstanceOf(ConfirmedExportManifest::class, $manifest);
         $this->assertSame(ExportReviewStatus::Confirmed, $review->fresh()->status);
         $this->assertNotNull($review->fresh()->confirmed_at);
+        $this->assertNotNull($review->playlist->fresh()->bank_content_edited_at);
         $this->assertSame([0, 1], $review->playlist->items()->pluck('position')->all());
         $this->assertSame(['source-0', 'source-1'], $review->playlist->items()->pluck('catalog_id')->all());
         $this->assertDatabaseHas('playlist_items', ['catalog_id' => 'source-1', 'is_available' => true]);
@@ -92,6 +93,7 @@ class ConfirmExportReviewTest extends TestCase
 
         $this->assertEquals($first, $second);
         $this->assertTrue($confirmedAt->equalTo($review->fresh()->confirmed_at));
+        $this->assertNull($review->playlist->fresh()->bank_content_edited_at);
         $this->assertSame(['target-0', 'target-1'], array_column($second->items, 'catalog_id'));
         $this->assertSame(['source-0', 'source-1'], $review->playlist->items()->pluck('catalog_id')->all());
     }

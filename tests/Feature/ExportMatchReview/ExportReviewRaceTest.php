@@ -40,6 +40,9 @@ class ExportReviewRaceTest extends TestCase
         $edited = $this->readyReview();
         $edited->playlist->items()->firstOrFail()->update(['title' => 'Edited in another tab']);
         $this->assertStale($edited);
+        $this->assertSame(ExportReviewStatus::Failed, $edited->fresh()->status);
+        $this->assertSame('source-changed', $edited->fresh()->failure_code);
+        $this->assertNotNull($edited->fresh()->completed_at);
 
         $reimported = $this->readyReview();
         $reimported->playlist->items()->delete();
@@ -49,6 +52,8 @@ class ExportReviewRaceTest extends TestCase
             'title' => 'Reimported item',
         ]);
         $this->assertStale($reimported);
+        $this->assertSame(ExportReviewStatus::Failed, $reimported->fresh()->status);
+        $this->assertSame('source-changed', $reimported->fresh()->failure_code);
     }
 
     public function test_unlinked_target_and_expired_review_cannot_be_confirmed(): void
@@ -60,6 +65,8 @@ class ExportReviewRaceTest extends TestCase
         $expired = $this->readyReview();
         $expired->update(['expires_at' => now()->subSecond()]);
         $this->assertStale($expired->fresh());
+        $this->assertSame(ExportReviewStatus::Expired, $expired->fresh()->status);
+        $this->assertNotNull($expired->fresh()->completed_at);
     }
 
     public function test_parallel_tabs_commit_exactly_one_confirmation(): void

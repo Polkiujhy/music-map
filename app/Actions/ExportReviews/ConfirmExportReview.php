@@ -29,7 +29,7 @@ final readonly class ConfirmExportReview
             abort(404);
         }
 
-        return DB::transaction(function () use ($user, $review, $decisions): ConfirmedExportManifest {
+        $result = DB::transaction(function () use ($user, $review, $decisions): ConfirmedExportManifest|ValidationException {
             $locked = ExportReview::query()->whereKey($review->getKey())->lockForUpdate()->firstOrFail();
 
             if ((int) $locked->user_id !== (int) $user->getKey()) {
@@ -45,8 +45,12 @@ final readonly class ConfirmExportReview
             }
 
             if ($locked->expires_at->isPast()) {
-                $locked->forceFill(['status' => ExportReviewStatus::Expired])->save();
-                $this->invalid('review', 'Ten przegląd wygasł. Przygotuj nowy wynik.');
+                $locked->forceFill([
+                    'status' => ExportReviewStatus::Expired,
+                    'completed_at' => now(),
+                ])->save();
+
+                return $this->validation('review', 'Ten przegląd wygasł. Przygotuj nowy wynik.');
             }
 
             $playlist = Playlist::query()->whereKey($locked->playlist_id)->lockForUpdate()->firstOrFail();
@@ -56,7 +60,13 @@ final readonly class ConfirmExportReview
 
             $playlist->load('items');
             if (! hash_equals($locked->source_fingerprint, $this->fingerprint->handle($playlist))) {
-                $this->invalid('review', 'Zawartość playlisty zmieniła się. Przygotuj nowy przegląd.');
+                $locked->forceFill([
+                    'status' => ExportReviewStatus::Failed,
+                    'failure_code' => 'source-changed',
+                    'completed_at' => now(),
+                ])->save();
+
+                return $this->validation('review', 'Zawartość playlisty zmieniła się. Przygotuj nowy przegląd.');
             }
 
             $destination = $this->destinations->handle(
@@ -112,6 +122,10 @@ final readonly class ConfirmExportReview
                 'is_available' => $item->source_is_available,
             ])->all());
 
+            if ($keptSourceItems->count() !== $items->count()) {
+                $playlist->forceFill(['bank_content_edited_at' => now()])->save();
+            }
+
             $locked->forceFill([
                 'status' => ExportReviewStatus::Confirmed,
                 'confirmed_at' => now(),
@@ -119,6 +133,12 @@ final readonly class ConfirmExportReview
 
             return ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
         });
+
+        if ($result instanceof ValidationException) {
+            throw $result;
+        }
+
+        return $result;
     }
 
     private function decision(mixed $value, int $itemId): ExportReviewDecision
@@ -136,6 +156,11 @@ final readonly class ConfirmExportReview
 
     private function invalid(string $key, string $message): never
     {
-        throw ValidationException::withMessages([$key => $message]);
+        throw $this->validation($key, $message);
+    }
+
+    private function validation(string $key, string $message): ValidationException
+    {
+        return ValidationException::withMessages([$key => $message]);
     }
 }
