@@ -104,6 +104,22 @@ class UnixManagedExportAccessBrokerTest extends TestCase
                 ...$valid,
                 'expires_at' => '2020-01-01T00:00:00+00:00',
             ], JSON_THROW_ON_ERROR)."\n"],
+            'relative expiration' => [json_encode([
+                ...$valid,
+                'expires_at' => 'tomorrow',
+            ], JSON_THROW_ON_ERROR)."\n"],
+            'offset-free expiration' => [json_encode([
+                ...$valid,
+                'expires_at' => '2099-01-01T00:00:00',
+            ], JSON_THROW_ON_ERROR)."\n"],
+            'invalid calendar expiration' => [json_encode([
+                ...$valid,
+                'expires_at' => '2099-02-30T00:00:00+00:00',
+            ], JSON_THROW_ON_ERROR)."\n"],
+            'invalid timezone expiration' => [json_encode([
+                ...$valid,
+                'expires_at' => '2099-01-01T00:00:00+24:00',
+            ], JSON_THROW_ON_ERROR)."\n"],
         ];
     }
 

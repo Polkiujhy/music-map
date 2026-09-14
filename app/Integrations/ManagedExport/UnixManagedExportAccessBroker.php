@@ -140,9 +140,27 @@ final readonly class UnixManagedExportAccessBroker implements ManagedExportAcces
             || ! is_string($response['expires_at'])) {
             throw new ManagedExportAccessException('internal-failure');
         }
-        try {
-            $expiresAt = new DateTimeImmutable($response['expires_at']);
-        } catch (\Exception) {
+        $timestamp = $response['expires_at'];
+        if (preg_match(
+            '/^(?<date>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?<fraction>\.\d{1,6})?(?<zone>Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D',
+            $timestamp,
+            $parts,
+        ) !== 1) {
+            throw new ManagedExportAccessException('internal-failure');
+        }
+        $normalized = $parts['date']
+            .(isset($parts['fraction']) && $parts['fraction'] !== ''
+                ? '.'.str_pad(substr($parts['fraction'], 1), 6, '0')
+                : '.000000')
+            .($parts['zone'] === 'Z' ? '+00:00' : $parts['zone']);
+        $expiresAt = DateTimeImmutable::createFromFormat(
+            '!Y-m-d\TH:i:s.uP',
+            $normalized,
+        );
+        $dateErrors = DateTimeImmutable::getLastErrors();
+        if ($expiresAt === false
+            || ($dateErrors !== false
+                && ($dateErrors['warning_count'] !== 0 || $dateErrors['error_count'] !== 0))) {
             throw new ManagedExportAccessException('internal-failure');
         }
         if ($expiresAt <= new DateTimeImmutable('now')) {

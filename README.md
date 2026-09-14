@@ -154,6 +154,9 @@ Asynchronous exports use the separate public PaaS contract
 selected by `MUSIC_MAP_MANAGED_EXPORT_SOCKET` and sends one closed JSON request
 containing only the protocol, `spotify|youtube` provider and a nonsecret UUIDv4
 operation ID. It accepts an access token only from the exact success response.
+The response `expires_at` must be an RFC 3339 date-time with seconds, an optional
+one-to-six digit fraction, and a mandatory `Z` or numeric UTC offset; relative
+and offset-free values fail closed.
 
 Manager owns the technical refresh grant and guarantees that any replacement
 refresh token is durably adopted before success is returned. Music Map never
