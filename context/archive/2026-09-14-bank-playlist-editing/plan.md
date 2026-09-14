@@ -581,7 +581,7 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Manual
 
-- [x] 1.7 Schemat zachowuje minimalną granicę względem S-05
+- [x] 1.7 Schemat zachowuje minimalną granicę względem S-05 — 598e567293c8e8a1e732a20de40f22e2d16d52ff
 
 ### Phase 2: Właścicielski edytor playlisty
 
@@ -596,9 +596,9 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Manual
 
-- [ ] 2.7 Edytor jest czytelny na małym i dużym ekranie
-- [ ] 2.8 Klawiatura, focus, 200% zoom i czytnik ekranu przechodzą cały przepływ
-- [ ] 2.9 Moment zapisu i konflikt są jednoznaczne dla użytkownika
+- [x] 2.7 Edytor jest czytelny na małym i dużym ekranie — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 2.8 Klawiatura, focus, 200% zoom i czytnik ekranu przechodzą cały przepływ — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 2.9 Moment zapisu i konflikt są jednoznaczne dla użytkownika — 598e567293c8e8a1e732a20de40f22e2d16d52ff
 
 ### Phase 3: Refresh i świadomy reimport
 
@@ -613,9 +613,9 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Manual
 
-- [ ] 3.7 Copy wyjaśnia różnicę między refreshem a pełnym reimportem
-- [ ] 3.8 Modal reimportu jasno ostrzega o utracie lokalnych zmian
-- [ ] 3.9 UI nie pokazuje wygasłych danych YouTube jako aktualnych
+- [x] 3.7 Copy wyjaśnia różnicę między refreshem a pełnym reimportem — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 3.8 Modal reimportu jasno ostrzega o utracie lokalnych zmian — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 3.9 UI nie pokazuje wygasłych danych YouTube jako aktualnych — 598e567293c8e8a1e732a20de40f22e2d16d52ff
 
 ### Phase 4: Handoff do S-05, regresja i wydanie
 
@@ -631,8 +631,8 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Manual
 
-- [ ] 4.8 Scenariusz 20 pozycji zachowuje dokładny wynik po jednym zapisie
-- [ ] 4.9 Druga karta i refresh nie powodują silent lost update
-- [ ] 4.10 Końcowy edytor przechodzi pełną weryfikację dostępności
-- [ ] 4.11 Dane, HTML, joby i logi nie zawierają sekretów ani surowych payloadów
-- [x] 4.12 Addytywna migracja jest gotowa do nadzorowanego wydania schematu
+- [x] 4.8 Scenariusz 20 pozycji zachowuje dokładny wynik po jednym zapisie — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 4.9 Druga karta i refresh nie powodują silent lost update — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 4.10 Końcowy edytor przechodzi pełną weryfikację dostępności — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 4.11 Dane, HTML, joby i logi nie zawierają sekretów ani surowych payloadów — 598e567293c8e8a1e732a20de40f22e2d16d52ff
+- [x] 4.12 Addytywna migracja jest gotowa do nadzorowanego wydania schematu — 598e567293c8e8a1e732a20de40f22e2d16d52ff
