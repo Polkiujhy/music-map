@@ -231,16 +231,16 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | ID mapy drogowej | Change ID | Sugerowany tytuł zadania | Gotowe do `/10x-plan` | Uwagi |
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
 | F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Zakończono i zarchiwizowano. |
-| F-02 | `youtube-write-admission` | Wprowadź wspólne dopuszczenie zapisów YouTube | yes | Gotowe do `/10x-plan`; odblokowuje S-06, S-07, S-08 i S-09. |
+| F-02 | `youtube-write-admission` | Wprowadź wspólne dopuszczenie zapisów YouTube | no | Zakończono i zarchiwizowano. |
 | S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | no | Zakończono i zarchiwizowano. |
 | S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Zakończono i zarchiwizowano. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
 | S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Zakończono i zarchiwizowano. |
-| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | S-05 zakończone; czeka na F-02. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 i S-05 zakończone; czeka na F-02. |
-| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | S-03 i S-04 zakończone; czeka na F-02. |
-| S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na F-02, S-07 i S-08. |
+| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | F-02 i S-05 zakończone; gotowe do `/10x-plan`. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | F-02, S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
+| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | F-02, S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
+| S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | F-02 zakończone; czeka na S-07 i S-08. |
 | S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
 
 ## Otwarte pytania dotyczące mapy drogowej
