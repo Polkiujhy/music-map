@@ -888,13 +888,13 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [x] 5.1 Uruchomić pełny fake workflow i fault matrix
-- [x] 5.2 Uruchomić pełną suite PHPUnit
-- [x] 5.3 Zweryfikować formatowanie Pint
-- [x] 5.4 Zbudować produkcyjny frontend
-- [x] 5.5 Zweryfikować source contract
-- [x] 5.6 Uruchomić audyty zależności
-- [x] 5.7 Udokumentować zielony hosted lub disposable PostgreSQL
+- [x] 5.1 Uruchomić pełny fake workflow i fault matrix — 87b4a58
+- [x] 5.2 Uruchomić pełną suite PHPUnit — 87b4a58
+- [x] 5.3 Zweryfikować formatowanie Pint — 87b4a58
+- [x] 5.4 Zbudować produkcyjny frontend — 87b4a58
+- [x] 5.5 Zweryfikować source contract — 87b4a58
+- [x] 5.6 Uruchomić audyty zależności — 87b4a58
+- [x] 5.7 Udokumentować zielony hosted lub disposable PostgreSQL — 87b4a58
 
 #### Manual
 

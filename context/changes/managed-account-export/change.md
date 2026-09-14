@@ -1,7 +1,7 @@
 ---
 change_id: managed-account-export
 title: Eksport na konto techniczne music-map
-status: implementing
+status: implemented
 created: 2026-09-14
 updated: 2026-09-14
 ---
