@@ -77,6 +77,16 @@ app/Integrations/PlaylistImport/PlaylistSourceReaderRegistry.php
 app/Integrations/PlaylistImport/ProviderImportFailureMapper.php
 app/Integrations/PlaylistImport/Providers/SpotifyPlaylistReader.php
 app/Integrations/PlaylistImport/Providers/YouTubePlaylistReader.php
+app/Integrations/PlaylistExport/Contracts/ExportMutationGuard.php
+app/Integrations/PlaylistExport/Contracts/PlaylistWriter.php
+app/Integrations/PlaylistExport/Data/CreateRecoveryResult.php
+app/Integrations/PlaylistExport/Data/ExportPlaylistDefinition.php
+app/Integrations/PlaylistExport/Data/PlaylistWriteResult.php
+app/Integrations/PlaylistExport/PlaylistWriteFailure.php
+app/Integrations/PlaylistExport/PlaylistWriterRegistry.php
+app/Integrations/PlaylistExport/ProviderPlaylistUrl.php
+app/Integrations/PlaylistExport/Providers/SpotifyPlaylistWriter.php
+app/Integrations/PlaylistExport/Providers/YouTubePlaylistWriter.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
 app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
@@ -150,6 +160,7 @@ app/Providers/AppServiceProvider.php
 app/Providers/ExportMatchingServiceProvider.php
 app/Providers/FortifyServiceProvider.php
 app/Providers/PlaylistImportServiceProvider.php
+app/Providers/PlaylistExportServiceProvider.php
 app/Providers/StreamingAccountsServiceProvider.php
 app/Providers/YouTubeWriteAdmissionServiceProvider.php
 app/Services/Auth/ResolveGoogleIdentity.php
@@ -292,6 +303,8 @@ tests/Unit/Integrations/PlaylistImport/PlaylistDataTest.php
 tests/Unit/Integrations/PlaylistImport/PlaylistShareUrlParserTest.php
 tests/Unit/Integrations/PlaylistImport/SpotifyPlaylistReaderTest.php
 tests/Unit/Integrations/PlaylistImport/YouTubePlaylistReaderTest.php
+tests/Unit/Integrations/PlaylistExport/SpotifyPlaylistWriterTest.php
+tests/Unit/Integrations/PlaylistExport/YouTubePlaylistWriterTest.php
 tests/Unit/Integrations/PlatformAccess/PrincipalBoundaryTest.php
 tests/Unit/Integrations/PlatformAccess/ProbeInputTest.php
 tests/Unit/Integrations/PlatformAccess/ProbeOutputTest.php

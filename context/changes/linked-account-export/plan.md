@@ -996,11 +996,11 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 1.1 Migracje i kontrakty modeli przechodzą na SQLite
-- [x] 1.2 Start operacji jest idempotentny i dispatchuje wyłącznie po commit
-- [x] 1.3 Formatowanie PHP przechodzi
-- [x] 1.5 Rola playlisty izoluje cele eksportu od lifecycle źródeł
-- [x] 1.6 Reconciler odzyskuje operację po crashu między commit a enqueue
+- [x] 1.1 Migracje i kontrakty modeli przechodzą na SQLite — 49599fe
+- [x] 1.2 Start operacji jest idempotentny i dispatchuje wyłącznie po commit — 49599fe
+- [x] 1.3 Formatowanie PHP przechodzi — 49599fe
+- [x] 1.5 Rola playlisty izoluje cele eksportu od lifecycle źródeł — 49599fe
+- [x] 1.6 Reconciler odzyskuje operację po crashu między commit a enqueue — 49599fe
 
 #### Manual
 
@@ -1010,12 +1010,12 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [ ] 2.1 Kontrakt adaptera Spotify przechodzi dla create, replace, scan i awarii
-- [ ] 2.2 Kontrakt adaptera YouTube przechodzi dla minimalnego diffu, kolejności i awarii
-- [ ] 2.3 Recovery marker nigdy nie powtarza create po niejednoznacznym wyniku
-- [ ] 2.4 Source contract i formatowanie przechodzą
-- [ ] 2.7 Recovery respektuje limit 20 stron i budżet czasu bez mutacji po przekroczeniu
-- [ ] 2.9 Kanoniczny link powstaje lokalnie ze zwalidowanego providerowego ID
+- [x] 2.1 Kontrakt adaptera Spotify przechodzi dla create, replace, scan i awarii
+- [x] 2.2 Kontrakt adaptera YouTube przechodzi dla minimalnego diffu, kolejności i awarii
+- [x] 2.3 Recovery marker nigdy nie powtarza create po niejednoznacznym wyniku
+- [x] 2.4 Source contract i formatowanie przechodzą
+- [x] 2.7 Recovery respektuje limit 20 stron i budżet czasu bez mutacji po przekroczeniu
+- [x] 2.9 Kanoniczny link powstaje lokalnie ze zwalidowanego providerowego ID
 
 #### Manual
 

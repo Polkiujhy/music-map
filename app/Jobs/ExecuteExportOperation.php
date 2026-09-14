@@ -10,6 +10,8 @@ final class ExecuteExportOperation implements ShouldQueue
 {
     use Queueable;
 
+    public int $timeout = 450;
+
     public int $tries = 3;
 
     /** @var list<int> */
