@@ -182,6 +182,7 @@ class SpotifyPlaylistImportTest extends TestCase
             'name' => 'Spotify canary playlist',
             'description' => 'Canary description',
             'snapshot_id' => 'revision-canary',
+            'owner' => ['id' => 'spotify-account-canary'],
             'items' => ['total' => $count],
         ];
     }

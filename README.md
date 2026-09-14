@@ -149,29 +149,41 @@ application storage, output, or logs.
 
 ## Managed-export access
 
-Asynchronous exports use the separate public PaaS contract
-`music-map.managed-export.v1`. The queue role connects to the Unix stream socket
-selected by `MUSIC_MAP_MANAGED_EXPORT_SOCKET` and sends one closed JSON request
-containing only the protocol, `spotify|youtube` provider and a nonsecret UUIDv4
-operation ID. It accepts an access token only from the exact success response.
-The v1 transport limits a newline-terminated request to 4,096 bytes and a
-newline-terminated response to 16,384 bytes; oversized messages fail closed.
-The response `expires_at` must be an RFC 3339 date-time with seconds, an optional
-one-to-six digit fraction, and a mandatory `Z` or numeric UTC offset; relative
-and offset-free values fail closed.
+Asynchronous exports to a technical account use the separate public PaaS contract
+`music-map.managed-export.v1`. Only the queue role receives the
+`MUSIC_MAP_MANAGED_EXPORT_SOCKET` locator. The capability supplies a short-lived
+access token for the requested `spotify` or `youtube` operation and guarantees
+the configured technical identity and provider-required scopes. Music Map keeps
+that token only in process memory for the current provider call and has no
+fallback to probe or linked-user credentials.
 
-Manager owns the technical refresh grant and guarantees that any replacement
-refresh token is durably adopted before success is returned. Music Map never
-receives that refresh token on this path and has no fallback to the probe
-configuration. The returned access token is used only in memory for the current
-provider operation; it must not enter a job payload, database, cache, exception,
-log or telemetry field. A failure response prevents provider mutation.
+Manager owns the technical refresh grant and rotation. A successful response
+means any replacement refresh token was durably adopted before the access token
+became observable, so provider mutation may start only after that success. A
+rotation or acquisition failure means zero provider writes. Closed failure
+statuses include `invalid-request`, `caller-denied`, `credential-unavailable`,
+`reauthorization-required`, `scope-mismatch`, `provider-unavailable`,
+`rate-limited`, `quota-exceeded`, `rotation-recovery-required`, and
+`internal-failure`; Music Map retries only a validated failure explicitly marked
+retryable. Playlist mutation, idempotency, and retry policy remain application
+responsibilities.
 
-`rotation-recovery-required`, `reauthorization-required`, `scope-mismatch` and
-`credential-unavailable` require operator resolution. Ordinary acquisition
-retry is permitted only when the closed response explicitly contains
-`retryable: true`. Playlist creation and retry idempotency remain application
-responsibilities and are not delegated to Manager.
+Linked-account exports use the user's OAuth grant instead. Both destination
+types share `export_operations`, `playlist_exports`, target-attempt history,
+the queue job and recovery scheduler. Existing `managed-export` class and route
+names are retained for compatibility; they do not select the credential type.
+The frozen destination type and provider account identity select access.
+Retry may use a reconnected row for the same identity, never a different account.
+Private Spotify exports do not require the additional public-write scope used
+by source synchronization.
+
+Confirmation freezes tracks, name and description and enqueues an export.
+Previously confirmed reviews without an operation must be prepared again.
+Successful export copies remain read-only in the bank for both destination
+types (`origin=managed_target` is the compatibility storage value). They cannot
+be edited, reimported or synchronized as sources. Existing imported sources are
+never adopted as targets. Removing a source-bank item in a review can also
+remove it from the original provider playlist when automatic source sync runs.
 
 ## YouTube write admission
 
@@ -196,6 +208,51 @@ applied through the published supervised `schema-release` capability before
 code that uses this port is released. Manager remains an external PaaS: it
 supplies runtime configuration and the schema-release capability, while the
 application owns admission behavior and all future consumer integration.
+
+## Source-playlist synchronization
+
+An activated synchronization compares the private bank playlist with its
+Spotify or YouTube source. Source changes win conflicts; a bank-only change is
+pushed back to the source. Synchronization is limited to 20 positions and
+preserves order and duplicate occurrences. Provider failures do not advance the
+confirmed baseline. Authentication failures require reconnecting the linked
+account, while retryable rate-limit and provider failures remain available to
+the queue retry policy.
+
+The application uses Laravel's standard queue worker and scheduler. Run a
+worker for the configured queue connection and invoke `php artisan
+schedule:run` every minute (or keep `php artisan schedule:work` running in an
+appropriate development environment). The scheduler dispatches due checks no
+less frequently than the configured maximum interval; a successful login may
+also dispatch a check once the login threshold has elapsed.
+
+Only the following application-owned runtime settings control this feature:
+
+```dotenv
+PLAYLIST_SYNC_MAXIMUM_CHECK_INTERVAL_MINUTES=240
+PLAYLIST_SYNC_LOGIN_CHECK_THRESHOLD_MINUTES=15
+PLAYLIST_SYNC_DISPATCH_BATCH_SIZE=50
+PLAYLIST_SYNC_RUN_RETENTION_DAYS=14
+PLAYLIST_SYNC_PRUNE_BATCH_SIZE=500
+PLAYLIST_SYNC_JOB_TRIES=3
+PLAYLIST_SYNC_JOB_TIMEOUT_SECONDS=450
+```
+
+`PLAYLIST_SYNC_MAXIMUM_CHECK_INTERVAL_MINUTES` must not exceed `240` (four
+hours). The login threshold defaults to `15` minutes. Batch and retention
+settings bound scheduler/pruner work and retain terminal run diagnostics for 14
+days by default. These values contain no credentials; deployment secrets remain
+outside the repository.
+
+Spotify synchronization requires `playlist-read-private`,
+`playlist-read-collaborative`, `playlist-modify-private`,
+`playlist-modify-public`, and `user-read-private`.
+YouTube synchronization requires
+`https://www.googleapis.com/auth/youtube`. Users whose historical grant lacks a
+required scope must reconnect before synchronization resumes. Manager remains
+an external PaaS and only supplies the documented symbolic runtime settings;
+the application owns queue jobs, scheduling, OAuth grants, reads, writes,
+retries, and retention.
 
 ## Disposable PostgreSQL smoke test
 

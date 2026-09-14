@@ -26,7 +26,7 @@ class ResolveExportDestinationTest extends TestCase
     {
         $user = User::factory()->create();
         $playlist = Playlist::factory()->for($user)->create();
-        $account = StreamingAccount::factory()->for($user)->spotify()->create(['market' => 'GB']);
+        $account = StreamingAccount::factory()->for($user)->spotify()->create(['market' => 'GB', 'scopes' => StreamingProvider::Spotify->exportScopes()]);
 
         $destination = $this->resolver()->handle($user, $playlist, StreamingProvider::Spotify, ExportDestinationType::Linked, $account->id);
 
@@ -37,8 +37,9 @@ class ResolveExportDestinationTest extends TestCase
 
     public function test_managed_destination_uses_symbolic_identity_only_without_active_linked_account(): void
     {
-        config()->set('services.platform_access.spotify.technical.account_id', 'managed-canary');
-        config()->set('services.platform_access.spotify.technical.market', 'pl');
+        config()->set('services.managed_export.providers.spotify.account_id', 'managed-canary');
+        config()->set('services.managed_export.providers.spotify.market', 'pl');
+        config()->set('services.platform_access.spotify.technical.account_id', 'probe-canary');
         $user = User::factory()->create();
 
         $destination = $this->resolver()->handle($user, Playlist::factory()->for($user)->create(), StreamingProvider::Spotify, ExportDestinationType::Managed);
@@ -52,7 +53,7 @@ class ResolveExportDestinationTest extends TestCase
     {
         Http::fake(['https://api.spotify.com/v1/me' => Http::response(['id' => 'spotify-canary', 'display_name' => 'Canary', 'country' => 'de'])]);
         $user = User::factory()->create();
-        $account = StreamingAccount::factory()->for($user)->spotify()->create(['provider_account_id' => 'spotify-canary', 'market' => null]);
+        $account = StreamingAccount::factory()->for($user)->spotify()->create(['provider_account_id' => 'spotify-canary', 'market' => null, 'scopes' => StreamingProvider::Spotify->exportScopes()]);
 
         $destination = $this->resolver()->handle($user, Playlist::factory()->for($user)->create(), StreamingProvider::Spotify, ExportDestinationType::Linked, $account->id);
 
@@ -71,12 +72,12 @@ class ResolveExportDestinationTest extends TestCase
             fn () => $this->resolver()->handle($user, $playlist, StreamingProvider::Spotify, ExportDestinationType::Linked, $foreign->id),
             fn () => $this->resolver()->handle($user, $playlist, StreamingProvider::YouTube, ExportDestinationType::Linked, $reconnect->id),
             function () use ($user, $playlist): void {
-                config()->set('services.platform_access.spotify.technical.account_id', 'managed');
-                config()->set('services.platform_access.spotify.technical.market', null);
+                config()->set('services.managed_export.providers.spotify.account_id', 'managed');
+                config()->set('services.managed_export.providers.spotify.market', null);
                 $this->resolver()->handle($user, $playlist, StreamingProvider::Spotify, ExportDestinationType::Managed);
             },
             function () use ($user): void {
-                config()->set('services.platform_access.youtube.technical.account_id', 'same-account');
+                config()->set('services.managed_export.providers.youtube.account_id', 'same-account');
                 $source = Playlist::factory()->for($user)->create([
                     'source_provider' => StreamingProvider::YouTube,
                     'source_playlist_id' => 'PL-same-account-source',

@@ -13,8 +13,11 @@ class PlaylistReimportController extends Controller
         abort_unless(ctype_digit($playlist) && (int) $playlist > 0, 404);
 
         $playlist = $request->user()->playlists()
+            ->sourceOnly()
             ->whereKey($playlist)
             ->firstOrFail();
+
+        abort_if($playlist->isManagedTarget(), 404);
 
         $request->validate([
             'confirm_reimport' => ['accepted'],

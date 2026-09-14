@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\PlaylistOrigin;
+use App\Enums\PlaylistSyncStatus;
 use App\Enums\StreamingProvider;
 use App\Jobs\RefreshYouTubePlaylistMetadata;
 use App\Models\Playlist;
@@ -21,7 +23,13 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
         $expireBefore = now()->subDays(30);
 
         Playlist::query()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)
+            ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                PlaylistSyncStatus::PendingConfirmation->value,
+                PlaylistSyncStatus::Enabled->value,
+                PlaylistSyncStatus::Attention->value,
+            ]))
             ->where('provider_metadata_refreshed_at', '<=', $expireBefore)
             ->where(function ($query): void {
                 $query
@@ -39,7 +47,13 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
             });
 
         Playlist::query()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)
+            ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                PlaylistSyncStatus::PendingConfirmation->value,
+                PlaylistSyncStatus::Enabled->value,
+                PlaylistSyncStatus::Attention->value,
+            ]))
             ->where('provider_metadata_refreshed_at', '>', $expireBefore)
             ->where('provider_metadata_refreshed_at', '<=', $refreshBefore)
             ->orderBy('id')
@@ -55,7 +69,13 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
         DB::transaction(function () use ($playlistId, $expireBefore): void {
             $playlist = Playlist::query()
                 ->whereKey($playlistId)
+                ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', StreamingProvider::YouTube->value)
+                ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                    PlaylistSyncStatus::PendingConfirmation->value,
+                    PlaylistSyncStatus::Enabled->value,
+                    PlaylistSyncStatus::Attention->value,
+                ]))
                 ->lockForUpdate()
                 ->first();
 

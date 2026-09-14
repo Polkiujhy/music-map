@@ -11,3 +11,14 @@ Artisan::command('inspire', function () {
 Schedule::command('playlists:refresh-youtube-metadata')
     ->daily()
     ->withoutOverlapping();
+
+Schedule::command('managed-exports:recover')
+    ->everyMinute()
+    ->withoutOverlapping(10);
+Schedule::command('playlist-sync:dispatch-due')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+Schedule::command('playlist-sync:prune-runs')
+    ->daily()
+    ->withoutOverlapping();

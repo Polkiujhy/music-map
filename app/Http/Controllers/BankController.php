@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ExportDestinationType;
+use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
+use App\Models\ExportOperation;
 use App\Models\ExportReview;
 use App\Models\StreamingAccount;
 use App\Models\User;
@@ -12,12 +14,14 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BankController extends Controller
 {
     public function index(Request $request): View
     {
         $playlists = $request->user()->playlists()
+            ->with('managedExportTarget.sourcePlaylist')
             ->withCount([
                 'items',
                 'items as unavailable_items_count' => fn ($query) => $query->where('is_available', false),
@@ -50,7 +54,63 @@ class BankController extends Controller
             );
         }
 
+        $sourceIds = $playlists->reject(fn ($playlist) => $playlist->isManagedTarget())->modelKeys();
+        $operationIds = collect()
+            ->merge($this->latestOperationIds($request->user(), $sourceIds, [
+                ExportOperationStatus::Queued,
+                ExportOperationStatus::Processing,
+                ExportOperationStatus::PartialFailed,
+                ExportOperationStatus::ManualRecoveryRequired,
+                ExportOperationStatus::RecreateRequired,
+            ]))
+            ->merge($this->latestOperationIds($request->user(), $sourceIds, [
+                ExportOperationStatus::Succeeded,
+                ExportOperationStatus::Failed,
+            ]))
+            ->unique()
+            ->values();
+        $operations = ExportOperation::query()
+            ->whereIn('id', $operationIds)
+            ->with([
+                'exportReview',
+                'playlistExport.targetAttempts',
+                'playlistExport.targetPlaylist',
+            ])
+            ->get();
+
+        foreach ($playlists as $playlist) {
+            $playlist->setRelation(
+                'managedOperations',
+                $operations->filter(fn (ExportOperation $operation): bool => (int) $operation->playlistExport->source_playlist_id === (int) $playlist->getKey())
+                    ->sortByDesc('created_at')
+                    ->values(),
+            );
+        }
+
         return view('bank.index', ['playlists' => $playlists, 'accounts' => $accounts]);
+    }
+
+    /**
+     * @param  list<int>  $sourceIds
+     * @param  list<ExportOperationStatus>  $statuses
+     * @return Collection<int, string>
+     */
+    private function latestOperationIds(User $user, array $sourceIds, array $statuses): Collection
+    {
+        if ($sourceIds === []) {
+            return collect();
+        }
+
+        $ranked = ExportOperation::query()
+            ->join('playlist_exports', 'playlist_exports.id', '=', 'export_operations.playlist_export_id')
+            ->where('export_operations.user_id', $user->getKey())
+            ->whereIn('playlist_exports.source_playlist_id', $sourceIds)
+            ->whereIn('export_operations.status', array_map(fn (ExportOperationStatus $status): string => $status->value, $statuses))
+            ->selectRaw('export_operations.id, ROW_NUMBER() OVER (PARTITION BY playlist_exports.source_playlist_id, playlist_exports.target_provider, playlist_exports.destination_type, playlist_exports.target_account_id ORDER BY export_operations.created_at DESC, export_operations.id DESC) AS operation_rank');
+
+        return collect(DB::query()->fromSub($ranked, 'ranked_operations')
+            ->where('operation_rank', 1)
+            ->pluck('id'));
     }
 
     /** @return array{ExportDestinationType, string} */
@@ -64,7 +124,7 @@ class BankController extends Controller
             $linked ? ExportDestinationType::Linked : ExportDestinationType::Managed,
             $linked
                 ? $account->provider_account_id
-                : (string) config("services.platform_access.{$provider->value}.technical.account_id"),
+                : (string) config("services.managed_export.providers.{$provider->value}.account_id"),
         ];
     }
 

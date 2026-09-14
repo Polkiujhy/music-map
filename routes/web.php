@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\ManagedExportController;
 use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistExportReviewController;
 use App\Http\Controllers\PlaylistImportController;
 use App\Http\Controllers\PlaylistReimportController;
+use App\Http\Controllers\PlaylistSynchronizationController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -24,6 +26,19 @@ RateLimiter::for('export-review-retry', function (Request $request): Limit {
     $provider = $request->user()?->exportReviews()
         ->whereKey($request->route('exportReview'))
         ->value('target_provider');
+    $providerKey = $provider instanceof BackedEnum ? $provider->value : (string) ($provider ?? 'unknown');
+
+    return Limit::perMinute(3)->by(implode('|', [
+        (string) $request->user()?->getAuthIdentifier(),
+        $providerKey,
+    ]));
+});
+
+RateLimiter::for('managed-export-action', function (Request $request): Limit {
+    $provider = $request->user()?->exportOperations()
+        ->whereKey($request->route('exportOperation'))
+        ->with('playlistExport:id,target_provider')
+        ->first()?->playlistExport?->target_provider;
     $providerKey = $provider instanceof BackedEnum ? $provider->value : (string) ($provider ?? 'unknown');
 
     return Limit::perMinute(3)->by(implode('|', [
@@ -77,6 +92,23 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->whereNumber('playlist')
         ->middleware('throttle:playlist-import')
         ->name('bank.playlists.reimport');
+    Route::post('/bank/playlists/{playlist}/synchronization/prepare', [PlaylistSynchronizationController::class, 'prepare'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:playlist-sync-provider')
+        ->name('playlist-synchronizations.prepare');
+    Route::post('/bank/playlists/{playlist}/synchronization/confirm', [PlaylistSynchronizationController::class, 'confirm'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:playlist-sync-provider')
+        ->name('playlist-synchronizations.confirm');
+    Route::get('/bank/playlists/{playlist}/synchronization', [PlaylistSynchronizationController::class, 'show'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.show');
+    Route::post('/bank/playlists/{playlist}/synchronization/run', [PlaylistSynchronizationController::class, 'run'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.run');
+    Route::patch('/bank/playlists/{playlist}/synchronization', [PlaylistSynchronizationController::class, 'update'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.update');
     Route::post('/bank/playlists/{playlist}/export-reviews', [PlaylistExportReviewController::class, 'store'])
         ->middleware('throttle:export-review-start')
         ->name('export-reviews.store');
@@ -87,4 +119,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('export-reviews.retry');
     Route::post('/bank/playlists/{playlist}/export-reviews/{exportReview}/confirm', [PlaylistExportReviewController::class, 'confirm'])
         ->name('export-reviews.confirm');
+    Route::post('/bank/playlists/{playlist}/managed-exports/{exportOperation}/retry', [ManagedExportController::class, 'retry'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:managed-export-action')
+        ->name('managed-exports.retry');
+    Route::post('/bank/playlists/{playlist}/managed-exports/{exportOperation}/recreate', [ManagedExportController::class, 'recreate'])
+        ->whereNumber('playlist')
+        ->middleware('throttle:managed-export-action')
+        ->name('managed-exports.recreate');
 });

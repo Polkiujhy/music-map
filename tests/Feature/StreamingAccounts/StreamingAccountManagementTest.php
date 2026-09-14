@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\StreamingAccounts;
 
+use App\Actions\PlaylistSync\DisableAccountPlaylistSynchronizations;
 use App\Integrations\StreamingAccounts\Contracts\DisableDependentStreamingSynchronizations;
 use App\Integrations\StreamingAccounts\Contracts\StreamingOAuthGateway;
 use App\Integrations\StreamingAccounts\Data\StreamingGrant;
@@ -54,14 +55,10 @@ class StreamingAccountManagementTest extends TestCase
         $this->assertSame(1, substr_count($response->getContent(), 'Sprawdź połączenie'));
     }
 
-    public function test_default_synchronization_seam_is_an_explicit_noop(): void
+    public function test_default_synchronization_seam_is_the_playlist_sync_implementation(): void
     {
         $seam = $this->app->make(DisableDependentStreamingSynchronizations::class);
-        $account = StreamingAccount::factory()->spotify()->create();
-
-        $seam->handle($account);
-
-        $this->assertDatabaseHas('streaming_accounts', ['id' => $account->id]);
+        $this->assertInstanceOf(DisableAccountPlaylistSynchronizations::class, $seam);
     }
 
     public function test_youtube_unlink_disables_dependents_deletes_before_revoke_and_confirms_revocation(): void

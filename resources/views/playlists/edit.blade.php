@@ -30,6 +30,8 @@
 
         <livewire:playlist-editor :playlist-id="(string) $playlist->getKey()" />
 
+        @include('playlists._synchronization', ['playlist' => $playlist])
+
         <flux:modal name="confirm-playlist-reimport" class="max-w-lg">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.16em] text-ash-grey-400">Pełny reimport</p>

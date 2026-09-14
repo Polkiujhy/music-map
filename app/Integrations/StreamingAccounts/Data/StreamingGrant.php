@@ -2,6 +2,7 @@
 
 namespace App\Integrations\StreamingAccounts\Data;
 
+use DateTimeImmutable;
 use LogicException;
 
 final readonly class StreamingGrant
@@ -13,6 +14,7 @@ final readonly class StreamingGrant
         public string $accessToken,
         public ?string $refreshToken,
         public array $scopes,
+        public ?DateTimeImmutable $expiresAt = null,
     ) {}
 
     public function __serialize(): array

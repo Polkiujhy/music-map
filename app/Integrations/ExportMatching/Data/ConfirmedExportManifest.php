@@ -24,6 +24,8 @@ final readonly class ConfirmedExportManifest
         public ?string $targetMarket,
         public string $sourceFingerprint,
         public array $items,
+        public ?string $playlistName = null,
+        public ?string $playlistDescription = null,
     ) {}
 
     public static function fromConfirmedReview(ExportReview $review): self
@@ -49,6 +51,8 @@ final readonly class ConfirmedExportManifest
             ->values()
             ->all();
 
+        $operation = $review->exportOperation;
+
         return new self(
             (int) $review->getKey(),
             (int) $review->playlist_id,
@@ -58,6 +62,8 @@ final readonly class ConfirmedExportManifest
             $review->target_market,
             $review->source_fingerprint,
             $items,
+            $operation === null ? $review->playlist->name : $operation->playlist_name,
+            $operation === null ? $review->playlist->description : $operation->playlist_description,
         );
     }
 }

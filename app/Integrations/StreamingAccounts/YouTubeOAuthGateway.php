@@ -130,11 +130,13 @@ final readonly class YouTubeOAuthGateway implements StreamingOAuthGateway
         $accessToken = $response->json('access_token');
         $replacement = $response->json('refresh_token');
         $scope = $response->json('scope');
+        $expiresIn = $response->json('expires_in');
 
         if (! $this->secret($accessToken)
             || ($replacement !== null && ! $this->secret($replacement))
             || (! $refresh && ! $this->secret($replacement))
-            || ($scope !== null && ! is_string($scope))) {
+            || ($scope !== null && ! is_string($scope))
+            || ($expiresIn !== null && (! is_int($expiresIn) || $expiresIn <= 0))) {
             return StreamingOAuthFailure::InvalidResponse;
         }
 
@@ -142,6 +144,7 @@ final readonly class YouTubeOAuthGateway implements StreamingOAuthGateway
             $accessToken,
             $replacement,
             is_string($scope) ? $this->scopes($scope) : [],
+            $expiresIn === null ? null : now()->addSeconds($expiresIn)->toDateTimeImmutable(),
         );
     }
 

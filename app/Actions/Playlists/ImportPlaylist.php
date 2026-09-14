@@ -2,6 +2,7 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Integrations\PlaylistImport\ImportResult;
@@ -35,6 +36,7 @@ final readonly class ImportPlaylist
         }
 
         $existingPlaylist = $user->playlists()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', $reference->provider->value)
             ->where('source_playlist_id', $reference->providerPlaylistId)
             ->first();
@@ -45,6 +47,10 @@ final readonly class ImportPlaylist
                 $reference->provider,
                 $correlationId,
             );
+        }
+
+        if ($this->replace->isKnownExportTarget($user, $reference->provider, $reference->providerPlaylistId)) {
+            return $this->failure(ImportFailureCode::ExportTargetConflict, $reference->provider, $correlationId);
         }
 
         $streamingAccountId = null;
@@ -106,7 +112,9 @@ final readonly class ImportPlaylist
             $streamingAccountId,
             $localEditsConfirmed,
         ) {
+            User::query()->whereKey($user->getKey())->lock(DB::getDriverName() === 'pgsql' ? 'for no key update' : true)->firstOrFail();
             $currentPlaylist = $user->playlists()
+                ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', $snapshot->provider->value)
                 ->where('source_playlist_id', $snapshot->providerPlaylistId)
                 ->lockForUpdate()
@@ -121,6 +129,10 @@ final readonly class ImportPlaylist
                 $snapshot,
                 streamingAccountId: $streamingAccountId,
             );
+
+            if ($playlist instanceof ImportFailureCode) {
+                return $playlist;
+            }
 
             if ($localEditsConfirmed) {
                 $playlist->update(['bank_content_edited_at' => null]);

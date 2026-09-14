@@ -32,6 +32,8 @@ final readonly class ResolveExportDestination
             $this->invalid('Ta playlista nie należy do użytkownika.');
         }
 
+        $playlist->assertSource();
+
         return $type === ExportDestinationType::Linked
             ? $this->linked($user, $playlist, $provider, $streamingAccountId)
             : $this->managed($user, $playlist, $provider);
@@ -50,6 +52,10 @@ final readonly class ResolveExportDestination
 
         if ($account->connectionState() === StreamingAccount::STATE_RECONNECT_REQUIRED) {
             $this->invalid('Połącz konto ponownie przed rozpoczęciem przeglądu.');
+        }
+
+        if (array_diff($provider->exportScopes(), $account->scopes ?? []) !== []) {
+            $this->invalid('Połącz konto ponownie, aby udzielić uprawnień eksportu.');
         }
 
         if ($provider === StreamingProvider::Spotify && $account->market === null) {
@@ -76,9 +82,9 @@ final readonly class ResolveExportDestination
             $this->invalid('Dla tego providera użyj aktywnego połączonego konta.');
         }
 
-        $accountId = (string) config("services.platform_access.{$provider->value}.technical.account_id");
+        $accountId = (string) config("services.managed_export.providers.{$provider->value}.account_id");
         $market = $provider === StreamingProvider::Spotify
-            ? $this->market(config('services.platform_access.spotify.technical.market'))
+            ? $this->market(config('services.managed_export.providers.spotify.market'))
             : null;
 
         if ($accountId === '') {
@@ -96,7 +102,7 @@ final readonly class ResolveExportDestination
         $result = $this->access->handle(
             $user,
             $account,
-            $account->provider->requiredScopes(),
+            $account->provider->exportScopes(),
             function (StreamingAccessContext $context) use ($account, &$market): ?StreamingAccessFailure {
                 $identity = $this->spotify->identity($context->accessToken);
 
