@@ -64,12 +64,11 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
             return ProviderImportFailureMapper::transport();
         }
 
-        return $this->snapshot($reference, $access, $metadata, $items);
+        return $this->snapshot($reference, $metadata, $items);
     }
 
     private function snapshot(
         PlaylistReference $reference,
-        StreamingAccessContext $access,
         Response $metadataResponse,
         Response $itemsResponse,
     ): PlaylistSnapshot|ImportFailureCode {
@@ -88,6 +87,7 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
         $name = $this->nullableString($metadata['name'] ?? null, 255);
         $description = $this->nullableString($metadata['description'] ?? null, 65535);
         $revision = $this->nullableString($metadata['snapshot_id'] ?? null, 255);
+        $ownerId = $this->boundedString($metadata['owner']['id'] ?? null);
         $metadataTotal = $metadata['items']['total'] ?? null;
         $itemsTotal = $payload['total'] ?? null;
 
@@ -96,6 +96,7 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
             || $name === null
             || $description === false
             || $revision === false
+            || $ownerId === null
             || ! is_int($metadataTotal)
             || $metadataTotal < 0
             || ! is_int($itemsTotal)
@@ -130,7 +131,7 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
         return new PlaylistSnapshot(
             StreamingProvider::Spotify,
             $reference->providerPlaylistId,
-            $access->providerAccountId,
+            $ownerId,
             $reference->canonicalUrl,
             $revision,
             $name,

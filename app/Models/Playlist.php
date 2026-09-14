@@ -80,6 +80,12 @@ class Playlist extends Model
         return $this->origin === PlaylistOrigin::ManagedTarget;
     }
 
+    /** @return HasOne<PlaylistSynchronization, $this> */
+    public function synchronization(): HasOne
+    {
+        return $this->hasOne(PlaylistSynchronization::class);
+    }
+
     /**
      * @return array<string, string>
      */

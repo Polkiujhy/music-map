@@ -39,8 +39,20 @@ class ReserveYouTubeWriteTest extends TestCase
 
     protected function tearDown(): void
     {
-        Carbon::setTestNow();
-        parent::tearDown();
+        try {
+            // These tests deliberately opt out of RefreshDatabase's ambient
+            // transaction because the admission action owns its transaction.
+            // Clean committed fixture rows so later test classes still start
+            // from the database-isolation contract RefreshDatabase promises.
+            DB::table('youtube_write_admissions')->delete();
+            DB::table('youtube_write_quota_states')->updateOrInsert(
+                ['singleton_key' => YouTubeWriteQuotaState::GLOBAL_KEY],
+                ['quota_day' => null, 'admitted_count' => 0, 'daily_limit' => null],
+            );
+        } finally {
+            Carbon::setTestNow();
+            parent::tearDown();
+        }
     }
 
     public function test_container_resolves_the_public_port_to_the_transactional_action(): void

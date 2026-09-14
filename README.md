@@ -197,6 +197,51 @@ code that uses this port is released. Manager remains an external PaaS: it
 supplies runtime configuration and the schema-release capability, while the
 application owns admission behavior and all future consumer integration.
 
+## Source-playlist synchronization
+
+An activated synchronization compares the private bank playlist with its
+Spotify or YouTube source. Source changes win conflicts; a bank-only change is
+pushed back to the source. Synchronization is limited to 20 positions and
+preserves order and duplicate occurrences. Provider failures do not advance the
+confirmed baseline. Authentication failures require reconnecting the linked
+account, while retryable rate-limit and provider failures remain available to
+the queue retry policy.
+
+The application uses Laravel's standard queue worker and scheduler. Run a
+worker for the configured queue connection and invoke `php artisan
+schedule:run` every minute (or keep `php artisan schedule:work` running in an
+appropriate development environment). The scheduler dispatches due checks no
+less frequently than the configured maximum interval; a successful login may
+also dispatch a check once the login threshold has elapsed.
+
+Only the following application-owned runtime settings control this feature:
+
+```dotenv
+PLAYLIST_SYNC_MAXIMUM_CHECK_INTERVAL_MINUTES=240
+PLAYLIST_SYNC_LOGIN_CHECK_THRESHOLD_MINUTES=15
+PLAYLIST_SYNC_DISPATCH_BATCH_SIZE=50
+PLAYLIST_SYNC_RUN_RETENTION_DAYS=14
+PLAYLIST_SYNC_PRUNE_BATCH_SIZE=500
+PLAYLIST_SYNC_JOB_TRIES=3
+PLAYLIST_SYNC_JOB_TIMEOUT_SECONDS=450
+```
+
+`PLAYLIST_SYNC_MAXIMUM_CHECK_INTERVAL_MINUTES` must not exceed `240` (four
+hours). The login threshold defaults to `15` minutes. Batch and retention
+settings bound scheduler/pruner work and retain terminal run diagnostics for 14
+days by default. These values contain no credentials; deployment secrets remain
+outside the repository.
+
+Spotify synchronization requires `playlist-read-private`,
+`playlist-read-collaborative`, `playlist-modify-private`,
+`playlist-modify-public`, and `user-read-private`.
+YouTube synchronization requires
+`https://www.googleapis.com/auth/youtube`. Users whose historical grant lacks a
+required scope must reconnect before synchronization resumes. Manager remains
+an external PaaS and only supplies the documented symbolic runtime settings;
+the application owns queue jobs, scheduling, OAuth grants, reads, writes,
+retries, and retention.
+
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the

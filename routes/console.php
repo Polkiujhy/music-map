@@ -15,3 +15,10 @@ Schedule::command('playlists:refresh-youtube-metadata')
 Schedule::command('managed-exports:recover')
     ->everyMinute()
     ->withoutOverlapping(10);
+Schedule::command('playlist-sync:dispatch-due')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+Schedule::command('playlist-sync:prune-runs')
+    ->daily()
+    ->withoutOverlapping();

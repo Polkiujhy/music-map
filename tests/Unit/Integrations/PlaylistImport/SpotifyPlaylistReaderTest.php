@@ -23,6 +23,7 @@ class SpotifyPlaylistReaderTest extends TestCase
         $result = $this->reader()->read($this->reference(), $this->access());
 
         $this->assertInstanceOf(PlaylistSnapshot::class, $result);
+        $this->assertSame('account-canary', $result->sourceAccountId);
         $this->assertCount($count, $result->items);
         Http::assertSentCount(2);
         Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api.spotify.com/v1/playlists/0123456789abcdefghijkl'
@@ -161,6 +162,7 @@ class SpotifyPlaylistReaderTest extends TestCase
             'name' => 'Canary playlist',
             'description' => 'Canary description',
             'snapshot_id' => 'revision-canary',
+            'owner' => ['id' => 'account-canary'],
             'items' => ['total' => $count],
         ];
     }
