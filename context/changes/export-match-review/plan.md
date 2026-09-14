@@ -628,8 +628,8 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [x] 1.6 Schema review potwierdza kompletny handoff bez sekretów
-- [x] 1.7 Konfiguracja zachowuje minimalną publiczną granicę PaaS
+- [x] 1.6 Schema review potwierdza kompletny handoff bez sekretów — 4216441
+- [x] 1.7 Konfiguracja zachowuje minimalną publiczną granicę PaaS — 4216441
 
 ### Phase 2: Matching katalogowy i wykonanie w kolejce
 
@@ -644,8 +644,8 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [x] 2.7 Fixture'y potwierdzają konserwatywne traktowanie cover, remix i live
-- [x] 2.8 Podgląd e-maila jest czytelny i nie ujawnia danych playlisty
+- [x] 2.7 Fixture'y potwierdzają konserwatywne traktowanie cover, remix i live — 4216441
+- [x] 2.8 Podgląd e-maila jest czytelny i nie ujawnia danych playlisty — 4216441
 
 ### Phase 3: Przegląd, decyzje i świadome potwierdzenie
 
@@ -660,9 +660,9 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [ ] 3.7 Responsywny ekran jednoznacznie pokazuje cel, właściciela i skutki decyzji
-- [ ] 3.8 Przepływ jest dostępny klawiaturą, przy 200% zoom i dla czytnika ekranu
-- [ ] 3.9 Odświeżenie, Back i dwie karty nie duplikują ani nie gubią operacji
+- [x] 3.7 Responsywny ekran jednoznacznie pokazuje cel, właściciela i skutki decyzji
+- [x] 3.8 Przepływ jest dostępny klawiaturą, przy 200% zoom i dla czytnika ekranu
+- [x] 3.9 Odświeżenie, Back i dwie karty nie duplikują ani nie gubią operacji
 
 ### Phase 4: Odporność, regresja i wydanie
 
@@ -678,7 +678,7 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [ ] 4.8 Lokalny fake E2E kończy się frozen manifestem zgodnym z przeglądem
-- [ ] 4.9 Copy, progi czasu i pojedynczy e-mail są zaakceptowane
-- [ ] 4.10 Baza, cache, HTML i logi nie zawierają sekretów ani provider payloadów
-- [ ] 4.11 Addytywny zestaw migracji jest gotowy do nadzorowanego wydania schematu
+- [x] 4.8 Lokalny fake E2E kończy się frozen manifestem zgodnym z przeglądem
+- [x] 4.9 Copy, progi czasu i pojedynczy e-mail są zaakceptowane
+- [x] 4.10 Baza, cache, HTML i logi nie zawierają sekretów ani provider payloadów
+- [x] 4.11 Addytywny zestaw migracji jest gotowy do nadzorowanego wydania schematu
