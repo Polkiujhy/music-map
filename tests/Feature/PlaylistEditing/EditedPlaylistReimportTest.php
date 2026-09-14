@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\PlaylistEditing;
 
+use App\Enums\StreamingProvider;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\User;
@@ -97,6 +98,28 @@ class EditedPlaylistReimportTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_failed_spotify_reimport_returns_the_actionable_failure_without_changing_the_snapshot(): void
+    {
+        Http::fake();
+        $playlist = $this->editedPlaylist([
+            'source_provider' => StreamingProvider::Spotify,
+            'source_playlist_id' => 'AbCdEfGhIjKlMnOpQrStUv',
+            'canonical_source_url' => 'https://open.spotify.com/playlist/AbCdEfGhIjKlMnOpQrStUv',
+        ]);
+        $before = $playlist->fresh()->load('items')->toArray();
+
+        $this->actingAs($playlist->user)
+            ->post(route('bank.playlists.reimport', $playlist), ['confirm_reimport' => 'yes'])
+            ->assertRedirect(route('bank.playlists.edit', $playlist))
+            ->assertSessionHas('error', fn (string $message): bool => str_contains(
+                $message,
+                'Połącz konto Spotify i spróbuj ponownie.',
+            ));
+
+        Http::assertNothingSent();
+        $this->assertSame($before, $playlist->fresh()->load('items')->toArray());
+    }
+
     public function test_editor_explains_the_difference_and_warns_about_replacement(): void
     {
         $playlist = $this->editedPlaylist();
@@ -110,13 +133,13 @@ class EditedPlaylistReimportTest extends TestCase
             ->assertSee('Potwierdź pełny reimport');
     }
 
-    private function editedPlaylist(): Playlist
+    private function editedPlaylist(array $attributes = []): Playlist
     {
-        $playlist = Playlist::factory()->create([
+        $playlist = Playlist::factory()->create([...[
             'source_playlist_id' => 'PL-edited-reimport',
             'canonical_source_url' => 'https://www.youtube.com/playlist?list=PL-edited-reimport',
             'bank_content_edited_at' => now()->subHour(),
-        ]);
+        ], ...$attributes]);
         PlaylistItem::factory()->for($playlist)->create([
             'position' => 0,
             'occurrence_id' => 'local-occurrence',

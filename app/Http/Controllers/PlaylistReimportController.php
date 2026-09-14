@@ -35,7 +35,7 @@ class PlaylistReimportController extends Controller
 
         return to_route('bank.playlists.edit', $playlist)->with(
             'error',
-            "Nie udało się ponownie zaimportować playlisty. Identyfikator błędu: {$result->correlationId}.",
+            $result->failureMessage(),
         );
     }
 }
