@@ -81,7 +81,7 @@ final class PlaylistExportReviewController extends Controller
         $confirm->handle($request->user(), $review, $request->decisions());
 
         return to_route('export-reviews.show', [$ownedPlaylist, $review])
-            ->with('status', 'Przegląd został potwierdzony. Dokładny manifest jest gotowy do eksportu.');
+            ->with('status', 'Przegląd został potwierdzony. Eksport został rozpoczęty.');
     }
 
     private function playlist(Request $request, string $playlist): Playlist

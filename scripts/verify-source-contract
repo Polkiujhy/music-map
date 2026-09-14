@@ -39,6 +39,11 @@ app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
 app/Actions/ExportReviews/StartExportReview.php
+app/Actions/ManagedAccountExport/MaterializeManagedExportPlaylist.php
+app/Actions/ManagedAccountExport/ReconcileManagedExport.php
+app/Actions/ManagedAccountExport/ResolveManagedExportTarget.php
+app/Actions/ManagedAccountExport/RunManagedExport.php
+app/Actions/ManagedAccountExport/StartConfirmedManagedExport.php
 app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
@@ -147,6 +152,7 @@ app/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionStatus.php
 app/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionUnavailable.php
 app/Integrations/YouTubeWriteAdmission/YouTubeWriteOperationType.php
 app/Jobs/PrepareExportReview.php
+app/Jobs/RunManagedExport.php
 app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Livewire/ExportReviewPanel.php
@@ -272,8 +278,11 @@ tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/ManagedAccountExport/ManagedExportMigrationTest.php
+tests/Feature/ManagedAccountExport/ManagedExportMaterializationTest.php
 tests/Feature/ManagedAccountExport/ManagedExportModelTest.php
 tests/Feature/ManagedAccountExport/ManagedExportPostgresTest.php
+tests/Feature/ManagedAccountExport/RunManagedExportTest.php
+tests/Feature/ManagedAccountExport/StartManagedExportTest.php
 tests/Feature/ManagedExport/ManagedExportBrokerBindingTest.php
 tests/Feature/Playlists/PlaylistConcurrentImportTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php

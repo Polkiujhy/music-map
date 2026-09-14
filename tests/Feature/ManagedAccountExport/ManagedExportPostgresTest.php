@@ -2,13 +2,40 @@
 
 namespace Tests\Feature\ManagedAccountExport;
 
+use App\Actions\ManagedAccountExport\ReconcileManagedExport;
+use App\Actions\ManagedAccountExport\RunManagedExport;
 use App\Enums\ExportDestinationType;
+use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
+use App\Integrations\ManagedAccountExport\Contracts\ManagedPlaylistGateway;
+use App\Integrations\ManagedAccountExport\Contracts\WithManagedAccountAccess;
+use App\Integrations\ManagedAccountExport\Data\ManagedAccessContext;
+use App\Integrations\ManagedAccountExport\Data\ManagedAccessResult;
+use App\Integrations\ManagedAccountExport\Data\ManagedMarkerLookup;
+use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistItem;
+use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistMetadata;
+use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistReconciliationResult;
+use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistReference;
+use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistSnapshot;
+use App\Integrations\ManagedAccountExport\ManagedExportFailureCode;
+use App\Integrations\ManagedAccountExport\ManagedPlaylistGatewayRegistry;
+use App\Integrations\ManagedAccountExport\ManagedProviderFailure;
+use App\Integrations\YouTubeWriteAdmission\Actions\ReserveYouTubeWrite;
+use App\Integrations\YouTubeWriteAdmission\Contracts\AdmitYouTubeWrite;
+use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
+use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
+use App\Models\ExportOperation;
 use App\Models\ExportReview;
+use App\Models\ExportReviewItem;
 use App\Models\Playlist;
 use App\Models\PlaylistExport;
+use App\Models\PlaylistExportTargetAttempt;
 use App\Models\User;
+use App\Models\YouTubeWriteAdmission;
+use App\Models\YouTubeWriteQuotaState;
+use Closure;
+use DateTimeImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -19,6 +46,106 @@ use Throwable;
 
 class ManagedExportPostgresTest extends TestCase
 {
+    public function test_concurrent_workers_grant_one_claim_and_one_managed_target_mutation_right(): void
+    {
+        $this->requirePostgresConcurrency();
+        $operation = $this->managedOperation(StreamingProvider::Spotify);
+
+        try {
+            $outcomes = $this->runConcurrently(2, 'worker-claim', function () use ($operation): string {
+                $gateway = new PostgresManagedPlaylistGateway(StreamingProvider::Spotify);
+                $action = new RunManagedExport(
+                    app(AdmitYouTubeWrite::class),
+                    new PostgresManagedAccess,
+                    new ManagedPlaylistGatewayRegistry($gateway),
+                    app(ReconcileManagedExport::class),
+                );
+                $action->handle($operation->id);
+
+                return 'delivered';
+            });
+
+            $this->assertSame(['delivered', 'delivered'], $outcomes);
+            DB::purge();
+            $operation->refresh();
+            $this->assertSame(ExportOperationStatus::Succeeded, $operation->status);
+            $this->assertSame(1, $operation->attempt_generation);
+            $this->assertSame(1, $operation->automatic_claim_count);
+            $this->assertSame(1, $operation->playlistExport->targetAttempts()->whereNotNull('provider_playlist_id')->count());
+            $this->assertSame(1, Playlist::query()
+                ->where('user_id', $operation->user_id)
+                ->where('source_provider', StreamingProvider::Spotify->value)
+                ->where('source_playlist_id', 'postgres-managed-target')
+                ->count());
+        } finally {
+            $this->deleteOperationGraph($operation);
+        }
+    }
+
+    public function test_concurrent_and_repeated_youtube_admission_uses_one_reservation_for_stable_operation_id(): void
+    {
+        $this->requirePostgresConcurrency();
+        $operation = $this->managedOperation(StreamingProvider::YouTube);
+        config(['services.youtube_write_admission.daily_limit' => 10]);
+        DB::table('youtube_write_quota_states')->updateOrInsert(
+            ['singleton_key' => YouTubeWriteQuotaState::GLOBAL_KEY],
+            ['quota_day' => null, 'admitted_count' => 0, 'daily_limit' => 10],
+        );
+
+        try {
+            $outcomes = $this->runConcurrently(2, 'stable-f02', fn (): string => (new ReserveYouTubeWrite)
+                ->admit(YouTubeWriteOperationType::ManagedExport, $operation->id)
+                ->status
+                ->value);
+            sort($outcomes);
+
+            $this->assertSame(['admitted-existing', 'admitted-new'], $outcomes);
+            DB::purge();
+            $reservation = YouTubeWriteAdmission::query()
+                ->where('operation_type', YouTubeWriteOperationType::ManagedExport->value)
+                ->where('operation_id', $operation->id)
+                ->firstOrFail();
+            $repeated = (new ReserveYouTubeWrite)->admit(YouTubeWriteOperationType::ManagedExport, $operation->id);
+            $this->assertSame(YouTubeWriteAdmissionStatus::AdmittedExisting, $repeated->status);
+            $this->assertSame($reservation->id, $repeated->reservationId);
+            $this->assertSame(1, YouTubeWriteAdmission::query()->where('operation_id', $operation->id)->count());
+            $this->assertSame(1, YouTubeWriteQuotaState::query()->whereKey(YouTubeWriteQuotaState::GLOBAL_KEY)->value('admitted_count'));
+        } finally {
+            DB::purge();
+            YouTubeWriteAdmission::query()->where('operation_id', $operation->id)->delete();
+            DB::table('youtube_write_quota_states')
+                ->where('singleton_key', YouTubeWriteQuotaState::GLOBAL_KEY)
+                ->update(['quota_day' => null, 'admitted_count' => 0, 'daily_limit' => null]);
+            $this->deleteOperationGraph($operation);
+        }
+    }
+
+    public function test_durable_claim_budget_uses_compare_and_swap_generation_on_postgresql(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('This managed-export race test requires PostgreSQL.');
+        }
+
+        $operation = ExportOperation::factory()->create([
+            'status' => ExportOperationStatus::Processing,
+            'attempt_generation' => 4,
+            'automatic_claim_count' => 3,
+            'heartbeat_at' => now()->subSeconds(511),
+        ]);
+
+        // A new delivery cannot reset the durable generation budget.
+        app(RunManagedExport::class)->handle($operation->id);
+
+        $operation->refresh();
+        $this->assertSame(4, $operation->attempt_generation);
+        $this->assertSame(3, $operation->automatic_claim_count);
+        $this->assertContains($operation->status, [
+            ExportOperationStatus::Failed,
+            ExportOperationStatus::PartialFailed,
+            ExportOperationStatus::ManualRecoveryRequired,
+        ]);
+    }
+
     public function test_concurrent_inserts_create_one_canonical_copy_and_one_operation_per_review(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
@@ -101,13 +228,34 @@ class ManagedExportPostgresTest extends TestCase
      */
     private function runConcurrentInserts(string $table, array $rows, string $purpose): array
     {
+        return $this->runConcurrently(count($rows), $purpose, function (int $index) use ($table, $rows): string {
+            try {
+                DB::table($table)->insert($rows[$index]);
+
+                return 'saved';
+            } catch (QueryException $exception) {
+                if ($exception->getCode() !== '23505') {
+                    throw $exception;
+                }
+
+                return 'duplicate';
+            }
+        });
+    }
+
+    /**
+     * @param  Closure(int): string  $contender
+     * @return list<string>
+     */
+    private function runConcurrently(int $count, string $purpose, Closure $contender): array
+    {
         $barrier = sys_get_temp_dir().'/music-map-managed-export-'.$purpose.'-'.Str::uuid();
         File::ensureDirectoryExists($barrier, 0700);
         DB::disconnect();
         $pids = [];
 
         try {
-            foreach ($rows as $index => $row) {
+            for ($index = 0; $index < $count; $index++) {
                 $pid = pcntl_fork();
 
                 if ($pid === -1) {
@@ -120,16 +268,7 @@ class ManagedExportPostgresTest extends TestCase
                         touch("{$barrier}/ready-{$index}");
                         $this->waitForFile("{$barrier}/go");
 
-                        try {
-                            DB::table($table)->insert($row);
-                            file_put_contents("{$barrier}/result-{$index}", 'saved');
-                        } catch (QueryException $exception) {
-                            if ($exception->getCode() !== '23505') {
-                                throw $exception;
-                            }
-
-                            file_put_contents("{$barrier}/result-{$index}", 'duplicate');
-                        }
+                        file_put_contents("{$barrier}/result-{$index}", $contender($index));
 
                         exit(0);
                     } catch (Throwable $exception) {
@@ -143,7 +282,7 @@ class ManagedExportPostgresTest extends TestCase
 
             $deadline = microtime(true) + 10;
 
-            while (count(glob("{$barrier}/ready-*")) !== count($rows)) {
+            while (count(glob("{$barrier}/ready-*")) !== $count) {
                 if (microtime(true) >= $deadline) {
                     throw new RuntimeException('Managed-export contenders did not reach the race barrier.');
                 }
@@ -166,7 +305,7 @@ class ManagedExportPostgresTest extends TestCase
 
             return array_map(
                 static fn (int $index): string => file_get_contents("{$barrier}/result-{$index}"),
-                array_keys($rows),
+                range(0, $count - 1),
             );
         } finally {
             touch("{$barrier}/go");
@@ -180,6 +319,71 @@ class ManagedExportPostgresTest extends TestCase
         }
     }
 
+    private function requirePostgresConcurrency(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('This managed-export race test requires PostgreSQL.');
+        }
+        if (! function_exists('pcntl_fork')) {
+            $this->markTestSkipped('This managed-export race test requires the pcntl extension.');
+        }
+    }
+
+    private function managedOperation(StreamingProvider $provider): ExportOperation
+    {
+        $user = User::factory()->create();
+        $source = Playlist::factory()->for($user)->create([
+            'source_playlist_id' => 'postgres-source-'.Str::uuid(),
+            'source_provider' => $provider === StreamingProvider::Spotify
+                ? StreamingProvider::YouTube
+                : StreamingProvider::Spotify,
+        ]);
+        $review = ExportReview::factory()->for($user)->for($source)->create([
+            'status' => ExportReviewStatus::Confirmed,
+            'confirmed_at' => now(),
+            'target_provider' => $provider,
+            'target_account_id' => 'postgres-managed-owner',
+        ]);
+        ExportReviewItem::factory()->for($review)->create([
+            'position' => 0,
+            'target_catalog_id' => 'postgres-target-item',
+            'target_catalog_uri' => $provider === StreamingProvider::Spotify
+                ? 'spotify:track:postgres-target-item'
+                : 'https://www.youtube.com/watch?v=postgres-target-item',
+        ]);
+        $export = PlaylistExport::factory()->for($source, 'sourcePlaylist')->create([
+            'target_provider' => $provider,
+            'target_account_id' => 'postgres-managed-owner',
+        ]);
+        PlaylistExportTargetAttempt::factory()->for($export, 'playlistExport')->create([
+            'target_provider' => $provider,
+            'target_account_id' => 'postgres-managed-owner',
+        ]);
+
+        return ExportOperation::factory()->for($user)->for($review)->for($export, 'playlistExport')->create();
+    }
+
+    private function deleteOperationGraph(ExportOperation $operation): void
+    {
+        DB::purge();
+        $operation = ExportOperation::query()->with(['exportReview', 'playlistExport.targetPlaylist', 'playlistExport.sourcePlaylist'])->find($operation->id);
+        if (! $operation instanceof ExportOperation) {
+            return;
+        }
+        $userId = $operation->user_id;
+        $review = $operation->exportReview;
+        $export = $operation->playlistExport;
+        $target = $export->targetPlaylist;
+        $source = $export->sourcePlaylist;
+        $operation->delete();
+        $export->targetAttempts()->delete();
+        $export->delete();
+        $review->delete();
+        $target?->delete();
+        $source->delete();
+        User::query()->whereKey($userId)->delete();
+    }
+
     private function waitForFile(string $path): void
     {
         $deadline = microtime(true) + 10;
@@ -191,5 +395,99 @@ class ManagedExportPostgresTest extends TestCase
 
             usleep(1000);
         }
+    }
+}
+
+final class PostgresManagedAccess implements WithManagedAccountAccess
+{
+    public function handle(
+        StreamingProvider $provider,
+        string $operationId,
+        string $expectedAccountId,
+        array $requiredScopes,
+        Closure $callback,
+    ): ManagedAccessResult {
+        $result = $callback(new ManagedAccessContext(
+            $provider,
+            $expectedAccountId,
+            'postgres-race-token',
+            new DateTimeImmutable('+1 hour'),
+            $operationId,
+        ));
+
+        return $result instanceof ManagedExportFailureCode
+            ? ManagedAccessResult::failure($result)
+            : ManagedAccessResult::success();
+    }
+}
+
+final class PostgresManagedPlaylistGateway implements ManagedPlaylistGateway
+{
+    private ?ManagedPlaylistMetadata $metadata = null;
+
+    public function __construct(private StreamingProvider $streamingProvider) {}
+
+    public function provider(): StreamingProvider
+    {
+        return $this->streamingProvider;
+    }
+
+    public function findByMarker(ManagedAccessContext $access, string $marker): ManagedMarkerLookup|ManagedProviderFailure
+    {
+        return ManagedMarkerLookup::none();
+    }
+
+    public function create(ManagedAccessContext $access, ManagedPlaylistMetadata $metadata): ManagedPlaylistReference|ManagedProviderFailure
+    {
+        $this->metadata = $metadata;
+
+        return $this->reference($access->providerAccountId);
+    }
+
+    public function inspect(ManagedAccessContext $access, ManagedPlaylistReference $reference): ManagedPlaylistSnapshot|ManagedProviderFailure
+    {
+        if (! $this->metadata instanceof ManagedPlaylistMetadata) {
+            return new ManagedProviderFailure(ManagedExportFailureCode::InvalidResponse);
+        }
+
+        return $this->snapshot($reference, $this->metadata);
+    }
+
+    public function reconcile(
+        ManagedAccessContext $access,
+        ManagedPlaylistReference $reference,
+        ManagedPlaylistMetadata $metadata,
+        array $catalogItems,
+    ): ManagedPlaylistReconciliationResult|ManagedProviderFailure {
+        return ManagedPlaylistReconciliationResult::exact($this->snapshot($reference, $metadata));
+    }
+
+    private function reference(string $owner): ManagedPlaylistReference
+    {
+        return new ManagedPlaylistReference(
+            $this->streamingProvider,
+            'postgres-managed-target',
+            $this->streamingProvider === StreamingProvider::Spotify
+                ? 'https://open.spotify.com/playlist/postgres-managed-target'
+                : 'https://www.youtube.com/playlist?list=postgres-managed-target',
+            $owner,
+        );
+    }
+
+    private function snapshot(ManagedPlaylistReference $reference, ManagedPlaylistMetadata $metadata): ManagedPlaylistSnapshot
+    {
+        return new ManagedPlaylistSnapshot(
+            $reference,
+            $metadata,
+            $this->streamingProvider === StreamingProvider::Spotify ? 'private' : 'unlisted',
+            [new ManagedPlaylistItem(
+                'postgres-target-item',
+                $this->streamingProvider === StreamingProvider::Spotify
+                    ? 'spotify:track:postgres-target-item'
+                    : 'https://www.youtube.com/watch?v=postgres-target-item',
+                0,
+                $this->streamingProvider === StreamingProvider::YouTube ? 'postgres-occurrence' : null,
+            )],
+        );
     }
 }

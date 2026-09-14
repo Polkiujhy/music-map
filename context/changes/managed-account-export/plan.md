@@ -842,11 +842,11 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [x] 2.1 Zweryfikować efemeryczny dostęp techniczny i rotację
-- [x] 2.2 Zweryfikować marker i deterministyczne metadane
-- [x] 2.3 Zweryfikować kontrakt Spotify przez fake HTTP
-- [x] 2.4 Zweryfikować kontrakt YouTube przez fake HTTP
-- [x] 2.5 Uruchomić regresję F-01 i Google login
+- [x] 2.1 Zweryfikować efemeryczny dostęp techniczny i rotację — 27862a5
+- [x] 2.2 Zweryfikować marker i deterministyczne metadane — 27862a5
+- [x] 2.3 Zweryfikować kontrakt Spotify przez fake HTTP — 27862a5
+- [x] 2.4 Zweryfikować kontrakt YouTube przez fake HTTP — 27862a5
+- [x] 2.5 Uruchomić regresję F-01 i Google login — 27862a5
 
 #### Manual
 
@@ -857,12 +857,12 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [ ] 3.1 Zweryfikować atomowy start i idempotentne potwierdzenie
-- [ ] 3.2 Zweryfikować admission-before-write i checkpoint locatora
-- [ ] 3.3 Pokryć fault matrix create, scan, item write i retry
-- [ ] 3.4 Udowodnić claim, CAS, canonical relation i F-02 na PostgreSQL
-- [ ] 3.5 Uruchomić pełną regresję S-05 i F-02
-- [ ] 3.8 Zweryfikować atomową i idempotentną materializację docelowej playlisty
+- [x] 3.1 Zweryfikować atomowy start i idempotentne potwierdzenie
+- [x] 3.2 Zweryfikować admission-before-write i checkpoint locatora
+- [x] 3.3 Pokryć fault matrix create, scan, item write i retry
+- [x] 3.4 Udowodnić claim, CAS, canonical relation i F-02 na PostgreSQL
+- [x] 3.5 Uruchomić pełną regresję S-05 i F-02
+- [x] 3.8 Zweryfikować atomową i idempotentną materializację docelowej playlisty
 
 #### Manual
 

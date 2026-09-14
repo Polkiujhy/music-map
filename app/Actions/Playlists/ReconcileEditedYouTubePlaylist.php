@@ -2,6 +2,7 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\Data\PlaylistItemSnapshot;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
@@ -20,6 +21,7 @@ final readonly class ReconcileEditedYouTubePlaylist
         return DB::transaction(function () use ($playlistId, $snapshot): Playlist|ImportFailureCode|null {
             $playlist = Playlist::query()
                 ->whereKey($playlistId)
+                ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', StreamingProvider::YouTube->value)
                 ->with('user')
                 ->lockForUpdate()

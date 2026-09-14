@@ -124,7 +124,7 @@ final class ExportReviewPanel extends Component
     {
         $review = $this->ownedReview($this->reviewId);
         $confirm->handle(Auth::user(), $review, $this->decisions);
-        session()->flash('status', 'Przegląd został potwierdzony. Dokładny manifest jest gotowy do eksportu.');
+        session()->flash('status', 'Przegląd został potwierdzony. Eksport został rozpoczęty.');
         $this->redirectRoute('export-reviews.show', [$review->playlist_id, $review->getKey()], navigate: false);
     }
 
