@@ -45,7 +45,7 @@ milestone_status: open
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
-| S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | in-progress |
+| S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | proposed |
 | S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
 | S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
@@ -137,7 +137,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** zgody i zakresy dostępu udostępnione przez Spotify oraz YouTube.
 - **Niewiadome:** —
 - **Ryzyko:** zbyt szerokie zakresy lub pozostawienie aktywnych tokenów po odłączeniu narusza wymóg poufności i blokuje bezpieczny eksport na konto użytkownika.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Kontrola dopasowania przed eksportem
 
@@ -247,5 +247,6 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zrobione
 
+- **S-04: użytkownik może bezpiecznie powiązać lub odłączyć konto Spotify albo YouTube, a odłączenie wyłącza synchronizację wszystkich zależnych playlist.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-streaming-account-linking/`. Lekcja: —.
 - **F-01: (fundament) aplikacja udostępnia `music-map.platform-access.v1`, przez który Manager weryfikuje minimalny dostęp technicznych i testowych kont Spotify oraz YouTube bez przenoszenia OAuth i cyklu poświadczeń do repozytorium.** — Zarchiwizowano 2026-09-13 → `context/archive/2026-09-12-platform-access-readiness/`. Lekcja: —.
 - **S-01: użytkownik może utworzyć konto, zalogować się e-mailem lub przez Google i wejść do własnego pustego banku playlist bez dostępu do danych innych osób.** — Zarchiwizowano 2026-09-12 → `context/archive/2026-09-12-private-account-and-bank/`. Lekcja: —.

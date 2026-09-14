@@ -852,7 +852,7 @@ elementem rollbacku S-04.
 
 #### Manual
 
-- [ ] 4.7 Dedykowane konto Spotify przechodzi pełny cykl live
-- [ ] 4.8 Konto YouTube/Brand Account przechodzi providerowy wybór kanału i pełny cykl live
-- [ ] 4.9 Baza, HTML i logi nie zawierają access tokenów ani plaintext refresh tokenów
-- [ ] 4.10 Kontrolowane wydanie schematu i HTTPS smoke są udokumentowane
+- [x] 4.7 Dedykowane konto Spotify przechodzi pełny cykl live — 1c9dc38
+- [x] 4.8 Konto YouTube/Brand Account przechodzi providerowy wybór kanału i pełny cykl live — 1c9dc38
+- [x] 4.9 Baza, HTML i logi nie zawierają access tokenów ani plaintext refresh tokenów — 1c9dc38
+- [x] 4.10 Kontrolowane wydanie schematu i HTTPS smoke są udokumentowane — 1c9dc38
