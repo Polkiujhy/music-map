@@ -10,6 +10,7 @@ use App\Integrations\StreamingAccounts\Data\StreamingAccessResult;
 use App\Jobs\RunPlaylistSynchronization;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Models\PlaylistSynchronization;
 use App\Models\PlaylistSyncRun;
 use App\Models\StreamingAccount;
 use App\Models\User;
@@ -17,11 +18,63 @@ use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PlaylistSynchronizationActivationTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[DataProvider('activeRunStates')]
+    public function test_preview_and_rejected_confirmation_preserve_enabled_synchronization(?string $runState): void
+    {
+        $this->freezeSecond();
+        Queue::fake();
+        [$user, $playlist, $account] = $this->spotifyPlaylist();
+        $sync = PlaylistSynchronization::factory()->for($playlist)->create([
+            'streaming_account_id' => $account->id,
+            'status' => PlaylistSyncStatus::Enabled,
+            'automatic_enabled' => true,
+            'baseline_bank_fingerprint' => hash('sha256', 'bank-baseline'),
+            'baseline_source_fingerprint' => hash('sha256', 'source-baseline'),
+            'next_check_at' => now()->addHour(),
+        ]);
+        $run = $runState === null ? null : PlaylistSyncRun::factory()->create([
+            'playlist_synchronization_id' => $sync->id,
+            'state' => $runState,
+        ]);
+        $original = $sync->fresh()->getRawOriginal();
+        $this->app->instance(WithStreamingAccess::class, new SyncAccessFake(StreamingProvider::Spotify, 'owner-canary'));
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push($this->spotifyMetadata())->push($this->spotifyItems())
+            ->push($this->spotifyMetadata())->push($this->spotifyItems());
+
+        $token = $this->actingAs($user)
+            ->postJson(route('playlist-synchronizations.prepare', $playlist))
+            ->assertOk()->json('preview_token');
+
+        $this->assertSame($original, $sync->fresh()->getRawOriginal());
+        Queue::assertNothingPushed();
+
+        if ($run === null) {
+            $playlist->update(['name' => 'Changed after preview']);
+        }
+        $this->postJson(route('playlist-synchronizations.confirm', $playlist), ['preview_token' => $token])
+            ->assertUnprocessable()->assertJsonValidationErrors('preview_token');
+
+        $this->assertSame($original, $sync->fresh()->getRawOriginal());
+        $this->assertDatabaseCount('playlist_sync_runs', $run === null ? 0 : 1);
+        if ($run !== null) {
+            $this->assertSame($runState, $run->fresh()->state);
+        }
+        Queue::assertNothingPushed();
+    }
+
+    public static function activeRunStates(): array
+    {
+        return ['no active run' => [null], 'pending run' => ['pending'], 'running run' => ['running']];
+    }
 
     public function test_owner_prepares_and_confirms_an_activation_without_enabling_auto_or_admitting_a_write(): void
     {

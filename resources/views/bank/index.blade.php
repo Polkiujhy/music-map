@@ -141,7 +141,7 @@
                                                 $providerName = $provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube';
                                                 $providerOperations = $playlist->managedOperations
                                                     ->where('playlistExport.target_provider', $provider)
-                                                    ->groupBy(fn ($operation) => $operation->playlistExport->destination_type->value)
+                                                    ->groupBy(fn ($operation) => $operation->playlistExport->destination_type->value.':'.$operation->playlistExport->target_account_id)
                                                     ->map(fn ($operations) => $operations->first(fn ($operation) => in_array($operation->status, [
                                                         \App\Enums\ExportOperationStatus::Queued,
                                                         \App\Enums\ExportOperationStatus::Processing,

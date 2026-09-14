@@ -99,7 +99,7 @@ final readonly class PreparePlaylistSynchronization
             'source_snapshot' => $snapshot->items,
         ], $expiresAt);
 
-        $playlist->synchronization()->updateOrCreate([], [
+        $playlist->synchronization()->firstOrCreate([], [
             'streaming_account_id' => $account->getKey(),
             'status' => PlaylistSyncStatus::PendingConfirmation,
             'automatic_enabled' => false,

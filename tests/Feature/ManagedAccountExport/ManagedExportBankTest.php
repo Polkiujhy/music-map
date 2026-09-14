@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\ManagedAccountExport;
 
+use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
 use App\Enums\PlaylistOrigin;
@@ -12,13 +13,85 @@ use App\Models\Playlist;
 use App\Models\PlaylistExport;
 use App\Models\PlaylistExportTargetAttempt;
 use App\Models\PlaylistItem;
+use App\Models\StreamingAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ManagedExportBankTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[DataProvider('accountHistoryCases')]
+    public function test_bank_partitions_history_and_active_operations_by_target_account(
+        StreamingProvider $provider,
+        ExportDestinationType $type,
+        ExportOperationStatus $status,
+    ): void {
+        $this->freezeSecond();
+        $source = Playlist::factory()->create();
+        PlaylistItem::factory()->for($source)->create(['position' => 0]);
+        config([
+            'services.managed_export.providers.spotify.account_id' => '',
+            'services.managed_export.providers.youtube.account_id' => '',
+            "services.managed_export.providers.{$provider->value}.account_id" => 'current-owner',
+        ]);
+        if ($type === ExportDestinationType::Linked) {
+            StreamingAccount::factory()->for($source->user)->create([
+                'provider' => $provider,
+                'provider_account_id' => 'current-owner',
+                'scopes' => $provider->exportScopes(),
+            ]);
+        }
+
+        $operations = [];
+        foreach (['current-owner', 'historical-owner'] as $index => $owner) {
+            $destination = [
+                'target_provider' => $provider,
+                'destination_type' => $type,
+                'target_account_id' => $owner,
+            ];
+            $review = ExportReview::factory()->for($source)->for($source->user)->create([
+                ...$destination,
+                'status' => ExportReviewStatus::Confirmed,
+            ]);
+            $export = PlaylistExport::factory()->for($source, 'sourcePlaylist')->create($destination);
+            $url = $provider === StreamingProvider::Spotify
+                ? 'https://open.spotify.com/playlist/target-'.$index
+                : 'https://www.youtube.com/playlist?list=target-'.$index;
+            PlaylistExportTargetAttempt::factory()->resolved()->for($export, 'playlistExport')->create([
+                'target_account_id' => $owner,
+                'provider_playlist_id' => 'target-'.$index,
+                'canonical_url' => $url,
+            ]);
+            $operations[] = ExportOperation::factory()->for($source->user)->for($review)->for($export, 'playlistExport')->create([
+                'status' => $status,
+                'created_at' => now()->subMinutes(2 - $index),
+            ]);
+        }
+
+        $response = $this->actingAs($source->user)->get(route('bank.index'))->assertOk();
+        $loaded = $response->viewData('playlists')->firstWhere('id', $source->id)->managedOperations;
+        $this->assertEqualsCanonicalizing(array_map(fn ($operation) => $operation->id, $operations), $loaded->modelKeys());
+        foreach ($operations as $operation) {
+            $response->assertSee(route('export-reviews.show', [$source, $operation->export_review_id]), false)
+                ->assertSee($operation->playlistExport->targetAttempts->first()->canonical_url, false);
+        }
+        $response->assertSee('Status i historyczny link pozostają dostępne');
+        $this->assertSame(0, substr_count($response->getContent(), '>Rozpocznij przegląd</button>'));
+    }
+
+    public static function accountHistoryCases(): iterable
+    {
+        foreach (StreamingProvider::cases() as $provider) {
+            foreach (ExportDestinationType::cases() as $type) {
+                foreach ([ExportOperationStatus::Succeeded, ExportOperationStatus::PartialFailed] as $status) {
+                    yield $provider->value.' '.$type->value.' '.$status->value => [$provider, $type, $status];
+                }
+            }
+        }
+    }
 
     protected function setUp(): void
     {
