@@ -66,7 +66,7 @@ class ExportOperationPostgresTest extends TestCase
             );
         } finally {
             DB::purge();
-            User::query()->whereKey($review->user_id)->delete();
+            $this->cleanUserFixtures($review->user_id);
         }
     }
 
@@ -101,7 +101,7 @@ class ExportOperationPostgresTest extends TestCase
                 ->count());
         } finally {
             DB::purge();
-            User::query()->whereKey($first->user_id)->delete();
+            $this->cleanUserFixtures($first->user_id);
         }
     }
 
@@ -157,8 +157,14 @@ class ExportOperationPostgresTest extends TestCase
             $this->assertNull($operation->fresh()->streaming_account_id);
         } finally {
             DB::purge();
-            User::query()->whereKey($review->user_id)->delete();
+            $this->cleanUserFixtures($review->user_id);
         }
+    }
+
+    private function cleanUserFixtures(int $userId): void
+    {
+        Playlist::query()->where('user_id', $userId)->delete();
+        User::query()->whereKey($userId)->delete();
     }
 
     private function readyReview(?Playlist $playlist = null, ?User $user = null): ExportReview

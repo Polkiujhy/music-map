@@ -20,6 +20,7 @@ use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
 use App\Models\ExportOperation;
 use App\Models\ExportReview;
 use App\Models\ExportReviewItem;
+use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeWriteAdmission;
 use App\Models\YouTubeWriteQuotaState;
@@ -274,6 +275,7 @@ class YouTubeExportAdmissionPostgresTest extends TestCase
         DB::purge();
         YouTubeWriteAdmission::query()->where('operation_id', $operation->operation_id)->delete();
         $this->resetQuota();
+        Playlist::query()->where('user_id', $operation->user_id)->delete();
         User::query()->whereKey($operation->user_id)->delete();
     }
 }
