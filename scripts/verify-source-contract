@@ -36,6 +36,7 @@ app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
 app/Actions/Exports/ClassifyExportFailure.php
+app/Actions/Exports/AbandonExportRecovery.php
 app/Actions/Exports/PersistExportTarget.php
 app/Actions/Exports/RecoverStaleExportOperation.php
 app/Actions/Exports/RetryExportOperation.php
@@ -53,6 +54,7 @@ app/Exceptions/Auth/IdentityConflictException.php
 app/Http/Controllers/Auth/GoogleAuthController.php
 app/Http/Controllers/BankController.php
 app/Http/Controllers/Controller.php
+app/Http/Controllers/ExportOperationController.php
 app/Http/Controllers/PlaylistEditingController.php
 app/Http/Controllers/PlaylistExportReviewController.php
 app/Http/Controllers/PlaylistImportController.php
@@ -61,7 +63,9 @@ app/Http/Controllers/StreamingAccountController.php
 app/Http/Controllers/StreamingAccountOAuthController.php
 app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Requests/ConfirmExportReviewRequest.php
+app/Http/Requests/AbandonExportRecoveryRequest.php
 app/Http/Requests/ImportPlaylistRequest.php
+app/Http/Requests/RetryExportOperationRequest.php
 app/Http/Requests/StartExportReviewRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
@@ -152,8 +156,10 @@ app/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionUnavailable.php
 app/Integrations/YouTubeWriteAdmission/YouTubeWriteOperationType.php
 app/Jobs/ExecuteExportOperation.php
 app/Jobs/PrepareExportReview.php
+app/Jobs/SendExportOperationCompletedNotification.php
 app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
+app/Livewire/ExportOperationPanel.php
 app/Livewire/ExportReviewPanel.php
 app/Models/AuthIdentity.php
 app/Models/ExportOperation.php
@@ -167,6 +173,7 @@ app/Models/User.php
 app/Models/YouTubeWriteAdmission.php
 app/Models/YouTubeWriteQuotaState.php
 app/Notifications/ExportReviewCompleted.php
+app/Notifications/ExportOperationCompleted.php
 app/Providers/AppServiceProvider.php
 app/Providers/ExportMatchingServiceProvider.php
 app/Providers/FortifyServiceProvider.php
@@ -273,6 +280,9 @@ tests/Feature/ExportMatchReview/PrepareExportReviewTest.php
 tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Exports/ExportOperationDispatchRecoveryTest.php
 tests/Feature/Exports/ExportOperationMigrationTest.php
+tests/Feature/Exports/ExportOperationNotificationTest.php
+tests/Feature/Exports/ExportOperationPanelTest.php
+tests/Feature/Exports/ExportOperationRouteTest.php
 tests/Feature/Exports/PlaylistExportTargetBoundaryTest.php
 tests/Feature/Exports/StartExportOperationTest.php
 tests/Feature/Exports/ExecuteExportOperationTest.php

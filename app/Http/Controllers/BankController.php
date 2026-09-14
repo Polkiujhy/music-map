@@ -23,7 +23,16 @@ class BankController extends Controller
                 'items',
                 'items as unavailable_items_count' => fn ($query) => $query->where('is_available', false),
             ])
+            ->with([
+                'exportLinks' => fn ($query) => $query->latest('id'),
+                'exportLinks.targetPlaylist',
+            ])
             ->latest('imported_at')
+            ->get();
+
+        $operations = $request->user()->exportOperations()
+            ->whereIn('source_playlist_id', $playlists->modelKeys())
+            ->latest('id')
             ->get();
 
         $accounts = $request->user()->streamingAccounts()->get()->keyBy(
@@ -45,6 +54,10 @@ class BankController extends Controller
         }
 
         foreach ($playlists as $playlist) {
+            $playlist->setRelation(
+                'exportOperations',
+                new EloquentCollection($operations->where('source_playlist_id', $playlist->getKey())->values()->all()),
+            );
             $playlist->setRelation(
                 'exportReviews',
                 $reviews->where('playlist_id', $playlist->getKey())->sortByDesc('id')->values(),

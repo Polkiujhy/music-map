@@ -2,7 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ExportDestinationType;
+use App\Enums\ExportOperationStatus;
+use App\Enums\PlaylistRole;
+use App\Enums\StreamingProvider;
+use App\Models\ExportOperation;
+use App\Models\ExportReview;
 use App\Models\Playlist;
+use App\Models\PlaylistExportLink;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -97,5 +104,88 @@ class BankAccessTest extends TestCase
             ->assertDontSee(route('bank.playlists.edit', $foreignPlaylist), false);
 
         $this->assertSame(2, substr_count($response->getContent(), 'Przeglądaj i edytuj'));
+    }
+
+    public function test_export_target_is_nested_under_its_source_with_owner_status_and_local_link(): void
+    {
+        $owner = User::factory()->create();
+        $source = Playlist::factory()->for($owner)->create();
+        $providerId = '0123456789ABCDEFGHIJKL';
+        $target = Playlist::factory()->for($owner)->create([
+            'role' => PlaylistRole::ExportTarget,
+            'source_provider' => StreamingProvider::Spotify,
+            'source_playlist_id' => $providerId,
+            'source_account_id' => 'spotify-account',
+            'canonical_source_url' => 'javascript:alert(1)',
+        ]);
+        $link = PlaylistExportLink::factory()->create([
+            'user_id' => $owner->id,
+            'source_playlist_id' => $source->id,
+            'target_playlist_id' => $target->id,
+            'provider' => StreamingProvider::Spotify,
+            'destination_type' => ExportDestinationType::Linked,
+            'target_account_id' => 'spotify-account',
+        ]);
+        $review = ExportReview::factory()->for($source)->create([
+            'user_id' => $owner->id,
+            'target_account_id' => 'spotify-account',
+            'destination_type' => ExportDestinationType::Linked,
+        ]);
+        $operation = ExportOperation::factory()->create([
+            'export_review_id' => $review->id,
+            'user_id' => $owner->id,
+            'source_playlist_id' => $source->id,
+            'playlist_export_link_id' => $link->id,
+            'target_account_id' => 'spotify-account',
+            'destination_type' => ExportDestinationType::Linked,
+            'status' => ExportOperationStatus::Transferred,
+            'active_key' => null,
+            'started_at' => now()->subSeconds(10),
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('bank.index'))
+            ->assertOk()
+            ->assertSee('Powiązane kopie')
+            ->assertSee('Właściciel: Twoje połączone konto')
+            ->assertSee('Przeniesiona — na Twoim koncie')
+            ->assertSee('https://open.spotify.com/playlist/'.$providerId, false)
+            ->assertSee(route('export-operations.show', [$source, $operation->operation_id]), false)
+            ->assertDontSee('javascript:alert', false);
+
+        $this->assertSame(1, substr_count($this->actingAs($owner)->get(route('bank.index'))->getContent(), 'Przeglądaj i edytuj'));
+    }
+
+    public function test_active_export_links_to_status_and_suppresses_a_new_review_for_that_destination(): void
+    {
+        config(['services.platform_access.spotify.technical.account_id' => 'managed-spotify']);
+        $owner = User::factory()->create();
+        $source = Playlist::factory()->for($owner)->create();
+        $review = ExportReview::factory()->for($source)->create([
+            'user_id' => $owner->id,
+            'target_provider' => StreamingProvider::Spotify,
+            'destination_type' => ExportDestinationType::Managed,
+            'target_account_id' => 'managed-spotify',
+        ]);
+        $operation = ExportOperation::factory()->create([
+            'export_review_id' => $review->id,
+            'user_id' => $owner->id,
+            'source_playlist_id' => $source->id,
+            'target_provider' => StreamingProvider::Spotify,
+            'destination_type' => ExportDestinationType::Managed,
+            'target_account_id' => 'managed-spotify',
+            'status' => ExportOperationStatus::Processing,
+            'started_at' => now(),
+        ]);
+
+        $response = $this->actingAs($owner)->get(route('bank.index'));
+
+        $response
+            ->assertOk()
+            ->assertSee('Otwórz aktywny eksport')
+            ->assertSee(route('export-operations.show', [$source, $operation->operation_id]), false);
+
+        $this->assertSame(1, substr_count($response->getContent(), 'Otwórz aktywny eksport'));
     }
 }

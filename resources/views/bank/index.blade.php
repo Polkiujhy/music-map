@@ -94,6 +94,73 @@
                                 <a href="{{ route('bank.playlists.edit', $playlist) }}" class="auth-link">Przeglądaj i edytuj</a>
                             </div>
 
+                            @php
+                                $unlinkedActiveOperations = $playlist->exportOperations->filter(fn ($operation) =>
+                                    $operation->active_key !== null && $operation->playlist_export_link_id === null
+                                );
+                            @endphp
+                            @if ($unlinkedActiveOperations->isNotEmpty())
+                                <section aria-labelledby="active-exports-heading-{{ $playlist->id }}" class="mt-6 border-t border-ash-grey-900 pt-5">
+                                    <h4 id="active-exports-heading-{{ $playlist->id }}" class="font-semibold">Aktywne eksporty</h4>
+                                    <div class="mt-3 space-y-3">
+                                        @foreach ($unlinkedActiveOperations as $operation)
+                                            <article class="rounded-xl border border-ash-grey-800 p-4">
+                                                <p class="font-semibold">{{ $operation->target_provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube' }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-ash-grey-200/70">{{ $operation->destination_type === \App\Enums\ExportDestinationType::Linked ? 'Twoje połączone konto' : 'Konto zarządzane przez music-map' }}</p>
+                                                <a href="{{ route('export-operations.show', [$playlist, $operation->operation_id]) }}" class="auth-link mt-3 inline-block">Otwórz aktywny eksport</a>
+                                            </article>
+                                        @endforeach
+                                    </div>
+                                </section>
+                            @endif
+
+                            @if ($playlist->exportLinks->isNotEmpty())
+                                <section aria-labelledby="copies-heading-{{ $playlist->id }}" class="mt-6 border-t border-ash-grey-900 pt-5">
+                                    <h4 id="copies-heading-{{ $playlist->id }}" class="font-semibold">Powiązane kopie</h4>
+                                    <div class="mt-3 space-y-3">
+                                        @foreach ($playlist->exportLinks as $link)
+                                            @php
+                                                $target = $link->targetPlaylist;
+                                                $latestOperation = $playlist->exportOperations->first(fn ($operation) => (int) $operation->playlist_export_link_id === (int) $link->getKey());
+                                                $targetUrl = $target === null
+                                                    ? null
+                                                    : \App\Integrations\PlaylistExport\ProviderPlaylistUrl::fromId($link->provider, $target->source_playlist_id);
+                                                $copyStatus = match (true) {
+                                                    $latestOperation === null => 'Brak zakończonej operacji',
+                                                    in_array($latestOperation->status, [\App\Enums\ExportOperationStatus::Queued, \App\Enums\ExportOperationStatus::Processing], true) => 'W trakcie przenoszenia',
+                                                    $latestOperation->status === \App\Enums\ExportOperationStatus::Transferred && $link->destination_type === \App\Enums\ExportDestinationType::Linked => 'Przeniesiona — na Twoim koncie',
+                                                    $latestOperation->status === \App\Enums\ExportOperationStatus::Transferred => 'Przeniesiona — zarządzana przez music-map',
+                                                    $latestOperation->status === \App\Enums\ExportOperationStatus::Incomplete => 'Nie udało się dokończyć przenoszenia',
+                                                    default => 'Nie przeniesiono',
+                                                };
+                                            @endphp
+                                            <article class="rounded-xl border border-ash-grey-800 p-4">
+                                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                                    <div>
+                                                        <p class="font-semibold">{{ $link->provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube' }}</p>
+                                                        <p class="mt-1 text-xs leading-5 text-ash-grey-200/70">
+                                                            {{ $link->destination_type === \App\Enums\ExportDestinationType::Linked ? 'Właściciel: Twoje połączone konto' : 'Właściciel: music-map' }}
+                                                        </p>
+                                                    </div>
+                                                    @if ($link->retired_at !== null)
+                                                        <span class="rounded-full bg-ash-grey-900 px-2.5 py-1 text-xs">Historia — cel usunięty</span>
+                                                    @endif
+                                                </div>
+                                                <p class="mt-3 text-sm">{{ $copyStatus }}</p>
+                                                <div class="mt-3 flex flex-wrap gap-4">
+                                                    @if ($targetUrl !== null)
+                                                        <a href="{{ $targetUrl }}" rel="noreferrer noopener" class="auth-link">Otwórz kopię</a>
+                                                    @endif
+                                                    @if ($latestOperation !== null)
+                                                        <a href="{{ route('export-operations.show', [$playlist, $latestOperation->operation_id]) }}" class="auth-link">Otwórz wynik eksportu</a>
+                                                    @endif
+                                                </div>
+                                            </article>
+                                        @endforeach
+                                    </div>
+                                </section>
+                            @endif
+
                             @if (! $youtubeExpired && $playlist->items_count > 0)
                                 <section aria-labelledby="export-heading-{{ $playlist->id }}" class="mt-6 border-t border-ash-grey-900 pt-5">
                                     <h4 id="export-heading-{{ $playlist->id }}" class="font-semibold">Przygotuj eksport</h4>
@@ -127,6 +194,12 @@
                                                         || $review->status === \App\Enums\ExportReviewStatus::Expired
                                                         || $review->expires_at->isPast())
                                                 );
+                                                $activeOperation = $playlist->exportOperations->first(fn ($operation) =>
+                                                    $operation->target_provider === $provider
+                                                    && $operation->destination_type === $destinationType
+                                                    && $operation->target_account_id === $targetAccountId
+                                                    && $operation->active_key !== null
+                                                );
                                                 $providerName = $provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube';
                                             @endphp
 
@@ -145,6 +218,12 @@
                                                     <p class="mt-3 text-sm text-ash-grey-400">Niedostępne: źródło i cel to to samo konto {{ $providerName }}.</p>
                                                 @elseif ($targetAccountId === '')
                                                     <p class="mt-3 text-sm text-ash-grey-400">Ten cel nie jest obecnie skonfigurowany.</p>
+                                                @elseif ($activeOperation)
+                                                    @if ($activeOperation->playlist_export_link_id === null)
+                                                        <p class="mt-3 text-sm text-ash-grey-400">Aktywny eksport jest pokazany powyżej.</p>
+                                                    @else
+                                                        <a href="{{ route('export-operations.show', [$playlist, $activeOperation->operation_id]) }}" class="auth-link mt-3 inline-block">Otwórz aktywny eksport</a>
+                                                    @endif
                                                 @elseif ($activeReview)
                                                     <a href="{{ route('export-reviews.show', [$playlist, $activeReview]) }}" class="auth-link mt-3 inline-block">Wznów przegląd</a>
                                                 @else

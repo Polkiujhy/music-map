@@ -80,7 +80,7 @@ final class PlaylistExportReviewController extends Controller
         $review = $this->review($request, $ownedPlaylist, $exportReview);
         $operationId = $confirm->handle($request->user(), $review, $request->decisions());
 
-        return to_route('export-reviews.show', [$ownedPlaylist, $review])
+        return to_route('export-operations.show', [$ownedPlaylist, $operationId])
             ->with('status', "Eksport został zakolejkowany (operacja {$operationId}).");
     }
 

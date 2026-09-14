@@ -1028,12 +1028,12 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 3.1 Linked i managed create/update używają jednej trwałej relacji i tego samego providerowego ID
-- [x] 3.2 Admission YouTube poprzedza każdą pierwszą mutację i odmawia bez zapisu
-- [x] 3.3 Retry, checkpointy, relink i częściowe awarie konwergują bez nowego celu
-- [x] 3.4 Formatowanie PHP przechodzi
-- [x] 3.7 Unlink między mutacjami zatrzymuje dalsze zapisy przez efemeryczny guard
-- [x] 3.8 Timeout i osierocone processing są odzyskiwane bez nadpisania późnego sukcesu
+- [x] 3.1 Linked i managed create/update używają jednej trwałej relacji i tego samego providerowego ID — 1442d9a
+- [x] 3.2 Admission YouTube poprzedza każdą pierwszą mutację i odmawia bez zapisu — 1442d9a
+- [x] 3.3 Retry, checkpointy, relink i częściowe awarie konwergują bez nowego celu — 1442d9a
+- [x] 3.4 Formatowanie PHP przechodzi — 1442d9a
+- [x] 3.7 Unlink między mutacjami zatrzymuje dalsze zapisy przez efemeryczny guard — 1442d9a
+- [x] 3.8 Timeout i osierocone processing są odzyskiwane bez nadpisania późnego sukcesu — 1442d9a
 
 #### Manual
 
@@ -1044,10 +1044,10 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [ ] 4.1 Trasy, panel i bank zachowują owner scope, retry, recovery i pięć statusów
-- [ ] 4.2 Powiadomienie po 60 sekundach ma at-least-once delivery i best-effort deduplikację
-- [ ] 4.3 Produkcyjny frontend buduje się
-- [ ] 4.4 Formatowanie PHP przechodzi
+- [x] 4.1 Trasy, panel i bank zachowują owner scope, retry, recovery i pięć statusów
+- [x] 4.2 Powiadomienie po 60 sekundach ma at-least-once delivery i best-effort deduplikację
+- [x] 4.3 Produkcyjny frontend buduje się
+- [x] 4.4 Formatowanie PHP przechodzi
 
 #### Manual
 

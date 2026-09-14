@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\ExportOperationController;
 use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistExportReviewController;
 use App\Http\Controllers\PlaylistImportController;
@@ -29,6 +30,13 @@ RateLimiter::for('export-review-retry', function (Request $request): Limit {
     return Limit::perMinute(3)->by(implode('|', [
         (string) $request->user()?->getAuthIdentifier(),
         $providerKey,
+    ]));
+});
+
+RateLimiter::for('export-operation-action', function (Request $request): Limit {
+    return Limit::perMinute(3)->by(implode('|', [
+        (string) $request->user()?->getAuthIdentifier(),
+        (string) $request->route('exportOperation'),
     ]));
 });
 
@@ -87,4 +95,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('export-reviews.retry');
     Route::post('/bank/playlists/{playlist}/export-reviews/{exportReview}/confirm', [PlaylistExportReviewController::class, 'confirm'])
         ->name('export-reviews.confirm');
+    Route::get('/bank/playlists/{playlist}/exports/{exportOperation}', [ExportOperationController::class, 'show'])
+        ->name('export-operations.show');
+    Route::post('/bank/playlists/{playlist}/exports/{exportOperation}/retry', [ExportOperationController::class, 'retry'])
+        ->middleware('throttle:export-operation-action')
+        ->name('export-operations.retry');
+    Route::post('/bank/playlists/{playlist}/exports/{exportOperation}/abandon-recovery', [ExportOperationController::class, 'abandonRecovery'])
+        ->middleware('throttle:export-operation-action')
+        ->name('export-operations.abandon-recovery');
 });

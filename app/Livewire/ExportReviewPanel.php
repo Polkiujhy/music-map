@@ -125,7 +125,7 @@ final class ExportReviewPanel extends Component
         $review = $this->ownedReview($this->reviewId);
         $operationId = $confirm->handle(Auth::user(), $review, $this->decisions);
         session()->flash('status', "Eksport został zakolejkowany (operacja {$operationId}).");
-        $this->redirectRoute('export-reviews.show', [$review->playlist_id, $review->getKey()], navigate: false);
+        $this->redirectRoute('export-operations.show', [$review->playlist_id, $operationId], navigate: false);
     }
 
     public function getIsPollingProperty(): bool

@@ -6,6 +6,8 @@ use App\Enums\ExportDestinationType;
 use App\Enums\ExportOperationFailure;
 use App\Enums\ExportOperationStatus;
 use App\Enums\StreamingProvider;
+use App\Jobs\ExecuteExportOperation;
+use App\Jobs\SendExportOperationCompletedNotification;
 use Database\Factories\ExportOperationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +24,40 @@ class ExportOperation extends Model
 {
     /** @use HasFactory<ExportOperationFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $operation): void {
+            if (! $operation->wasChanged(['status', 'completed_at']) || ! $operation->shouldSendCompletionNotification()) {
+                return;
+            }
+
+            SendExportOperationCompletedNotification::dispatch($operation->operation_id)->afterCommit();
+        });
+    }
+
+    public function shouldSendCompletionNotification(): bool
+    {
+        if (! $this->status->isTerminal()
+            || $this->started_at === null
+            || $this->completed_at === null
+            || $this->started_at->diffInSeconds($this->completed_at) < 60
+            || $this->notification_sent_at !== null) {
+            return false;
+        }
+
+        return $this->status === ExportOperationStatus::Transferred
+            || $this->failure_code === null
+            || ! in_array($this->failure_code, [
+                ExportOperationFailure::RateLimited,
+                ExportOperationFailure::QuotaLimited,
+                ExportOperationFailure::TemporaryFailure,
+                ExportOperationFailure::AdmissionUnavailable,
+                ExportOperationFailure::AmbiguousCreate,
+                ExportOperationFailure::RecoveryScanIncomplete,
+            ], true)
+            || $this->attempt_count >= ExecuteExportOperation::MAX_ATTEMPTS;
+    }
 
     public static function activeKey(int $sourcePlaylistId, StreamingProvider $provider, string $targetAccountId): string
     {
