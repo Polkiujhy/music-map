@@ -7,5 +7,6 @@ final readonly class StreamingIdentity
     public function __construct(
         public string $accountId,
         public ?string $label = null,
+        public ?string $market = null,
     ) {}
 }

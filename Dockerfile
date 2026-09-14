@@ -115,7 +115,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 FROM php-base AS queue
 STOPSIGNAL SIGTERM
 ENTRYPOINT ["/usr/local/bin/music-map-queue"]
-CMD ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90", "--max-time=3600"]
+CMD ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=450", "--max-time=3600"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD ["php", "-r", "exit(str_contains((string) @file_get_contents('/proc/1/cmdline'), 'queue:work') ? 0 : 1);"]
 

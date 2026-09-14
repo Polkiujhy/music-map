@@ -33,6 +33,7 @@ class StreamingAccountLinkingTest extends TestCase
 
         $this->assertInstanceOf(StreamingAccount::class, $account);
         $this->assertSame($user->id, $account->user_id);
+        $this->assertSame('GB', $account->market);
         $this->assertSame('refresh-link-canary', $account->refresh_token);
         $this->assertStringNotContainsString(
             'refresh-link-canary',
@@ -113,7 +114,7 @@ class StreamingAccountLinkingTest extends TestCase
 
     private function identity(string $accountId): StreamingIdentity
     {
-        return new StreamingIdentity($accountId, 'Canary account');
+        return new StreamingIdentity($accountId, 'Canary account', 'GB');
     }
 }
 

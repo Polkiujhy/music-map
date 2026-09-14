@@ -93,6 +93,76 @@
                                 <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" class="auth-link">Otwórz źródło</a>
                                 <a href="{{ route('bank.playlists.edit', $playlist) }}" class="auth-link">Przeglądaj i edytuj</a>
                             </div>
+
+                            @if (! $youtubeExpired && $playlist->items_count > 0)
+                                <section aria-labelledby="export-heading-{{ $playlist->id }}" class="mt-6 border-t border-ash-grey-900 pt-5">
+                                    <h4 id="export-heading-{{ $playlist->id }}" class="font-semibold">Przygotuj eksport</h4>
+                                    <p class="mt-1 text-sm leading-6 text-ash-grey-200/70">Najpierw sprawdzisz każde dopasowanie. Na tym etapie nic nie zostanie zapisane u providera.</p>
+
+                                    <div class="mt-4 space-y-4">
+                                        @foreach ([\App\Enums\StreamingProvider::Spotify, \App\Enums\StreamingProvider::YouTube] as $provider)
+                                            @php
+                                                $account = $accounts->get($provider->value);
+                                                $linked = $account !== null && $account->connectionState() === \App\Models\StreamingAccount::STATE_CONNECTED;
+                                                $destinationType = $linked ? \App\Enums\ExportDestinationType::Linked : \App\Enums\ExportDestinationType::Managed;
+                                                $targetAccountId = $linked
+                                                    ? $account->provider_account_id
+                                                    : (string) config("services.platform_access.{$provider->value}.technical.account_id");
+                                                $sameSource = $playlist->source_provider === $provider
+                                                    && $playlist->source_account_id !== null
+                                                    && $targetAccountId !== ''
+                                                    && hash_equals($playlist->source_account_id, $targetAccountId);
+                                                $activeReview = $playlist->exportReviews->first(fn ($review) =>
+                                                    $review->target_provider === $provider
+                                                    && $review->destination_type === $destinationType
+                                                    && $review->target_account_id === $targetAccountId
+                                                    && in_array($review->status, [\App\Enums\ExportReviewStatus::Queued, \App\Enums\ExportReviewStatus::Processing, \App\Enums\ExportReviewStatus::Ready], true)
+                                                    && $review->expires_at->isFuture()
+                                                );
+                                                $retryableReview = $playlist->exportReviews->first(fn ($review) =>
+                                                    $review->target_provider === $provider
+                                                    && $review->destination_type === $destinationType
+                                                    && $review->target_account_id === $targetAccountId
+                                                    && ($review->status === \App\Enums\ExportReviewStatus::Failed
+                                                        || $review->status === \App\Enums\ExportReviewStatus::Expired
+                                                        || $review->expires_at->isPast())
+                                                );
+                                                $providerName = $provider === \App\Enums\StreamingProvider::Spotify ? 'Spotify' : 'YouTube';
+                                            @endphp
+
+                                            <div class="rounded-xl border border-ash-grey-800 p-4">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p class="font-semibold">{{ $providerName }}</p>
+                                                        <p class="mt-1 text-xs leading-5 text-ash-grey-200/70">
+                                                            Cel: {{ $linked ? 'Twoje połączone konto — '.($account->label ?: $account->provider_account_id) : 'konto zarządzane przez Music Map' }}
+                                                        </p>
+                                                    </div>
+                                                    <span class="rounded-full bg-ash-grey-900 px-2.5 py-1 text-xs">{{ $linked ? 'linked' : 'managed' }}</span>
+                                                </div>
+
+                                                @if ($sameSource)
+                                                    <p class="mt-3 text-sm text-ash-grey-400">Niedostępne: źródło i cel to to samo konto {{ $providerName }}.</p>
+                                                @elseif ($targetAccountId === '')
+                                                    <p class="mt-3 text-sm text-ash-grey-400">Ten cel nie jest obecnie skonfigurowany.</p>
+                                                @elseif ($activeReview)
+                                                    <a href="{{ route('export-reviews.show', [$playlist, $activeReview]) }}" class="auth-link mt-3 inline-block">Wznów przegląd</a>
+                                                @else
+                                                    <form method="POST" action="{{ route('export-reviews.store', $playlist) }}" class="mt-3">
+                                                        @csrf
+                                                        <input type="hidden" name="target_provider" value="{{ $provider->value }}">
+                                                        <input type="hidden" name="destination_type" value="{{ $destinationType->value }}">
+                                                        @if ($linked)
+                                                            <input type="hidden" name="streaming_account_id" value="{{ $account->id }}">
+                                                        @endif
+                                                        <button type="submit" class="auth-link">{{ $retryableReview ? 'Przygotuj nowy wynik' : 'Rozpocznij przegląd' }}</button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </section>
+                            @endif
                         </article>
                     @endforeach
                 </div>

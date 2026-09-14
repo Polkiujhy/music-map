@@ -72,15 +72,17 @@ final readonly class SpotifyOAuthGateway implements StreamingOAuthGateway
                 : $this->responseFailure($response, false);
         }
 
-        $accountId = $response->json('account_id');
+        $accountId = $response->json('id', $response->json('account_id'));
         $label = $response->json('display_name');
+        $market = $response->json('country');
 
         if (! $this->bounded($accountId, 255)
-            || ($label !== null && ! $this->bounded($label, 255))) {
+            || ($label !== null && ! $this->bounded($label, 255))
+            || ($market !== null && (! is_string($market) || preg_match('/^[A-Za-z]{2}$/', $market) !== 1))) {
             return StreamingOAuthFailure::InvalidResponse;
         }
 
-        return new StreamingIdentity($accountId, $label);
+        return new StreamingIdentity($accountId, $label, $market === null ? null : strtoupper($market));
     }
 
     public function revoke(string $token): ?StreamingOAuthFailure
