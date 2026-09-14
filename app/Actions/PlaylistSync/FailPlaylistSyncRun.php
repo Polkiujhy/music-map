@@ -17,9 +17,21 @@ final class FailPlaylistSyncRun
             if (in_array($run->state, ['completed', 'failed', 'superseded', 'cancelled'], true)) {
                 return;
             }
+            $sync = $run->synchronization()->lockForUpdate()->firstOrFail();
+            $newerRunExists = $sync->runs()->where('id', '>', $run->getKey())->exists();
+            if ($sync->status !== PlaylistSyncStatus::Enabled || $newerRunExists) {
+                $run->update([
+                    'state' => $sync->status === PlaylistSyncStatus::Disabled
+                        ? 'cancelled'
+                        : 'superseded',
+                ]);
+
+                return;
+            }
+
             $code = $failure instanceof SourceSyncFailure ? $failure->value : $failure;
             $run->update(['state' => 'failed']);
-            $run->synchronization()->lockForUpdate()->firstOrFail()->update([
+            $sync->update([
                 'status' => PlaylistSyncStatus::Attention,
                 'automatic_enabled' => false,
                 'last_checked_at' => now(),

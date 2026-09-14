@@ -84,6 +84,11 @@ final readonly class ConfirmPlaylistSynchronization
                 $this->stale();
             }
 
+            $sync = $locked->synchronization()->lockForUpdate()->first();
+            if ($sync?->runs()->whereIn('state', ['pending', 'running'])->exists()) {
+                $this->stale();
+            }
+
             $sync = $locked->synchronization()->updateOrCreate([], [
                 'streaming_account_id' => $account->getKey(),
                 'status' => PlaylistSyncStatus::Enabled,

@@ -3,6 +3,7 @@
 namespace Tests\Feature\PlaylistSync;
 
 use App\Actions\Playlists\FingerprintPlaylistContent;
+use App\Actions\PlaylistSync\FailPlaylistSyncRun;
 use App\Actions\PlaylistSync\FingerprintSourcePlaylist;
 use App\Actions\PlaylistSync\RunPlaylistSynchronization;
 use App\Enums\PlaylistSyncStatus;
@@ -108,6 +109,35 @@ class PlaylistSynchronizationFailureTest extends TestCase
         $this->assertSame(PlaylistSyncStatus::Attention, $sync->refresh()->status);
         $this->assertSame($before, $this->baseline($sync));
         Http::assertNothingSent();
+    }
+
+    public function test_stale_failure_preserves_a_new_pending_confirmation(): void
+    {
+        [$sync, $run] = $this->spotifyScenario();
+        $sync->update([
+            'status' => PlaylistSyncStatus::PendingConfirmation,
+            'automatic_enabled' => false,
+            'last_failure_code' => null,
+        ]);
+
+        $this->app->make(FailPlaylistSyncRun::class)->handle($run->id, SourceSyncFailure::Unauthorized);
+
+        $this->assertSame('superseded', $run->refresh()->state);
+        $this->assertSame(PlaylistSyncStatus::PendingConfirmation, $sync->refresh()->status);
+        $this->assertNull($sync->last_failure_code);
+    }
+
+    public function test_stale_failure_preserves_a_newer_enabled_activation_run(): void
+    {
+        [$sync, $run] = $this->spotifyScenario();
+        $newer = PlaylistSyncRun::factory()->for($sync, 'synchronization')->create(['state' => 'pending']);
+
+        $this->app->make(FailPlaylistSyncRun::class)->handle($run->id, SourceSyncFailure::Unauthorized);
+
+        $this->assertSame('superseded', $run->refresh()->state);
+        $this->assertSame('pending', $newer->refresh()->state);
+        $this->assertSame(PlaylistSyncStatus::Enabled, $sync->refresh()->status);
+        $this->assertNull($sync->last_failure_code);
     }
 
     public function test_admission_refusal_leaves_the_complete_bank_source_and_baseline_state_unchanged(): void

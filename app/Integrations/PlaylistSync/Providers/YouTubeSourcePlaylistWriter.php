@@ -38,7 +38,12 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
         if ($access->provider !== StreamingProvider::YouTube || $providerPlaylistId === '' || $run === null || count($desiredItems) > 20) {
             return SourceSyncFailure::InvalidResponse;
         }
-        $desired = array_map(static fn (array $item): string => (string) ($item['catalog_id'] ?? ''), $desiredItems);
+        $writableItems = array_values(array_filter(
+            $desiredItems,
+            static fn (array $item): bool => ($item['is_available'] ?? true) !== false
+                || ($item['catalog_id'] ?? null) !== null,
+        ));
+        $desired = array_map(static fn (array $item): string => (string) ($item['catalog_id'] ?? ''), $writableItems);
         if (in_array('', $desired, true)) {
             return SourceSyncFailure::InvalidResponse;
         }

@@ -7,6 +7,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessResult;
+use App\Jobs\RunPlaylistSynchronization;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\PlaylistSyncRun;
@@ -15,6 +16,7 @@ use App\Models\User;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class PlaylistSynchronizationActivationTest extends TestCase
@@ -87,6 +89,33 @@ class PlaylistSynchronizationActivationTest extends TestCase
             ->postJson(route('playlist-synchronizations.prepare', $playlist))
             ->assertStatus(429);
         Http::assertSentCount(10);
+    }
+
+    public function test_second_valid_preview_is_rejected_while_the_first_activation_run_is_pending(): void
+    {
+        Queue::fake();
+        [$user, $playlist] = $this->spotifyPlaylist();
+        $this->app->instance(WithStreamingAccess::class, new SyncAccessFake(StreamingProvider::Spotify, 'owner-canary'));
+        Http::preventStrayRequests();
+        $responses = Http::fakeSequence();
+        foreach (range(1, 4) as $attempt) {
+            $responses->push($this->spotifyMetadata())->push($this->spotifyItems());
+        }
+
+        $first = $this->actingAs($user)->postJson(route('playlist-synchronizations.prepare', $playlist))->assertOk()->json();
+        $second = $this->actingAs($user)->postJson(route('playlist-synchronizations.prepare', $playlist))->assertOk()->json();
+
+        $this->actingAs($user)->postJson(route('playlist-synchronizations.confirm', $playlist), [
+            'preview_token' => $first['preview_token'],
+        ])->assertAccepted();
+        $this->actingAs($user)->postJson(route('playlist-synchronizations.confirm', $playlist), [
+            'preview_token' => $second['preview_token'],
+        ])->assertUnprocessable()->assertJsonValidationErrors('preview_token');
+
+        $this->assertDatabaseCount('playlist_sync_runs', 1);
+        $this->assertSame('pending', PlaylistSyncRun::query()->value('state'));
+        Queue::assertPushed(RunPlaylistSynchronization::class, 1);
+        Http::assertSentCount(8);
     }
 
     public function test_changed_bank_invalidates_the_preview_without_creating_an_activation_run(): void

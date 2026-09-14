@@ -70,6 +70,38 @@ class YouTubeSourcePlaylistWriterTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_it_removes_unavailable_source_positions_and_writes_the_available_bank_projection(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push([], 204)
+            ->push($this->metadata(2))
+            ->push(['items' => [$this->item('item-a', 'a', 0), $this->item('item-b', 'b', 1)]])
+            ->push([], 200)
+            ->push($this->metadata(2))
+            ->push(['items' => [$this->item('item-b', 'b', 0), $this->item('item-a', 'a', 1)]]);
+
+        $run = PlaylistSyncRun::factory()->create(['checkpoint' => null]);
+        $desired = [
+            ['catalog_id' => 'b', 'is_available' => true],
+            ['catalog_id' => null, 'is_available' => false],
+            ['catalog_id' => 'a', 'is_available' => true],
+        ];
+        $result = $this->writer()->write(
+            'playlist-canary',
+            $this->snapshot(['a', null, 'b'], ['item-a', 'item-unavailable', 'item-b']),
+            $desired,
+            $this->access(),
+            $run,
+        );
+
+        $this->assertInstanceOf(SourcePlaylistSnapshot::class, $result);
+        $this->assertSame(['b', 'a'], $result->itemIdentifiers);
+        $this->assertSame(2, $run->refresh()->checkpoint['index']);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE'
+            && $request->url() === 'https://www.googleapis.com/youtube/v3/playlistItems?id=item-unavailable');
+    }
+
     public function test_it_maps_youtube_write_quota_responses_without_treating_them_as_forbidden(): void
     {
         Http::preventStrayRequests();
@@ -99,7 +131,7 @@ class YouTubeSourcePlaylistWriterTest extends TestCase
         return new StreamingAccessContext(StreamingProvider::YouTube, 'owner', 'secret-canary');
     }
 
-    /** @param list<string> $ids
+    /** @param list<string|null> $ids
      * @param  list<string>  $providerIds
      */
     private function snapshot(array $ids, array $providerIds): SourcePlaylistSnapshot
