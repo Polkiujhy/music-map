@@ -1044,10 +1044,10 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 4.1 Trasy, panel i bank zachowują owner scope, retry, recovery i pięć statusów
-- [x] 4.2 Powiadomienie po 60 sekundach ma at-least-once delivery i best-effort deduplikację
-- [x] 4.3 Produkcyjny frontend buduje się
-- [x] 4.4 Formatowanie PHP przechodzi
+- [x] 4.1 Trasy, panel i bank zachowują owner scope, retry, recovery i pięć statusów — 97fda2e
+- [x] 4.2 Powiadomienie po 60 sekundach ma at-least-once delivery i best-effort deduplikację — 97fda2e
+- [x] 4.3 Produkcyjny frontend buduje się — 97fda2e
+- [x] 4.4 Formatowanie PHP przechodzi — 97fda2e
 
 #### Manual
 
@@ -1058,10 +1058,10 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [ ] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL
-- [ ] 5.2 Pełny PHPUnit suite przechodzi
-- [ ] 5.3 Pint i produkcyjny frontend build przechodzą
-- [ ] 5.4 Source contract przechodzi dla worktree i tracked candidate
+- [x] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL
+- [x] 5.2 Pełny PHPUnit suite przechodzi
+- [x] 5.3 Pint i produkcyjny frontend build przechodzą
+- [x] 5.4 Source contract przechodzi dla worktree i tracked candidate
 
 #### Manual
 

@@ -282,11 +282,13 @@ tests/Feature/Exports/ExportOperationDispatchRecoveryTest.php
 tests/Feature/Exports/ExportOperationMigrationTest.php
 tests/Feature/Exports/ExportOperationNotificationTest.php
 tests/Feature/Exports/ExportOperationPanelTest.php
+tests/Feature/Exports/ExportOperationPostgresTest.php
 tests/Feature/Exports/ExportOperationRouteTest.php
 tests/Feature/Exports/PlaylistExportTargetBoundaryTest.php
 tests/Feature/Exports/StartExportOperationTest.php
 tests/Feature/Exports/ExecuteExportOperationTest.php
 tests/Feature/Exports/YouTubeExportAdmissionTest.php
+tests/Feature/Exports/YouTubeExportAdmissionPostgresTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/ManagedExport/ManagedExportBrokerBindingTest.php
