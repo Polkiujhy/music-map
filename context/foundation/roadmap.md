@@ -48,7 +48,7 @@ milestone_status: open
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | done |
-| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
+| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | planning |
 | S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | F-02, S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
 | S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | F-02, S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
 | S-09 | `playlist-drift-recovery` | zobaczyć rozbieżność powiązanych playlist i przywrócić zgodność bez tworzenia duplikatu | F-02, S-07, S-08 | US-02, FR-002, FR-014, NFR-006 | proposed |
@@ -176,7 +176,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** prawo kont technicznych do tworzenia i aktualizowania playlist oraz ograniczenia widoczności narzucone przez platformy.
 - **Niewiadome:** —
 - **Ryzyko:** operacja musi uzyskać wspólne dopuszczenie przed pierwszym zapisem, a ponowienie po częściowym sukcesie użyć tej samej rezerwacji i zapisanego ID, inaczej zużyje limit ponownie lub utworzy duplikat.
-- **Status:** proposed
+- **Status:** planning
 
 ### S-07: Eksport na powiązane konto użytkownika
 
