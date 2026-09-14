@@ -295,6 +295,7 @@ tests/Feature/ManagedAccountExport/ManagedExportRecoveryTest.php
 tests/Feature/ManagedAccountExport/ManagedExportRouteTest.php
 tests/Feature/ManagedAccountExport/RunManagedExportTest.php
 tests/Feature/ManagedAccountExport/StartManagedExportTest.php
+tests/Feature/ManagedAccountExport/ManagedExportWorkflowTest.php
 tests/Feature/ManagedExport/ManagedExportBrokerBindingTest.php
 tests/Feature/Playlists/PlaylistConcurrentImportTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php

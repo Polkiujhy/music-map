@@ -17,6 +17,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 use Tests\TestCase;
 
@@ -108,7 +109,9 @@ class ManagedExportModelTest extends TestCase
         $this->assertNull($second->provider_playlist_id);
 
         try {
-            PlaylistExportTargetAttempt::factory()->for($playlistExport)->create(['generation' => 2]);
+            DB::transaction(
+                fn () => PlaylistExportTargetAttempt::factory()->for($playlistExport)->create(['generation' => 2]),
+            );
             $this->fail('A target generation must be unique within its export.');
         } catch (QueryException) {
             $this->addToAssertionCount(1);
@@ -155,7 +158,9 @@ class ManagedExportModelTest extends TestCase
         ExportOperation::factory()->for($user)->for($review, 'exportReview')->for($playlistExport)->create();
 
         try {
-            ExportOperation::factory()->for($user)->for($review, 'exportReview')->for($playlistExport)->create();
+            DB::transaction(
+                fn () => ExportOperation::factory()->for($user)->for($review, 'exportReview')->for($playlistExport)->create(),
+            );
             $this->fail('A confirmed review may have only one durable operation.');
         } catch (QueryException) {
             $this->addToAssertionCount(1);

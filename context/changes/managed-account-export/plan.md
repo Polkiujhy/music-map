@@ -873,11 +873,11 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [x] 4.1 Zweryfikować owner-scoped retry, recreate i blokadę drugiego startu
-- [x] 4.2 Zweryfikować polling i dokładne komunikaty FR-011
-- [x] 4.3 Zweryfikować bounded status operacji w banku
-- [x] 4.4 Zweryfikować niezawodne powiadomienie per generation
-- [x] 4.5 Zweryfikować odzyskanie utraconego dispatchu i stale processing
+- [x] 4.1 Zweryfikować owner-scoped retry, recreate i blokadę drugiego startu — 115e9d8
+- [x] 4.2 Zweryfikować polling i dokładne komunikaty FR-011 — 115e9d8
+- [x] 4.3 Zweryfikować bounded status operacji w banku — 115e9d8
+- [x] 4.4 Zweryfikować niezawodne powiadomienie per generation — 115e9d8
+- [x] 4.5 Zweryfikować odzyskanie utraconego dispatchu i stale processing — 115e9d8
 
 #### Manual
 
@@ -888,13 +888,13 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [ ] 5.1 Uruchomić pełny fake workflow i fault matrix
-- [ ] 5.2 Uruchomić pełną suite PHPUnit
-- [ ] 5.3 Zweryfikować formatowanie Pint
-- [ ] 5.4 Zbudować produkcyjny frontend
-- [ ] 5.5 Zweryfikować source contract
-- [ ] 5.6 Uruchomić audyty zależności
-- [ ] 5.7 Udokumentować zielony hosted lub disposable PostgreSQL
+- [x] 5.1 Uruchomić pełny fake workflow i fault matrix
+- [x] 5.2 Uruchomić pełną suite PHPUnit
+- [x] 5.3 Zweryfikować formatowanie Pint
+- [x] 5.4 Zbudować produkcyjny frontend
+- [x] 5.5 Zweryfikować source contract
+- [x] 5.6 Uruchomić audyty zależności
+- [x] 5.7 Udokumentować zielony hosted lub disposable PostgreSQL
 
 #### Manual
 
