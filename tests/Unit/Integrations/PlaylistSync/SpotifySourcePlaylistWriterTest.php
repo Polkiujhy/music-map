@@ -35,6 +35,29 @@ class SpotifySourcePlaylistWriterTest extends TestCase
             && $request['uris'] === ['spotify:track:a', 'spotify:track:a']);
     }
 
+    public function test_it_preserves_unavailable_bank_positions_while_writing_the_available_projection(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push(['snapshot_id' => 'new-revision'])
+            ->push(['id' => 'playlist-canary', 'owner' => ['id' => 'owner'], 'snapshot_id' => 'new-revision', 'tracks' => ['total' => 2]])
+            ->push(['items' => [$this->item('b'), $this->item('a')], 'next' => null]);
+
+        $desired = [
+            ['catalog_id' => 'b', 'catalog_uri' => 'spotify:track:b', 'is_available' => true],
+            ['catalog_id' => null, 'catalog_uri' => null, 'is_available' => false],
+            ['catalog_id' => 'a', 'catalog_uri' => 'spotify:track:a', 'is_available' => true],
+        ];
+
+        $result = $this->writer()->write('playlist-canary', new SourcePlaylistSnapshot(['a', null, 'b']), $desired, $this->access());
+
+        $this->assertInstanceOf(SourcePlaylistSnapshot::class, $result);
+        $this->assertSame(['b', 'a'], $result->itemIdentifiers);
+        $this->assertNull($desired[1]['catalog_id']);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT'
+            && $request['uris'] === ['spotify:track:b', 'spotify:track:a']);
+    }
+
     #[DataProvider('failures')]
     public function test_it_maps_stable_replace_failures(int $status, SourceSyncFailure $expected): void
     {

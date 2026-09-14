@@ -29,14 +29,24 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
             return SourceSyncFailure::InvalidResponse;
         }
 
-        $uris = [];
+        $writableItems = [];
         foreach ($desiredItems as $item) {
+            // Spotify does not expose an addressable URI for unavailable positions.
+            // Keep those positions in the bank and replace the source with its writable projection.
+            if (($item['is_available'] ?? true) === false && ($item['catalog_uri'] ?? null) === null) {
+                continue;
+            }
+
             $uri = $item['catalog_uri'] ?? null;
-            if (! is_string($uri) || ! str_starts_with($uri, 'spotify:track:')) {
+            $identifier = $item['catalog_id'] ?? null;
+            if (! is_string($uri) || ! str_starts_with($uri, 'spotify:track:')
+                || ! is_string($identifier) || $identifier === '') {
                 return SourceSyncFailure::InvalidResponse;
             }
-            $uris[] = $uri;
+            $writableItems[] = $item;
         }
+
+        $uris = array_column($writableItems, 'catalog_uri');
 
         try {
             $response = Http::withToken($access->accessToken)->acceptJson()->connectTimeout(5)->timeout(10)
@@ -51,7 +61,7 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
 
             $confirmed = $this->reader->read($providerPlaylistId, $access);
             if (! $confirmed instanceof SourcePlaylistSnapshot
-                || $confirmed->normalizedItemIdentifiers() !== $this->identifiers($desiredItems)
+                || $confirmed->normalizedItemIdentifiers() !== $this->identifiers($writableItems)
                 || $confirmed->providerRevision !== $revision) {
                 return $confirmed instanceof SourceSyncFailure ? $confirmed : SourceSyncFailure::InvalidResponse;
             }

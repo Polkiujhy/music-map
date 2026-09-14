@@ -38,6 +38,34 @@ class YouTubeSourcePlaylistReaderTest extends TestCase
         Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer access-canary'));
     }
 
+    public function test_it_preserves_deleted_and_private_positions_as_unavailable_placeholders(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push(['items' => [[
+                'id' => 'playlist-canary',
+                'etag' => 'revision-canary',
+                'snippet' => ['channelId' => 'channel-canary'],
+                'contentDetails' => ['itemCount' => 2],
+            ]]])
+            ->push(['items' => [
+                $this->unavailableItem('deleted-occurrence', 0, 'Deleted video', null, 'public'),
+                $this->unavailableItem('private-occurrence', 1, 'Private video', 'private-video', 'private'),
+            ]]);
+
+        $snapshot = (new YouTubeSourcePlaylistReader)->read('playlist-canary', new StreamingAccessContext(
+            StreamingProvider::YouTube,
+            'channel-canary',
+            'access-canary',
+        ));
+
+        $this->assertInstanceOf(SourcePlaylistSnapshot::class, $snapshot);
+        $this->assertSame([null, null], $snapshot->itemIdentifiers);
+        $this->assertSame(['deleted-occurrence', 'private-occurrence'], $snapshot->providerItemIdentifiers);
+        $this->assertSame([false, false], array_column($snapshot->items, 'is_available'));
+        $this->assertSame([null, null], array_column($snapshot->items, 'catalog_uri'));
+    }
+
     /** @return array<string, array{string, SourceSyncFailure}> */
     public static function limitReasons(): array
     {
@@ -76,9 +104,25 @@ class YouTubeSourcePlaylistReaderTest extends TestCase
                 'position' => $position,
                 'title' => 'Video',
                 'videoOwnerChannelTitle' => 'Creator',
-                'resourceId' => ['videoId' => 'video-canary'],
+                'resourceId' => ['kind' => 'youtube#video', 'videoId' => 'video-canary'],
             ],
-            'status' => ['privacyStatus' => 'private'],
+            'status' => ['privacyStatus' => 'public'],
+        ];
+    }
+
+    private function unavailableItem(string $id, int $position, string $title, ?string $videoId, string $privacy): array
+    {
+        return [
+            'id' => $id,
+            'snippet' => [
+                'position' => $position,
+                'title' => $title,
+                'resourceId' => array_filter([
+                    'kind' => 'youtube#video',
+                    'videoId' => $videoId,
+                ]),
+            ],
+            'status' => ['privacyStatus' => $privacy],
         ];
     }
 }

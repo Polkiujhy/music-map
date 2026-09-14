@@ -125,25 +125,39 @@ final class YouTubeSourcePlaylistReader implements SourcePlaylistReader
         }
         $providerItemId = $this->string($value['id'] ?? null);
         $actualPosition = $value['snippet']['position'] ?? null;
-        $videoId = $this->string($value['snippet']['resourceId']['videoId'] ?? null);
+        $kind = $value['snippet']['resourceId']['kind'] ?? null;
+        $videoId = $this->nullableString($value['snippet']['resourceId']['videoId'] ?? null);
         $title = $this->nullableString($value['snippet']['title'] ?? null);
         $creator = $this->nullableString($value['snippet']['videoOwnerChannelTitle'] ?? null);
+        $privacyStatus = $this->nullableString($value['status']['privacyStatus'] ?? null, 32);
 
-        if ($providerItemId === null || $actualPosition !== $position || $videoId === null || $title === false || $title === null || $creator === false) {
+        if ($providerItemId === null || $actualPosition !== $position || $videoId === false
+            || $title === false || $creator === false || $privacyStatus === false) {
+            return SourceSyncFailure::InvalidResponse;
+        }
+        if ($kind !== null && $kind !== 'youtube#video') {
+            return SourceSyncFailure::UnsupportedItem;
+        }
+
+        $unavailable = $videoId === null
+            || in_array($title, ['Deleted video', 'Private video'], true)
+            || $privacyStatus === 'private';
+
+        if (! $unavailable && $title === null) {
             return SourceSyncFailure::InvalidResponse;
         }
 
         return [
             'position' => $position,
             'provider_item_id' => $providerItemId,
-            'catalog_id' => $videoId,
-            'catalog_uri' => 'https://www.youtube.com/watch?v='.$videoId,
-            'title' => $title,
-            'creators' => $creator === null ? [] : [$creator],
+            'catalog_id' => $unavailable ? null : $videoId,
+            'catalog_uri' => $unavailable ? null : 'https://www.youtube.com/watch?v='.$videoId,
+            'title' => $unavailable ? null : $title,
+            'creators' => $unavailable || $creator === null ? [] : [$creator],
             'album' => null,
             'duration_milliseconds' => null,
             'isrc' => null,
-            'is_available' => true,
+            'is_available' => ! $unavailable,
         ];
     }
 
