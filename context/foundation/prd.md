@@ -116,7 +116,7 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 - NFR-003 — Bezpieczeństwo integracji: dane uwierzytelniające powiązanych platform streamingowych pozostają poufne, nie pojawiają się w logach dostępnych operatorowi, nie przyznają aplikacji uprawnień wykraczających poza jej funkcje i przestają umożliwiać dostęp po odłączeniu integracji lub usunięciu konta.
 - NFR-004 — Świeżość synchronizacji: przy włączonej synchronizacji zmiana na platformie jest wykrywana najpóźniej w ciągu 4 godzin. Logowanie może uruchomić dodatkową kontrolę, jeżeli od poprzedniej minęło co najmniej 15 minut, a użytkownik może niezależnie zażądać synchronizacji ręcznej.
 - NFR-005 — Odtwarzalność danych: maksymalna dopuszczalna utrata zmian w banku playlist wynosi 24 godziny, a usługa i dane powinny zostać odtworzone w ciągu 24 godzin.
-- NFR-006 — Budżet YouTube: MVP pozwala globalnie rozpocząć najwyżej pięć operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia rozliczeniowego kwoty API. Limit jest wspólny dla wszystkich użytkowników; jego wyczerpanie nie rozpoczyna częściowej operacji i zwraca czytelną informację o czasowej niedostępności.
+- NFR-006 — Budżet YouTube: aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją. Odmowa zwraca czytelną informację o czasowej niedostępności.
 
 ## Business Logic
 

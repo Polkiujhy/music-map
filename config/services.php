@@ -71,6 +71,10 @@ return [
         ],
     ],
 
+    'youtube_write_admission' => [
+        'daily_limit' => env('YOUTUBE_WRITE_DAILY_LIMIT', '5'),
+    ],
+
     'platform_access' => [
         'spotify' => [
             'technical' => [

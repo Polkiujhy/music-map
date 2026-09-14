@@ -147,13 +147,36 @@ does not include application-user streaming OAuth described above. Never pass
 probe credentials on the command line or write their values to source,
 application storage, output, or logs.
 
+## YouTube write admission
+
+Every future export or synchronization that writes to YouTube must first persist
+its own stable logical operation ID. It then calls the `AdmitYouTubeWrite` port,
+outside any consumer-owned database transaction, with the same operation type
+and ID on every retry. The call returns only after its reservation transaction
+has committed.
+
+Only `admitted-new` and `admitted-existing` permit the consumer to begin its
+first YouTube mutation. `limit-reached` and
+`YouTubeWriteAdmissionUnavailable` both mean that the consumer performs zero
+YouTube mutations. A failure after an admitted result does not refund the
+reservation; retrying the same type-and-ID pair recovers it without consuming a
+second slot.
+
+`YOUTUBE_WRITE_DAILY_LIMIT` is the symbolic runtime setting for the global
+positive daily limit and defaults to `5`. The first new operation after local
+midnight in `America/Los_Angeles` snapshots that day's value. The additive
+`youtube_write_quota_states` and `youtube_write_admissions` schema must be
+applied through the published supervised `schema-release` capability before
+code that uses this port is released. Manager remains an external PaaS: it
+supplies runtime configuration and the schema-release capability, while the
+application owns admission behavior and all future consumer integration.
+
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the
-schema and runs the critical authentication, streaming-account, and playlist
-import/persistence matrix against PostgreSQL. To repeat that smoke test locally,
-point Laravel at a disposable, non-production database using local-only
-credentials:
+schema and runs the full PHPUnit suite against PostgreSQL. To repeat that smoke
+test locally, point Laravel at a disposable, non-production database using
+local-only credentials:
 
 ```dotenv
 DB_CONNECTION=pgsql
@@ -169,11 +192,11 @@ QUEUE_CONNECTION=sync
 ```
 
 With `pdo_pgsql` installed and that disposable database running, rebuild it and
-run the same critical matrix:
+run the same suite:
 
 ```bash
 php artisan migrate:fresh --force --no-interaction
-php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountModelTest.php tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php tests/Feature/Playlists/PlaylistPersistenceTest.php tests/Feature/Playlists/PlaylistImportTest.php tests/Feature/Playlists/SpotifyPlaylistImportTest.php tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
+php artisan test
 ```
 
 `migrate:fresh` destroys all tables in the selected database. Verify the target
