@@ -45,7 +45,13 @@ class ExportReviewDecisionConcurrencyTest extends TestCase
 
             if ($pid === 0) {
                 try {
-                    DB::purge();
+                    $defaultConnection = DB::getDefaultConnection();
+                    // Keep the inherited parent PDO alive until the lock is released;
+                    // purging it in the child terminates the parent's PostgreSQL session.
+                    config([
+                        'database.connections.export_review_contender' => config("database.connections.{$defaultConnection}"),
+                    ]);
+                    DB::setDefaultConnection('export_review_contender');
                     $user = User::query()->findOrFail($review->user_id);
                     $component = Livewire::actingAs($user)
                         ->test(ExportReviewPanel::class, ['exportReview' => ExportReview::query()->findOrFail($review->id)]);
