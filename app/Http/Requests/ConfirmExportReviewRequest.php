@@ -10,7 +10,7 @@ final class ConfirmExportReviewRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $playlist = $this->user()?->playlists()->whereKey($this->route('playlist'))->firstOrFail();
+        $playlist = $this->user()?->playlists()->sourceOnly()->whereKey($this->route('playlist'))->firstOrFail();
         $this->user()?->exportReviews()
             ->where('playlist_id', $playlist?->getKey())
             ->whereKey($this->route('exportReview'))

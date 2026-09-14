@@ -11,7 +11,7 @@ final class StartExportReviewRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->user()?->playlists()->whereKey($this->route('playlist'))->firstOrFail();
+        $this->user()?->playlists()->sourceOnly()->whereKey($this->route('playlist'))->firstOrFail();
     }
 
     public function authorize(): bool

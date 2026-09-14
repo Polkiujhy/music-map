@@ -19,6 +19,7 @@ final readonly class ReconcileEditedYouTubePlaylist
     {
         return DB::transaction(function () use ($playlistId, $snapshot): Playlist|ImportFailureCode|null {
             $playlist = Playlist::query()
+                ->sourceOnly()
                 ->whereKey($playlistId)
                 ->where('source_provider', StreamingProvider::YouTube->value)
                 ->with('user')

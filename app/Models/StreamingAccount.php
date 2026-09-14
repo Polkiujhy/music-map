@@ -46,6 +46,12 @@ class StreamingAccount extends Model
         return $this->hasMany(ExportReview::class);
     }
 
+    /** @return HasMany<ExportOperation, $this> */
+    public function exportOperations(): HasMany
+    {
+        return $this->hasMany(ExportOperation::class);
+    }
+
     public function connectionState(): string
     {
         return $this->refresh_token === null

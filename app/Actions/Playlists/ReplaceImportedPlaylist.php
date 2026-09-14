@@ -2,8 +2,10 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistRole;
 use App\Integrations\PlaylistImport\Data\PlaylistItemSnapshot;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
+use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Models\Playlist;
 use App\Models\User;
 use DateTimeInterface;
@@ -16,23 +18,32 @@ final class ReplaceImportedPlaylist
         PlaylistSnapshot $snapshot,
         bool $markImported = true,
         ?int $streamingAccountId = null,
-    ): Playlist {
-        return DB::transaction(function () use ($user, $snapshot, $markImported, $streamingAccountId): Playlist {
+    ): Playlist|ImportFailureCode {
+        return DB::transaction(function () use ($user, $snapshot, $markImported, $streamingAccountId): Playlist|ImportFailureCode {
             $identity = [
                 'user_id' => $user->getKey(),
                 'source_provider' => $snapshot->provider->value,
                 'source_playlist_id' => $snapshot->providerPlaylistId,
             ];
 
-            DB::table('playlists')->upsert(
-                [[
+            $existing = $user->playlists()
+                ->where('source_provider', $snapshot->provider->value)
+                ->where('source_playlist_id', $snapshot->providerPlaylistId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing?->role === PlaylistRole::ExportTarget) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
+
+            DB::table('playlists')->insertOrIgnore(
+                [
                     ...$identity,
+                    'role' => PlaylistRole::Source->value,
                     ...$this->playlistAttributes($snapshot, now(), $streamingAccountId),
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]],
-                ['user_id', 'source_provider', 'source_playlist_id'],
-                ['updated_at'],
+                ],
             );
 
             $playlist = $user->playlists()
@@ -40,6 +51,10 @@ final class ReplaceImportedPlaylist
                 ->where('source_playlist_id', $snapshot->providerPlaylistId)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($playlist->role !== PlaylistRole::Source) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
 
             $playlist->update($this->playlistAttributes(
                 $snapshot,

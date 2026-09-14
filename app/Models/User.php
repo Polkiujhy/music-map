@@ -54,6 +54,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ExportReview::class);
     }
 
+    /** @return HasMany<PlaylistExportLink, $this> */
+    public function playlistExportLinks(): HasMany
+    {
+        return $this->hasMany(PlaylistExportLink::class);
+    }
+
+    /** @return HasMany<ExportOperation, $this> */
+    public function exportOperations(): HasMany
+    {
+        return $this->hasMany(ExportOperation::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

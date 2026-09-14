@@ -18,6 +18,7 @@ class BankController extends Controller
     public function index(Request $request): View
     {
         $playlists = $request->user()->playlists()
+            ->sourceOnly()
             ->withCount([
                 'items',
                 'items as unavailable_items_count' => fn ($query) => $query->where('is_available', false),

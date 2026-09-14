@@ -23,8 +23,11 @@ final readonly class StartExportReview
             throw ValidationException::withMessages(['playlist' => 'Ta playlista nie należy do użytkownika.']);
         }
 
+        $playlist->assertSource();
+
         return DB::transaction(function () use ($user, $playlist, $destination): ExportReview {
             $lockedPlaylist = Playlist::query()->whereKey($playlist->getKey())->lockForUpdate()->firstOrFail();
+            $lockedPlaylist->assertSource();
             $items = $lockedPlaylist->items()->get();
 
             if ($items->count() > 20) {

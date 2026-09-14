@@ -21,6 +21,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
         $expireBefore = now()->subDays(30);
 
         Playlist::query()
+            ->sourceOnly()
             ->where('source_provider', StreamingProvider::YouTube->value)
             ->where('provider_metadata_refreshed_at', '<=', $expireBefore)
             ->where(function ($query): void {
@@ -39,6 +40,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
             });
 
         Playlist::query()
+            ->sourceOnly()
             ->where('source_provider', StreamingProvider::YouTube->value)
             ->where('provider_metadata_refreshed_at', '>', $expireBefore)
             ->where('provider_metadata_refreshed_at', '<=', $refreshBefore)
@@ -54,6 +56,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
     {
         DB::transaction(function () use ($playlistId, $expireBefore): void {
             $playlist = Playlist::query()
+                ->sourceOnly()
                 ->whereKey($playlistId)
                 ->where('source_provider', StreamingProvider::YouTube->value)
                 ->lockForUpdate()

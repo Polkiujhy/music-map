@@ -2,11 +2,13 @@
 
 namespace App\Actions\ExportReviews;
 
+use App\Actions\Exports\StartExportOperation;
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
 use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
+use App\Models\ExportOperation;
 use App\Models\ExportReview;
 use App\Models\Playlist;
 use App\Models\User;
@@ -18,18 +20,19 @@ final readonly class ConfirmExportReview
     public function __construct(
         private FingerprintPlaylistContent $fingerprint,
         private ResolveExportDestination $destinations,
+        private StartExportOperation $startOperation,
     ) {}
 
     /**
      * @param  array<int|string, string|ExportReviewDecision>  $decisions
      */
-    public function handle(User $user, ExportReview $review, array $decisions): ConfirmedExportManifest
+    public function handle(User $user, ExportReview $review, array $decisions): string
     {
         if ((int) $review->user_id !== (int) $user->getKey()) {
             abort(404);
         }
 
-        $result = DB::transaction(function () use ($user, $review, $decisions): ConfirmedExportManifest|ValidationException {
+        $result = DB::transaction(function () use ($user, $review, $decisions): string|ValidationException {
             $locked = ExportReview::query()->whereKey($review->getKey())->lockForUpdate()->firstOrFail();
 
             if ((int) $locked->user_id !== (int) $user->getKey()) {
@@ -37,7 +40,13 @@ final readonly class ConfirmExportReview
             }
 
             if ($locked->status === ExportReviewStatus::Confirmed) {
-                return ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+                $operation = $locked->exportOperation()->first();
+
+                if (! $operation instanceof ExportOperation) {
+                    return $this->validation('review', 'Ten historyczny przegląd nie może rozpocząć eksportu. Przygotuj i potwierdź nowy przegląd.');
+                }
+
+                return $operation->operation_id;
             }
 
             if ($locked->status !== ExportReviewStatus::Ready) {
@@ -57,6 +66,7 @@ final readonly class ConfirmExportReview
             if ((int) $playlist->user_id !== (int) $user->getKey()) {
                 abort(404);
             }
+            $playlist->assertSource();
 
             $playlist->load('items');
             if (! hash_equals($locked->source_fingerprint, $this->fingerprint->handle($playlist))) {
@@ -131,7 +141,10 @@ final readonly class ConfirmExportReview
                 'confirmed_at' => now(),
             ])->save();
 
-            return ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+            $locked->setRelation('playlist', $playlist);
+            $manifest = ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+
+            return $this->startOperation->handle($user, $locked, $manifest)->operation_id;
         });
 
         if ($result instanceof ValidationException) {

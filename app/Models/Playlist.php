@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Enums\PlaylistRole;
 use App\Enums\StreamingProvider;
 use Database\Factories\PlaylistFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'source_provider',
+    'role',
     'streaming_account_id',
     'source_playlist_id',
     'source_account_id',
@@ -60,6 +64,39 @@ class Playlist extends Model
         return $this->hasMany(ExportReview::class);
     }
 
+    /** @return HasMany<PlaylistExportLink, $this> */
+    public function exportLinks(): HasMany
+    {
+        return $this->hasMany(PlaylistExportLink::class, 'source_playlist_id');
+    }
+
+    /** @return HasOne<PlaylistExportLink, $this> */
+    public function exportTargetLink(): HasOne
+    {
+        return $this->hasOne(PlaylistExportLink::class, 'target_playlist_id');
+    }
+
+    /** @return HasMany<ExportOperation, $this> */
+    public function exportOperations(): HasMany
+    {
+        return $this->hasMany(ExportOperation::class, 'source_playlist_id');
+    }
+
+    /** @param Builder<Playlist> $query */
+    public function scopeSourceOnly(Builder $query): void
+    {
+        $query->where('role', PlaylistRole::Source->value);
+    }
+
+    public function assertSource(): self
+    {
+        if ($this->role !== PlaylistRole::Source) {
+            abort(404);
+        }
+
+        return $this;
+    }
+
     /**
      * @return array<string, string>
      */
@@ -67,6 +104,7 @@ class Playlist extends Model
     {
         return [
             'source_provider' => StreamingProvider::class,
+            'role' => PlaylistRole::class,
             'provider_metadata_refreshed_at' => 'immutable_datetime',
             'imported_at' => 'immutable_datetime',
             'bank_content_edited_at' => 'immutable_datetime',

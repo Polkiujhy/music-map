@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('playlists:refresh-youtube-metadata')
     ->daily()
     ->withoutOverlapping();
+
+Schedule::command('exports:reconcile-queued')
+    ->everyMinute()
+    ->withoutOverlapping();

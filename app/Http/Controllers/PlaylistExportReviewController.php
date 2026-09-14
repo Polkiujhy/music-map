@@ -78,15 +78,15 @@ final class PlaylistExportReviewController extends Controller
     ): RedirectResponse {
         $ownedPlaylist = $this->playlist($request, $playlist);
         $review = $this->review($request, $ownedPlaylist, $exportReview);
-        $confirm->handle($request->user(), $review, $request->decisions());
+        $operationId = $confirm->handle($request->user(), $review, $request->decisions());
 
         return to_route('export-reviews.show', [$ownedPlaylist, $review])
-            ->with('status', 'Przegląd został potwierdzony. Dokładny manifest jest gotowy do eksportu.');
+            ->with('status', "Eksport został zakolejkowany (operacja {$operationId}).");
     }
 
     private function playlist(Request $request, string $playlist): Playlist
     {
-        return $request->user()->playlists()->whereKey($playlist)->firstOrFail();
+        return $request->user()->playlists()->sourceOnly()->whereKey($playlist)->firstOrFail();
     }
 
     private function review(Request $request, Playlist $playlist, string $exportReview): ExportReview

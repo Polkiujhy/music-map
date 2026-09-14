@@ -2,6 +2,7 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistRole;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Integrations\PlaylistImport\ImportResult;
@@ -38,6 +39,10 @@ final readonly class ImportPlaylist
             ->where('source_provider', $reference->provider->value)
             ->where('source_playlist_id', $reference->providerPlaylistId)
             ->first();
+
+        if ($existingPlaylist?->role === PlaylistRole::ExportTarget) {
+            return $this->failure(ImportFailureCode::ExportTargetConflict, $reference->provider, $correlationId);
+        }
 
         if (! $localEditsConfirmed && $existingPlaylist?->bank_content_edited_at !== null) {
             return $this->failure(
@@ -112,6 +117,10 @@ final readonly class ImportPlaylist
                 ->lockForUpdate()
                 ->first();
 
+            if ($currentPlaylist?->role === PlaylistRole::ExportTarget) {
+                return ImportFailureCode::ExportTargetConflict;
+            }
+
             if (! $localEditsConfirmed && $currentPlaylist?->bank_content_edited_at !== null) {
                 return ImportFailureCode::LocalEditsConfirmationRequired;
             }
@@ -121,6 +130,10 @@ final readonly class ImportPlaylist
                 $snapshot,
                 streamingAccountId: $streamingAccountId,
             );
+
+            if ($playlist instanceof ImportFailureCode) {
+                return $playlist;
+            }
 
             if ($localEditsConfirmed) {
                 $playlist->update(['bank_content_edited_at' => null]);

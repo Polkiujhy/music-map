@@ -23,6 +23,8 @@ final readonly class ConfirmedExportManifest
         public string $targetAccountId,
         public ?string $targetMarket,
         public string $sourceFingerprint,
+        public ?string $playlistName,
+        public ?string $playlistDescription,
         public array $items,
     ) {}
 
@@ -57,6 +59,8 @@ final readonly class ConfirmedExportManifest
             $review->target_account_id,
             $review->target_market,
             $review->source_fingerprint,
+            $review->playlist->name,
+            $review->playlist->description,
             $items,
         );
     }

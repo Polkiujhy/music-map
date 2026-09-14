@@ -32,6 +32,8 @@ final readonly class ResolveExportDestination
             $this->invalid('Ta playlista nie należy do użytkownika.');
         }
 
+        $playlist->assertSource();
+
         return $type === ExportDestinationType::Linked
             ? $this->linked($user, $playlist, $provider, $streamingAccountId)
             : $this->managed($user, $playlist, $provider);

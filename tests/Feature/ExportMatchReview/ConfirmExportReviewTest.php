@@ -7,7 +7,6 @@ use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
-use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Models\ExportReview;
 use App\Models\ExportReviewItem;
 use App\Models\Playlist;
@@ -37,12 +36,12 @@ class ConfirmExportReviewTest extends TestCase
             ExportMatchStatus::Suspicious,
         ]);
 
-        $manifest = app(ConfirmExportReview::class)->handle($review->user, $review, [
+        $operationId = app(ConfirmExportReview::class)->handle($review->user, $review, [
             $items[1]->id => 'keep',
             $items[2]->id => 'remove',
         ]);
 
-        $this->assertInstanceOf(ConfirmedExportManifest::class, $manifest);
+        $this->assertIsString($operationId);
         $this->assertSame(ExportReviewStatus::Confirmed, $review->fresh()->status);
         $this->assertNotNull($review->fresh()->confirmed_at);
         $this->assertNotNull($review->playlist->fresh()->bank_content_edited_at);
@@ -50,11 +49,11 @@ class ConfirmExportReviewTest extends TestCase
         $this->assertSame(['source-0', 'source-1'], $review->playlist->items()->pluck('catalog_id')->all());
         $this->assertDatabaseHas('playlist_items', ['catalog_id' => 'source-1', 'is_available' => true]);
         $this->assertDatabaseMissing('playlist_items', ['catalog_id' => 'source-2']);
-        $this->assertSame([[
-            'position' => 0,
-            'catalog_id' => 'target-0',
-            'catalog_uri' => 'spotify:track:0',
-        ]], $manifest->items);
+        $this->assertDatabaseHas('export_operations', [
+            'operation_id' => $operationId,
+            'export_review_id' => $review->id,
+            'source_fingerprint' => $review->source_fingerprint,
+        ]);
     }
 
     public function test_empty_manifest_and_incomplete_decisions_are_rejected_without_mutating_bank(): void
@@ -92,10 +91,10 @@ class ConfirmExportReviewTest extends TestCase
         $confirmedAt = $review->fresh()->confirmed_at;
         $second = $action->handle($review->user, $review->fresh(), [$items[1]->id => 'remove']);
 
-        $this->assertEquals($first, $second);
+        $this->assertSame($first, $second);
         $this->assertTrue($confirmedAt->equalTo($review->fresh()->confirmed_at));
         $this->assertNull($review->playlist->fresh()->bank_content_edited_at);
-        $this->assertSame(['target-0', 'target-1'], array_column($second->items, 'catalog_id'));
+        $this->assertSame(['target-0', 'target-1'], $review->items()->orderBy('position')->pluck('target_catalog_id')->all());
         $this->assertSame(['source-0', 'source-1'], $review->playlist->items()->pluck('catalog_id')->all());
     }
 
@@ -104,10 +103,19 @@ class ConfirmExportReviewTest extends TestCase
         [$review, $items] = $this->readyReview([ExportMatchStatus::Matched, ExportMatchStatus::Suspicious]);
         $items[1]->forceFill(['decision' => ExportReviewDecision::Keep])->save();
 
-        $manifest = app(ConfirmExportReview::class)->handle($review->user, $review, []);
+        $operationId = app(ConfirmExportReview::class)->handle($review->user, $review, []);
 
         $this->assertSame(ExportReviewStatus::Confirmed, $review->fresh()->status);
-        $this->assertSame(['target-0', 'target-1'], array_column($manifest->items, 'catalog_id'));
+        $this->assertDatabaseHas('export_operations', ['operation_id' => $operationId, 'export_review_id' => $review->id]);
+    }
+
+    public function test_historical_confirmed_review_without_an_operation_requires_a_fresh_review(): void
+    {
+        [$review] = $this->readyReview([ExportMatchStatus::Matched]);
+        $review->forceFill(['status' => ExportReviewStatus::Confirmed, 'confirmed_at' => now()])->save();
+
+        $this->expectException(ValidationException::class);
+        app(ConfirmExportReview::class)->handle($review->user, $review, []);
     }
 
     /**

@@ -28,6 +28,7 @@ final readonly class UpdateBankPlaylistItems
             $emptyResultConfirmed,
         ): Playlist {
             $playlist = $owner->playlists()
+                ->sourceOnly()
                 ->whereKey($playlistId)
                 ->lockForUpdate()
                 ->first();

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportReviewStatus;
+use App\Enums\PlaylistRole;
 use App\Enums\StreamingProvider;
 use App\Integrations\ExportMatching\Data\MatchResult;
 use App\Integrations\ExportMatching\Data\SourceTrack;
@@ -53,6 +54,10 @@ final class PrepareExportReview implements ShouldQueue
         $review = ExportReview::query()->with(['items', 'playlist.items', 'user'])->find($this->exportReviewId);
 
         if (! $review instanceof ExportReview) {
+            return;
+        }
+
+        if ($review->playlist->role !== PlaylistRole::Source) {
             return;
         }
 
@@ -123,6 +128,10 @@ final class PrepareExportReview implements ShouldQueue
             $current = ExportReview::query()->whereKey($review->getKey())->lockForUpdate()->first();
             if (! $current instanceof ExportReview
                 || $current->status !== ExportReviewStatus::Processing) {
+                return 'inactive';
+            }
+
+            if ($current->playlist->role !== PlaylistRole::Source) {
                 return 'inactive';
             }
 

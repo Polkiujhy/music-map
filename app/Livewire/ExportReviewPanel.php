@@ -123,8 +123,8 @@ final class ExportReviewPanel extends Component
     public function confirm(ConfirmExportReview $confirm): void
     {
         $review = $this->ownedReview($this->reviewId);
-        $confirm->handle(Auth::user(), $review, $this->decisions);
-        session()->flash('status', 'Przegląd został potwierdzony. Dokładny manifest jest gotowy do eksportu.');
+        $operationId = $confirm->handle(Auth::user(), $review, $this->decisions);
+        session()->flash('status', "Eksport został zakolejkowany (operacja {$operationId}).");
         $this->redirectRoute('export-reviews.show', [$review->playlist_id, $review->getKey()], navigate: false);
     }
 
