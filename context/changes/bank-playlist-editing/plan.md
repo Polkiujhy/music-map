@@ -605,12 +605,12 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [x] 3.1 Refresh zachowuje lokalną kolejność i usunięcia po occurrence ID
-- [x] 3.2 Zniknięte pozycje stają się placeholderami, a nowe nie są dopisywane
-- [x] 3.3 Nietknięty snapshot nadal przechodzi pełny atomowy replacement
-- [x] 3.4 Jawny reimport wymaga potwierdzenia, zastępuje snapshot i zeruje znacznik
-- [x] 3.5 Cleanup retencji usuwa dane i znacznik w jednej transakcji
-- [x] 3.6 Regresje importu i cyklu YouTube przechodzą bez live requestów
+- [x] 3.1 Refresh zachowuje lokalną kolejność i usunięcia po occurrence ID — c945a7c
+- [x] 3.2 Zniknięte pozycje stają się placeholderami, a nowe nie są dopisywane — c945a7c
+- [x] 3.3 Nietknięty snapshot nadal przechodzi pełny atomowy replacement — c945a7c
+- [x] 3.4 Jawny reimport wymaga potwierdzenia, zastępuje snapshot i zeruje znacznik — c945a7c
+- [x] 3.5 Cleanup retencji usuwa dane i znacznik w jednej transakcji — c945a7c
+- [x] 3.6 Regresje importu i cyklu YouTube przechodzą bez live requestów — c945a7c
 
 #### Manual
 
@@ -622,13 +622,13 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [ ] 4.1 Cykl wszystkich mutacji zmienia neutralny fingerprint, a no-op go zachowuje
-- [ ] 4.2 Kontrakt fingerprintu jest gotowy do konsumpcji przez S-05 bez duplikatu
-- [ ] 4.3 Pełne regresje playlist i integracji streamingowych przechodzą
-- [ ] 4.4 Pełny zestaw Composer przechodzi
-- [ ] 4.5 Laravel Pint i produkcyjny build przechodzą
-- [ ] 4.6 Kontrakt źródła i audyty zależności przechodzą
-- [ ] 4.7 Macierz PostgreSQL przechodzi bez live providerów
+- [x] 4.1 Cykl wszystkich mutacji zmienia neutralny fingerprint, a no-op go zachowuje
+- [x] 4.2 Kontrakt fingerprintu jest gotowy do konsumpcji przez S-05 bez duplikatu
+- [x] 4.3 Pełne regresje playlist i integracji streamingowych przechodzą
+- [x] 4.4 Pełny zestaw Composer przechodzi
+- [x] 4.5 Laravel Pint i produkcyjny build przechodzą
+- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą
+- [x] 4.7 Macierz PostgreSQL przechodzi bez live providerów
 
 #### Manual
 

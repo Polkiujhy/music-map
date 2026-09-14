@@ -188,6 +188,7 @@ tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
 tests/Feature/PlaylistEditing/PlaylistEditorTest.php
 tests/Feature/PlaylistEditing/EditedPlaylistReimportTest.php
+tests/Feature/PlaylistEditing/PlaylistFingerprintLifecycleTest.php
 tests/Feature/PlaylistEditing/YouTubeEditedPlaylistRefreshTest.php
 tests/Feature/StreamingAccounts/StreamingAccountMigrationTest.php
 tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php
