@@ -542,8 +542,8 @@ zmiany i nowej decyzji produktowej.
 
 #### Manual
 
-- [ ] 1.4 Przegląd potwierdza zgodność NFR-006, F-02 i konfiguracji
-- [ ] 1.5 Przegląd potwierdza niezależność kontraktu od przyszłych konsumentów i PaaS
+- [x] 1.4 Przegląd potwierdza zgodność NFR-006, F-02 i konfiguracji
+- [x] 1.5 Przegląd potwierdza niezależność kontraktu od przyszłych konsumentów i PaaS
 
 ### Phase 2: Trwała i atomowa rezerwacja
 
@@ -556,8 +556,8 @@ zmiany i nowej decyzji produktowej.
 
 #### Manual
 
-- [ ] 2.5 Przegląd potwierdza commit dopuszczenia przed przyszłym requestem YouTube
-- [ ] 2.6 Inspekcja schematu potwierdza minimalne dane i brak zwalniania rezerwacji
+- [x] 2.5 Przegląd potwierdza commit dopuszczenia przed przyszłym requestem YouTube
+- [x] 2.6 Inspekcja schematu potwierdza minimalne dane i brak zwalniania rezerwacji
 
 ### Phase 3: Dowód współbieżności i gotowość integracyjna
 
@@ -570,6 +570,6 @@ zmiany i nowej decyzji produktowej.
 
 #### Manual
 
-- [ ] 3.5 Disposable PostgreSQL potwierdza limit, odmowę i retry po restarcie
-- [ ] 3.6 Kandydat addytywnego schematu jest gotowy do publicznej operacji schema-release
-- [ ] 3.7 Przegląd potwierdza brak requestów YouTube i gotowość dla S-06–S-09
+- [x] 3.5 Disposable PostgreSQL potwierdza limit, odmowę i retry po restarcie
+- [x] 3.6 Kandydat addytywnego schematu jest gotowy do publicznej operacji schema-release
+- [x] 3.7 Przegląd potwierdza brak requestów YouTube i gotowość dla S-06–S-09

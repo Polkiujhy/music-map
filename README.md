@@ -174,10 +174,9 @@ application owns admission behavior and all future consumer integration.
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the
-schema and runs the critical authentication, streaming-account, and playlist
-import/persistence matrix against PostgreSQL. To repeat that smoke test locally,
-point Laravel at a disposable, non-production database using local-only
-credentials:
+schema and runs the full PHPUnit suite against PostgreSQL. To repeat that smoke
+test locally, point Laravel at a disposable, non-production database using
+local-only credentials:
 
 ```dotenv
 DB_CONNECTION=pgsql
@@ -193,11 +192,11 @@ QUEUE_CONNECTION=sync
 ```
 
 With `pdo_pgsql` installed and that disposable database running, rebuild it and
-run the same critical matrix:
+run the same suite:
 
 ```bash
 php artisan migrate:fresh --force --no-interaction
-php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountModelTest.php tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php tests/Feature/Playlists/PlaylistPersistenceTest.php tests/Feature/Playlists/PlaylistImportTest.php tests/Feature/Playlists/SpotifyPlaylistImportTest.php tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
+php artisan test
 ```
 
 `migrate:fresh` destroys all tables in the selected database. Verify the target

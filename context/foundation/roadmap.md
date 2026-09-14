@@ -24,7 +24,7 @@ milestone_status: open
 
 - **Cel:** użytkownik zachowuje playlistę w prywatnym banku niezależnym od platformy, a następnie może bezpiecznie przenieść ją między Spotify i YouTube oraz utrzymywać powiązane kopie w zgodności.
 - **Materiały źródłowe:** `context/foundation/prd.md` (v1).
-- **Gotowe, gdy:** każdy F-NN i S-NN poniżej jest `done`, a przepływ dla playlisty do 20 utworów zachowuje świadome potwierdzenie, informację o właścicielu wyniku i możliwość bezpiecznego ponowienia operacji; zapis do YouTube respektuje globalny limit pięciu rozpoczętych operacji na dzień kwoty API.
+- **Gotowe, gdy:** każdy F-NN i S-NN poniżej jest `done`, a przepływ dla playlisty do 20 utworów zachowuje świadome potwierdzenie, informację o właścicielu wyniku i możliwość bezpiecznego ponowienia operacji; aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.
 - **Kotwice zakresu:** FR-001–FR-002, FR-004–FR-011, FR-014–FR-015, US-01–US-02, NFR-001–NFR-006.
 
 ## Podsumowanie wizji
@@ -42,15 +42,16 @@ milestone_status: open
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
 | F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |
+| F-02 | `youtube-write-admission` | (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją | F-01 | NFR-006 | in-progress |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
+| S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
-| S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | done |
-| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
-| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
-| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
-| S-09 | `playlist-drift-recovery` | zobaczyć rozbieżność powiązanych playlist i przywrócić zgodność bez tworzenia duplikatu | S-07, S-08 | US-02, FR-002, FR-014 | proposed |
+| S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | F-02, S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
+| S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | F-02, S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
+| S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | F-02, S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
+| S-09 | `playlist-drift-recovery` | zobaczyć rozbieżność powiązanych playlist i przywrócić zgodność bez tworzenia duplikatu | F-02, S-07, S-08 | US-02, FR-002, FR-014, NFR-006 | proposed |
 | S-10 | `safe-account-deletion` | usunąć konto po poznaniu skutków, zachowując playlisty należące do niego na platformach | S-04, S-06, S-07 | FR-015, NFR-003 | proposed |
 
 ## Strumienie
@@ -59,9 +60,10 @@ Pomoc nawigacyjna — grupuje elementy, które współdzielą łańcuch wymagań
 
 | Strumień | Temat | Łańcuch | Uwaga |
 | ------ | ------------------ | ------------------------------ | --------------------------------------------------------- |
-| A | Prywatny bank i synchronizacja | `S-01` → `S-02` → `S-03` → `S-08` → `S-09` | S-02 jest zaimplementowane; dalszy ciąg prowadzi przez edycję i synchronizację, a w S-09 łączy się ze Strumieniem B. |
+| A | Prywatny bank | `S-01` → `S-02` → `S-03` | S-02 jest zaimplementowane; dalsza synchronizacja dołącza do Strumienia D po wspólnym dopuszczeniu zapisu. |
 | B | Dostęp do platform i własność eksportu | `F-01` → `S-04` → `S-07` → `S-10` | F-01 i S-04 usunęły główne ryzyko dostępu; w S-10 strumień łączy się ze Strumieniem C. |
 | C | Kontrola i eksport zarządzany | `S-05` → `S-06` | W S-05 łączy bank ze Strumienia A z dostępem ze Strumienia B i prowadzi do wybranego eksportu na konto techniczne. |
+| D | Dopuszczenie zapisu i zgodność | `F-02` → `S-08` → `S-09` | F-02 odblokowuje zapisy w Strumieniach B i C, a tutaj prowadzi przez synchronizację do naprawy rozbieżności łączącej się ze Strumieniem B. |
 
 ## Baza
 
@@ -81,13 +83,26 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** (fundament) aplikacja udostępnia `music-map.platform-access.v1`, przez który Manager weryfikuje minimalny dostęp technicznych i testowych kont Spotify oraz YouTube bez przenoszenia OAuth i cyklu poświadczeń do repozytorium.
 - **Change ID:** `platform-access-readiness`
 - **Odniesienia do PRD:** FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006.
-- **Odblokowuje:** S-02, S-04, S-05, S-06 i S-07 oraz weryfikację importu i eksportu na obu platformach.
+- **Odblokowuje:** F-02, S-02, S-04 i S-05 oraz weryfikację importu i eksportu na obu platformach.
 - **Wymagania wstępne:** spełnione — kontrakt `music-map.platform-access.v1`, projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube zostały potwierdzone; wartości pozostają poza repozytorium.
 - **Równolegle z:** S-01.
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** ograniczone przez zaakceptowany kontrakt, probe obu providerów i potwierdzone konta techniczne oraz testowe; przyszłe zmiany API platform wymagają ponownej weryfikacji.
 - **Status:** done
+
+### F-02: Wspólne dopuszczenie zapisów YouTube
+
+- **Wynik:** (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.
+- **Change ID:** `youtube-write-admission`
+- **Odniesienia do PRD:** NFR-006.
+- **Odblokowuje:** S-06, S-07, S-08 i S-09 oraz wspólną weryfikację globalnego limitu, braku częściowego zapisu i idempotentnego ponowienia operacji.
+- **Wymagania wstępne:** F-01.
+- **Równolegle z:** —
+- **Blokery:** —
+- **Niewiadome:** —
+- **Ryzyko:** niezależne liczniki w kolejnych wycinkach mogłyby dopuścić więcej niż pięć operacji, naliczać ponowienia ponownie albo rozpocząć zapis mimo wyczerpanej kwoty.
+- **Status:** in-progress
 
 ## Wycinki
 
@@ -101,6 +116,18 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** połączenie metod logowania po adresie e-mail musi zapobiegać powieleniu kont, bo wszystkie kolejne wycinki opierają własność danych na jednej tożsamości.
+- **Status:** done
+
+### S-04: Powiązanie kont streamingowych
+
+- **Wynik:** użytkownik może bezpiecznie powiązać lub odłączyć konto Spotify albo YouTube, a odłączenie wyłącza synchronizację wszystkich zależnych playlist.
+- **Change ID:** `streaming-account-linking`
+- **Odniesienia do PRD:** FR-006, NFR-003.
+- **Wymagania wstępne:** F-01, S-01.
+- **Równolegle z:** —
+- **Blokery:** —
+- **Niewiadome:** —
+- **Ryzyko:** zbyt szerokie zakresy lub pozostawienie aktywnych tokenów po odłączeniu narusza wymóg poufności i blokuje bezpieczny eksport na konto użytkownika.
 - **Status:** done
 
 ### S-02: Import playlisty z linku do banku
@@ -127,18 +154,6 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Ryzyko:** edycja nie może zatrzeć nadrzędnego źródła ani identyfikatora platformy, bo późniejsza synchronizacja używa ich do aktualizacji właściwej playlisty.
 - **Status:** done
 
-### S-04: Powiązanie kont streamingowych
-
-- **Wynik:** użytkownik może bezpiecznie powiązać lub odłączyć konto Spotify albo YouTube, a odłączenie wyłącza synchronizację wszystkich zależnych playlist.
-- **Change ID:** `streaming-account-linking`
-- **Odniesienia do PRD:** FR-006, NFR-003.
-- **Wymagania wstępne:** F-01, S-01.
-- **Równolegle z:** —
-- **Blokery:** —
-- **Niewiadome:** —
-- **Ryzyko:** zbyt szerokie zakresy lub pozostawienie aktywnych tokenów po odłączeniu narusza wymóg poufności i blokuje bezpieczny eksport na konto użytkownika.
-- **Status:** done
-
 ### S-05: Kontrola dopasowania przed eksportem
 
 - **Wynik:** użytkownik może wybrać dozwoloną platformę docelową, zobaczyć dopasowane, błędnie dopasowane i niedostępne utwory, zdecydować o ich pozostawieniu lub usunięciu i świadomie potwierdzić eksport.
@@ -156,11 +171,11 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** użytkownik bez powiązanego konta może utworzyć lub zaktualizować playlistę na koncie technicznym `music-map`, otrzymać stały link i informację o właścicielu oraz bezpiecznie ponowić przerwaną operację.
 - **Change ID:** `managed-account-export`
 - **Odniesienia do PRD:** US-01, FR-010, FR-011, NFR-006.
-- **Wymagania wstępne:** S-05.
+- **Wymagania wstępne:** F-02, S-05.
 - **Równolegle z:** S-07.
 - **Blokery:** prawo kont technicznych do tworzenia i aktualizowania playlist oraz ograniczenia widoczności narzucone przez platformy.
 - **Niewiadome:** —
-- **Ryzyko:** ponowienie po częściowym sukcesie musi aktualizować playlistę po zapisanym ID, inaczej awaria utworzy duplikaty i złamie główną obietnicę produktu.
+- **Ryzyko:** operacja musi uzyskać wspólne dopuszczenie przed pierwszym zapisem, a ponowienie po częściowym sukcesie użyć tej samej rezerwacji i zapisanego ID, inaczej zużyje limit ponownie lub utworzy duplikat.
 - **Status:** proposed
 
 ### S-07: Eksport na powiązane konto użytkownika
@@ -168,11 +183,11 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** użytkownik może utworzyć lub zaktualizować playlistę na własnym powiązanym koncie, z właściwą widocznością oraz jednoznacznym statusem i linkiem.
 - **Change ID:** `linked-account-export`
 - **Odniesienia do PRD:** US-01, FR-009, FR-011, NFR-006.
-- **Wymagania wstępne:** S-04, S-05.
+- **Wymagania wstępne:** F-02, S-04, S-05.
 - **Równolegle z:** S-06.
 - **Blokery:** zakresy zapisu przyznane aplikacji przez użytkownika i ograniczenia widoczności playlist w API platform.
 - **Niewiadome:** —
-- **Ryzyko:** rozpoznawanie celu inaczej niż po zapisanym ID grozi utworzeniem kolejnych kopii lub zmianą niewłaściwej playlisty.
+- **Ryzyko:** pominięcie wspólnego dopuszczenia albo rozpoznawanie celu inaczej niż po zapisanym ID grozi przekroczeniem globalnego limitu, utworzeniem kolejnych kopii lub zmianą niewłaściwej playlisty.
 - **Status:** proposed
 
 ### S-08: Synchronizacja playlisty źródłowej
@@ -180,23 +195,23 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** użytkownik może ręcznie albo automatycznie synchronizować playlistę należącą do jego powiązanego konta, a w konflikcie bank przyjmuje wersję platformy źródłowej.
 - **Change ID:** `source-playlist-sync`
 - **Odniesienia do PRD:** US-02, FR-005, NFR-004, NFR-006.
-- **Wymagania wstępne:** S-03, S-04.
+- **Wymagania wstępne:** F-02, S-03, S-04.
 - **Równolegle z:** S-05.
 - **Blokery:** limity i dostępność cyklicznych odczytów oraz zapisów w API Spotify i YouTube.
 - **Niewiadome:** —
-- **Ryzyko:** niejednoznaczne wykrycie zmian od ostatniej synchronizacji może nadpisać edycję użytkownika lub uruchomić zbędne aktualizacje.
+- **Ryzyko:** tylko synchronizacja faktycznie zapisująca dane w YouTube może zużyć wspólne dopuszczenie; błędne wykrycie kierunku lub zmian mogłoby nadpisać edycję użytkownika i niepotrzebnie wykorzystać limit.
 - **Status:** proposed
 
 ### S-09: Wykrywanie i naprawa rozbieżności
 
 - **Wynik:** użytkownik może zobaczyć, która powiązana playlista jest nieaktualna, przejrzeć różnice i ponownie wyeksportować źródło do istniejącej playlisty bez tworzenia duplikatu.
 - **Change ID:** `playlist-drift-recovery`
-- **Odniesienia do PRD:** US-02, FR-002, FR-014.
-- **Wymagania wstępne:** S-07, S-08.
+- **Odniesienia do PRD:** US-02, FR-002, FR-014, NFR-006.
+- **Wymagania wstępne:** F-02, S-07, S-08.
 - **Równolegle z:** S-10.
 - **Blokery:** —
 - **Niewiadome:** —
-- **Ryzyko:** status aktualności musi wynikać z porównania właściwej relacji źródło–eksport, inaczej użytkownik otrzyma mylące powiadomienie lub naprawi niewłaściwą kopię.
+- **Ryzyko:** status aktualności musi wynikać z właściwej relacji źródło–eksport, a ponowny eksport do YouTube przejść przez wspólne dopuszczenie, inaczej użytkownik naprawi niewłaściwą kopię albo operacja ominie globalny limit.
 - **Status:** proposed
 
 ### S-10: Bezpieczne usunięcie konta
@@ -216,15 +231,16 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | ID mapy drogowej | Change ID | Sugerowany tytuł zadania | Gotowe do `/10x-plan` | Uwagi |
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
 | F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Zakończono i zarchiwizowano. |
+| F-02 | `youtube-write-admission` | Wprowadź wspólne dopuszczenie zapisów YouTube | yes | Gotowe do `/10x-plan`; odblokowuje S-06, S-07, S-08 i S-09. |
 | S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | no | Zakończono i zarchiwizowano. |
 | S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Zakończono i zarchiwizowano. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
 | S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Zakończono i zarchiwizowano. |
-| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | S-05 zakończone; gotowe do `/10x-plan`. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
-| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
-| S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na S-07 i S-08. |
+| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | S-05 zakończone; czeka na F-02. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 i S-05 zakończone; czeka na F-02. |
+| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | S-03 i S-04 zakończone; czeka na F-02. |
+| S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na F-02, S-07 i S-08. |
 | S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
 
 ## Otwarte pytania dotyczące mapy drogowej
