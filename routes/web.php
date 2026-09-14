@@ -3,11 +3,34 @@
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\PlaylistEditingController;
+use App\Http\Controllers\PlaylistExportReviewController;
 use App\Http\Controllers\PlaylistImportController;
 use App\Http\Controllers\PlaylistReimportController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+
+RateLimiter::for('export-review-start', function (Request $request): Limit {
+    return Limit::perMinute(5)->by(implode('|', [
+        (string) $request->user()?->getAuthIdentifier(),
+        (string) $request->input('target_provider'),
+    ]));
+});
+
+RateLimiter::for('export-review-retry', function (Request $request): Limit {
+    $provider = $request->user()?->exportReviews()
+        ->whereKey($request->route('exportReview'))
+        ->value('target_provider');
+    $providerKey = $provider instanceof BackedEnum ? $provider->value : (string) ($provider ?? 'unknown');
+
+    return Limit::perMinute(3)->by(implode('|', [
+        (string) $request->user()?->getAuthIdentifier(),
+        $providerKey,
+    ]));
+});
 
 Route::get('/', function () {
     return view('welcome');
@@ -54,4 +77,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->whereNumber('playlist')
         ->middleware('throttle:playlist-import')
         ->name('bank.playlists.reimport');
+    Route::post('/bank/playlists/{playlist}/export-reviews', [PlaylistExportReviewController::class, 'store'])
+        ->middleware('throttle:export-review-start')
+        ->name('export-reviews.store');
+    Route::get('/bank/playlists/{playlist}/export-reviews/{exportReview}', [PlaylistExportReviewController::class, 'show'])
+        ->name('export-reviews.show');
+    Route::post('/bank/playlists/{playlist}/export-reviews/{exportReview}/retry', [PlaylistExportReviewController::class, 'retry'])
+        ->middleware('throttle:export-review-retry')
+        ->name('export-reviews.retry');
+    Route::post('/bank/playlists/{playlist}/export-reviews/{exportReview}/confirm', [PlaylistExportReviewController::class, 'confirm'])
+        ->name('export-reviews.confirm');
 });

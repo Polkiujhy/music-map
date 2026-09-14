@@ -630,12 +630,12 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [x] 2.1 Klienci katalogowi przechodzą pełną macierz fake HTTP bez wycieków
-- [x] 2.2 Klasyfikatory rozróżniają matched, suspicious i unavailable
-- [x] 2.3 Budżet YouTube atomowo rezerwuje cache missy i deduplikuje zapytania
-- [x] 2.4 Job publikuje wyłącznie kompletny wynik i bezpiecznie obsługuje retry
-- [x] 2.5 Powiadomienie po 60 sekundach jest pojedyncze i idempotentne
-- [x] 2.6 Testy i CI nie wykonują rzeczywistych requestów providerów
+- [x] 2.1 Klienci katalogowi przechodzą pełną macierz fake HTTP bez wycieków — 0c5fe7a
+- [x] 2.2 Klasyfikatory rozróżniają matched, suspicious i unavailable — 0c5fe7a
+- [x] 2.3 Budżet YouTube atomowo rezerwuje cache missy i deduplikuje zapytania — 0c5fe7a
+- [x] 2.4 Job publikuje wyłącznie kompletny wynik i bezpiecznie obsługuje retry — 0c5fe7a
+- [x] 2.5 Powiadomienie po 60 sekundach jest pojedyncze i idempotentne — 0c5fe7a
+- [x] 2.6 Testy i CI nie wykonują rzeczywistych requestów providerów — 0c5fe7a
 
 #### Manual
 
@@ -646,12 +646,12 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [ ] 3.1 Trasy egzekwują middleware, CSRF, throttle i owner-scoped 404
-- [ ] 3.2 Livewire poprawnie obsługuje polling, progi czasu i trzy klasy wyników
-- [ ] 3.3 Potwierdzenie atomowo aktualizuje bank i zamraża dokładny manifest
-- [ ] 3.4 Pusty wynik, niekompletne decyzje i double submit są bezpiecznie odrzucane
-- [ ] 3.5 Reimport, edycja, unlink, expiry i spóźniony job unieważniają stale review
-- [ ] 3.6 Handoff udostępnia wyłącznie potwierdzony manifest bez ponownego matchingu
+- [x] 3.1 Trasy egzekwują middleware, CSRF, throttle i owner-scoped 404
+- [x] 3.2 Livewire poprawnie obsługuje polling, progi czasu i trzy klasy wyników
+- [x] 3.3 Potwierdzenie atomowo aktualizuje bank i zamraża dokładny manifest
+- [x] 3.4 Pusty wynik, niekompletne decyzje i double submit są bezpiecznie odrzucane
+- [x] 3.5 Reimport, edycja, unlink, expiry i spóźniony job unieważniają stale review
+- [x] 3.6 Handoff udostępnia wyłącznie potwierdzony manifest bez ponownego matchingu
 
 #### Manual
 

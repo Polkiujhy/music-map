@@ -35,6 +35,7 @@ app/Actions/Playlists/ReconcileEditedYouTubePlaylist.php
 app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
+app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/FingerprintPlaylist.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
@@ -46,12 +47,15 @@ app/Http/Controllers/Auth/GoogleAuthController.php
 app/Http/Controllers/BankController.php
 app/Http/Controllers/Controller.php
 app/Http/Controllers/PlaylistEditingController.php
+app/Http/Controllers/PlaylistExportReviewController.php
 app/Http/Controllers/PlaylistImportController.php
 app/Http/Controllers/PlaylistReimportController.php
 app/Http/Controllers/StreamingAccountController.php
 app/Http/Controllers/StreamingAccountOAuthController.php
 app/Http/Middleware/NormalizeAuthEmail.php
+app/Http/Requests/ConfirmExportReviewRequest.php
 app/Http/Requests/ImportPlaylistRequest.php
+app/Http/Requests/StartExportReviewRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
 app/Enums/ExportDestinationType.php
@@ -100,6 +104,7 @@ app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Livewire/PlaylistEditor.php
 app/Integrations/ExportMatching/Contracts/CatalogSearch.php
 app/Integrations/ExportMatching/Data/CatalogCandidate.php
+app/Integrations/ExportMatching/Data/ConfirmedExportManifest.php
 app/Integrations/ExportMatching/Data/MatchResult.php
 app/Integrations/ExportMatching/Data/SourceTrack.php
 app/Integrations/ExportMatching/MatchNormalizer.php
@@ -112,6 +117,7 @@ app/Integrations/ExportMatching/YouTubeMatchClassifier.php
 app/Integrations/ExportMatching/YouTubeSearchBudget.php
 app/Jobs/PrepareExportReview.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
+app/Livewire/ExportReviewPanel.php
 app/Models/AuthIdentity.php
 app/Models/ExportReview.php
 app/Models/ExportReviewItem.php
@@ -207,6 +213,11 @@ storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
 tests/Feature/ExportMatchReview/ExportReviewContractTest.php
 tests/Feature/ExportMatchReview/ExportReviewMigrationTest.php
+tests/Feature/ExportMatchReview/ConfirmExportReviewTest.php
+tests/Feature/ExportMatchReview/ConfirmedExportManifestTest.php
+tests/Feature/ExportMatchReview/ExportReviewPanelTest.php
+tests/Feature/ExportMatchReview/ExportReviewRaceTest.php
+tests/Feature/ExportMatchReview/ExportReviewRouteTest.php
 tests/Feature/ExportMatchReview/FingerprintPlaylistTest.php
 tests/Feature/ExportMatchReview/PrepareExportReviewTest.php
 tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
