@@ -886,11 +886,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 3.1 Cykl świeżości, unique job i granice 28/30 dni przechodzą testy
-- [x] 3.2 Joby nie serializują sekretów, a awaria nie pozoruje świeżości
-- [x] 3.3 Harmonogram zawiera dokładnie jedno codzienne uruchomienie cyklu
-- [x] 3.4 Regresja importu i banku przechodzi
-- [x] 3.5 Widoki, formatowanie i manifest źródła fazy przechodzą
+- [x] 3.1 Cykl świeżości, unique job i granice 28/30 dni przechodzą testy — ce7e4e6
+- [x] 3.2 Joby nie serializują sekretów, a awaria nie pozoruje świeżości — ce7e4e6
+- [x] 3.3 Harmonogram zawiera dokładnie jedno codzienne uruchomienie cyklu — ce7e4e6
+- [x] 3.4 Regresja importu i banku przechodzi — ce7e4e6
+- [x] 3.5 Widoki, formatowanie i manifest źródła fazy przechodzą — ce7e4e6
 
 #### Manual
 
@@ -901,11 +901,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [ ] 4.1 Reader Spotify i port efemerycznego dostępu przechodzą macierz bez sieci
-- [ ] 4.2 Linked-account import i wszystkie odmowy Spotify przechodzą testy feature
-- [ ] 4.3 Unlink zachowuje bank i niesekretne pochodzenie playlisty
-- [ ] 4.4 Regresja poprawionego S-04 oraz F-01 przechodzi
-- [ ] 4.5 Formatowanie PHP i manifest źródła fazy przechodzą
+- [x] 4.1 Reader Spotify i port efemerycznego dostępu przechodzą macierz bez sieci
+- [x] 4.2 Linked-account import i wszystkie odmowy Spotify przechodzą testy feature
+- [x] 4.3 Unlink zachowuje bank i niesekretne pochodzenie playlisty
+- [x] 4.4 Regresja poprawionego S-04 oraz F-01 przechodzi
+- [x] 4.5 Formatowanie PHP i manifest źródła fazy przechodzą
 
 #### Manual
 

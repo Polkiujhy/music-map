@@ -7,6 +7,10 @@ use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Integrations\PlaylistImport\ImportResult;
 use App\Integrations\PlaylistImport\PlaylistShareUrlParser;
 use App\Integrations\PlaylistImport\PlaylistSourceReaderRegistry;
+use App\Integrations\PlaylistImport\Providers\SpotifyPlaylistReader;
+use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
+use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
+use App\Integrations\StreamingAccounts\StreamingAccessFailure;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,6 +21,7 @@ final readonly class ImportPlaylist
         private PlaylistShareUrlParser $parser,
         private PlaylistSourceReaderRegistry $readers,
         private ReplaceImportedPlaylist $replace,
+        private WithStreamingAccess $withStreamingAccess,
     ) {}
 
     public function handle(User $user, string $submittedUrl): ImportResult
@@ -28,17 +33,53 @@ final readonly class ImportPlaylist
             return $this->failure($reference, null, $correlationId);
         }
 
-        $reader = $this->readers->readerFor($reference->provider);
+        $streamingAccountId = null;
 
-        if ($reader === null) {
-            $code = $reference->provider === StreamingProvider::Spotify
-                ? ImportFailureCode::LinkedAccountRequired
-                : ImportFailureCode::UnsupportedProvider;
+        if ($reference->provider === StreamingProvider::Spotify) {
+            $account = $user->streamingAccounts()
+                ->where('provider', StreamingProvider::Spotify->value)
+                ->first();
 
-            return $this->failure($code, $reference->provider, $correlationId);
+            if ($account === null) {
+                return $this->failure(
+                    ImportFailureCode::LinkedAccountRequired,
+                    StreamingProvider::Spotify,
+                    $correlationId,
+                );
+            }
+
+            $snapshot = null;
+            $accessResult = $this->withStreamingAccess->handle(
+                $user,
+                $account,
+                SpotifyPlaylistReader::REQUIRED_SCOPES,
+                function (StreamingAccessContext $access) use ($account, $reference, &$snapshot): void {
+                    if ($access->provider !== StreamingProvider::Spotify
+                        || $access->providerAccountId !== $account->provider_account_id) {
+                        $snapshot = ImportFailureCode::ReauthorizationRequired;
+
+                        return;
+                    }
+
+                    $snapshot = $this->readers->readerFor(StreamingProvider::Spotify)?->read($reference, $access)
+                        ?? ImportFailureCode::UnsupportedProvider;
+                },
+            );
+
+            if (! $accessResult->successful) {
+                return $this->failure(
+                    $this->mapAccessFailure($accessResult->failure),
+                    StreamingProvider::Spotify,
+                    $correlationId,
+                );
+            }
+
+            $snapshot ??= ImportFailureCode::InvalidResponse;
+            $streamingAccountId = $account->getKey();
+        } else {
+            $reader = $this->readers->readerFor($reference->provider);
+            $snapshot = $reader?->read($reference) ?? ImportFailureCode::UnsupportedProvider;
         }
-
-        $snapshot = $reader->read($reference);
 
         if ($snapshot instanceof ImportFailureCode) {
             return $this->failure($snapshot, $reference->provider, $correlationId);
@@ -48,7 +89,11 @@ final readonly class ImportPlaylist
             ->where('source_provider', $reference->provider->value)
             ->where('source_playlist_id', $reference->providerPlaylistId)
             ->exists();
-        $playlist = $this->replace->handle($user, $snapshot);
+        $playlist = $this->replace->handle(
+            $user,
+            $snapshot,
+            streamingAccountId: $streamingAccountId,
+        );
 
         return $wasImported
             ? ImportResult::refreshed($playlist->getKey(), $correlationId)
@@ -67,5 +112,18 @@ final readonly class ImportPlaylist
         ]);
 
         return ImportResult::failure($code, $provider, $correlationId);
+    }
+
+    private function mapAccessFailure(?StreamingAccessFailure $failure): ImportFailureCode
+    {
+        return match ($failure) {
+            StreamingAccessFailure::ReconnectRequired,
+            StreamingAccessFailure::StaleCredential => ImportFailureCode::ReauthorizationRequired,
+            StreamingAccessFailure::MissingScope => ImportFailureCode::InsufficientScope,
+            StreamingAccessFailure::RateLimited => ImportFailureCode::RateLimited,
+            StreamingAccessFailure::QuotaExceeded => ImportFailureCode::QuotaLimited,
+            StreamingAccessFailure::TemporarilyUnavailable,
+            null => ImportFailureCode::ProviderUnavailable,
+        };
     }
 }

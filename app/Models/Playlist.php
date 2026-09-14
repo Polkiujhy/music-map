@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'source_provider',
+    'streaming_account_id',
     'source_playlist_id',
     'source_account_id',
     'canonical_source_url',
@@ -32,6 +33,16 @@ class Playlist extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The optional account used to read this source. Unlinking keeps the bank snapshot.
+     *
+     * @return BelongsTo<StreamingAccount, $this>
+     */
+    public function streamingAccount(): BelongsTo
+    {
+        return $this->belongsTo(StreamingAccount::class);
     }
 
     /**

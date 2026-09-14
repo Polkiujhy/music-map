@@ -11,9 +11,13 @@ use Illuminate\Support\Facades\DB;
 
 final class ReplaceImportedPlaylist
 {
-    public function handle(User $user, PlaylistSnapshot $snapshot, bool $markImported = true): Playlist
-    {
-        return DB::transaction(function () use ($user, $snapshot, $markImported): Playlist {
+    public function handle(
+        User $user,
+        PlaylistSnapshot $snapshot,
+        bool $markImported = true,
+        ?int $streamingAccountId = null,
+    ): Playlist {
+        return DB::transaction(function () use ($user, $snapshot, $markImported, $streamingAccountId): Playlist {
             $identity = [
                 'user_id' => $user->getKey(),
                 'source_provider' => $snapshot->provider->value,
@@ -23,7 +27,7 @@ final class ReplaceImportedPlaylist
             DB::table('playlists')->upsert(
                 [[
                     ...$identity,
-                    ...$this->playlistAttributes($snapshot, now()),
+                    ...$this->playlistAttributes($snapshot, now(), $streamingAccountId),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]],
@@ -40,6 +44,7 @@ final class ReplaceImportedPlaylist
             $playlist->update($this->playlistAttributes(
                 $snapshot,
                 $markImported ? now() : $playlist->imported_at,
+                $streamingAccountId,
             ));
             $playlist->items()->delete();
             $playlist->items()->createMany(array_map(
@@ -65,10 +70,14 @@ final class ReplaceImportedPlaylist
     /**
      * @return array<string, mixed>
      */
-    private function playlistAttributes(PlaylistSnapshot $snapshot, DateTimeInterface $importedAt): array
-    {
+    private function playlistAttributes(
+        PlaylistSnapshot $snapshot,
+        DateTimeInterface $importedAt,
+        ?int $streamingAccountId,
+    ): array {
         return [
             'source_account_id' => $snapshot->sourceAccountId,
+            'streaming_account_id' => $streamingAccountId,
             'canonical_source_url' => $snapshot->canonicalUrl,
             'provider_revision' => $snapshot->providerRevision,
             'name' => $snapshot->name,

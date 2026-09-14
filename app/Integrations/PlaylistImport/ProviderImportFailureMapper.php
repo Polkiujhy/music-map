@@ -15,9 +15,11 @@ final class ProviderImportFailureMapper
     {
         $status = $response->status();
         $reason = self::boundedReason($response->json('error.errors.0.reason'))
-            ?? self::boundedReason($response->json('error.status'));
+            ?? self::boundedReason($response->json('error.reason'))
+            ?? self::boundedReason($response->json('error.status'))
+            ?? self::boundedReason($response->json('error.code'));
 
-        if (in_array($reason, ['quotaExceeded', 'dailyLimitExceeded'], true)) {
+        if (in_array($reason, ['quotaExceeded', 'dailyLimitExceeded', 'QUOTA_EXCEEDED'], true)) {
             return ImportFailureCode::QuotaLimited;
         }
 

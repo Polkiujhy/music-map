@@ -9,6 +9,7 @@ use App\Integrations\PlaylistImport\Data\PlaylistReference;
 use App\Integrations\PlaylistImport\Data\PlaylistSnapshot;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Integrations\PlaylistImport\ProviderImportFailureMapper;
+use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -21,9 +22,11 @@ final readonly class YouTubePlaylistReader implements PlaylistSourceReader
         private ?string $apiKey = null,
     ) {}
 
-    public function read(PlaylistReference $reference): PlaylistSnapshot|ImportFailureCode
-    {
-        if ($reference->provider !== StreamingProvider::YouTube) {
+    public function read(
+        PlaylistReference $reference,
+        ?StreamingAccessContext $access = null,
+    ): PlaylistSnapshot|ImportFailureCode {
+        if ($reference->provider !== StreamingProvider::YouTube || $access !== null) {
             return ImportFailureCode::UnsupportedProvider;
         }
 
