@@ -529,10 +529,10 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [x] 1.1 Migracje synchronizacji stosują się i cofają z poprawnymi ograniczeniami
-- [x] 1.2 Modele, enumy, relacje i fabryki spełniają kontrakt trwałego stanu
-- [x] 1.3 Fingerprint i pełna macierz kierunków przechodzą w testach jednostkowych
-- [x] 1.4 Pełne composer test, Pint i build przechodzą
+- [x] 1.1 Migracje synchronizacji stosują się i cofają z poprawnymi ograniczeniami — 0ba4bed
+- [x] 1.2 Modele, enumy, relacje i fabryki spełniają kontrakt trwałego stanu — 0ba4bed
+- [x] 1.3 Fingerprint i pełna macierz kierunków przechodzą w testach jednostkowych — 0ba4bed
+- [x] 1.4 Pełne composer test, Pint i build przechodzą — 0ba4bed
 
 #### Manual
 
@@ -542,11 +542,11 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [ ] 2.1 Readery OAuth potwierdzają właściciela, limit i stabilne błędy
-- [ ] 2.2 Spotify wymaga zakresów zapisu publicznego i prywatnego oraz reconnect
-- [ ] 2.3 Prepare i confirm chronią autoryzację, własność i aktualność preview
-- [ ] 2.4 Aktywacja przed wykonaniem nie zapisuje do dostawcy ani admission
-- [ ] 2.5 Pełne composer test, Pint i build przechodzą
+- [x] 2.1 Readery OAuth potwierdzają właściciela, limit i stabilne błędy
+- [x] 2.2 Spotify wymaga zakresów zapisu publicznego i prywatnego oraz reconnect
+- [x] 2.3 Prepare i confirm chronią autoryzację, własność i aktualność preview
+- [x] 2.4 Aktywacja przed wykonaniem nie zapisuje do dostawcy ani admission
+- [x] 2.5 Pełne composer test, Pint i build przechodzą
 
 #### Manual
 

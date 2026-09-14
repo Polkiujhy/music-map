@@ -4,6 +4,7 @@ use App\Providers\AppServiceProvider;
 use App\Providers\ExportMatchingServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\PlaylistImportServiceProvider;
+use App\Providers\PlaylistSyncServiceProvider;
 use App\Providers\StreamingAccountsServiceProvider;
 use App\Providers\YouTubeWriteAdmissionServiceProvider;
 
@@ -12,6 +13,7 @@ return [
     ExportMatchingServiceProvider::class,
     FortifyServiceProvider::class,
     PlaylistImportServiceProvider::class,
+    PlaylistSyncServiceProvider::class,
     StreamingAccountsServiceProvider::class,
     YouTubeWriteAdmissionServiceProvider::class,
 ];

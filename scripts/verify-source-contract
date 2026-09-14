@@ -37,6 +37,8 @@ app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
 app/Actions/PlaylistSync/DeterminePlaylistSyncDirection.php
 app/Actions/PlaylistSync/FingerprintSourcePlaylist.php
+app/Actions/PlaylistSync/ConfirmPlaylistSynchronization.php
+app/Actions/PlaylistSync/PreparePlaylistSynchronization.php
 app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
@@ -51,12 +53,14 @@ app/Http/Controllers/PlaylistEditingController.php
 app/Http/Controllers/PlaylistExportReviewController.php
 app/Http/Controllers/PlaylistImportController.php
 app/Http/Controllers/PlaylistReimportController.php
+app/Http/Controllers/PlaylistSynchronizationController.php
 app/Http/Controllers/StreamingAccountController.php
 app/Http/Controllers/StreamingAccountOAuthController.php
 app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Requests/ConfirmExportReviewRequest.php
 app/Http/Requests/ImportPlaylistRequest.php
 app/Http/Requests/StartExportReviewRequest.php
+app/Http/Requests/ConfirmPlaylistSynchronizationRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
 app/Enums/ExportDestinationType.php
@@ -79,6 +83,11 @@ app/Integrations/PlaylistImport/ProviderImportFailureMapper.php
 app/Integrations/PlaylistImport/Providers/SpotifyPlaylistReader.php
 app/Integrations/PlaylistImport/Providers/YouTubePlaylistReader.php
 app/Integrations/PlaylistSync/Data/SourcePlaylistSnapshot.php
+app/Integrations/PlaylistSync/Contracts/SourcePlaylistReader.php
+app/Integrations/PlaylistSync/Providers/SpotifySourcePlaylistReader.php
+app/Integrations/PlaylistSync/Providers/YouTubeSourcePlaylistReader.php
+app/Integrations/PlaylistSync/SourcePlaylistReaderRegistry.php
+app/Integrations/PlaylistSync/SourceSyncFailure.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
 app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
@@ -147,6 +156,7 @@ app/Providers/AppServiceProvider.php
 app/Providers/ExportMatchingServiceProvider.php
 app/Providers/FortifyServiceProvider.php
 app/Providers/PlaylistImportServiceProvider.php
+app/Providers/PlaylistSyncServiceProvider.php
 app/Providers/StreamingAccountsServiceProvider.php
 app/Providers/YouTubeWriteAdmissionServiceProvider.php
 app/Services/Auth/ResolveGoogleIdentity.php
@@ -251,6 +261,7 @@ tests/Feature/Playlists/SpotifyPlaylistImportTest.php
 tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationMigrationTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationModelTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationActivationTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
@@ -303,6 +314,8 @@ tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
 tests/Unit/Playlists/FingerprintPlaylistContentTest.php
 tests/Unit/PlaylistSync/DeterminePlaylistSyncDirectionTest.php
 tests/Unit/PlaylistSync/FingerprintSourcePlaylistTest.php
+tests/Unit/Integrations/PlaylistSync/SpotifySourcePlaylistReaderTest.php
+tests/Unit/Integrations/PlaylistSync/YouTubeSourcePlaylistReaderTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'
 

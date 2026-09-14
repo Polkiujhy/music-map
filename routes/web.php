@@ -6,6 +6,7 @@ use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistExportReviewController;
 use App\Http\Controllers\PlaylistImportController;
 use App\Http\Controllers\PlaylistReimportController;
+use App\Http\Controllers\PlaylistSynchronizationController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -77,6 +78,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->whereNumber('playlist')
         ->middleware('throttle:playlist-import')
         ->name('bank.playlists.reimport');
+    Route::post('/bank/playlists/{playlist}/synchronization/prepare', [PlaylistSynchronizationController::class, 'prepare'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.prepare');
+    Route::post('/bank/playlists/{playlist}/synchronization/confirm', [PlaylistSynchronizationController::class, 'confirm'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.confirm');
     Route::post('/bank/playlists/{playlist}/export-reviews', [PlaylistExportReviewController::class, 'store'])
         ->middleware('throttle:export-review-start')
         ->name('export-reviews.store');

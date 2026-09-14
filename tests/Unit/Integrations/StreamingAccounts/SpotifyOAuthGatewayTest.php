@@ -31,7 +31,7 @@ class SpotifyOAuthGatewayTest extends TestCase
         $this->assertSame('state-canary', $query['state']);
         $this->assertSame('https://music-map.example.test/integrations/spotify/callback', $query['redirect_uri']);
         $this->assertSame(
-            'playlist-modify-private playlist-read-collaborative playlist-read-private user-read-private',
+            'playlist-modify-private playlist-modify-public playlist-read-collaborative playlist-read-private user-read-private',
             $query['scope'],
         );
     }
@@ -39,8 +39,8 @@ class SpotifyOAuthGatewayTest extends TestCase
     public function test_exchange_refresh_identity_and_noop_revoke_keep_tokens_ephemeral(): void
     {
         Http::fakeSequence()
-            ->push(['access_token' => 'access-one', 'refresh_token' => 'refresh-one', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private'])
-            ->push(['access_token' => 'access-two', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private'])
+            ->push(['access_token' => 'access-one', 'refresh_token' => 'refresh-one', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public'])
+            ->push(['access_token' => 'access-two', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public'])
             ->push(['id' => 'stable-account', 'display_name' => 'Canary', 'country' => 'gb']);
 
         $gateway = new SpotifyOAuthGateway;
