@@ -195,13 +195,31 @@ class ReserveYouTubeWriteTest extends TestCase
 
     public function test_database_error_rolls_back_the_admission_and_state_increment(): void
     {
-        DB::unprepared(<<<'SQL'
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            DB::unprepared(<<<'SQL'
+CREATE FUNCTION reject_quota_state_update()
+RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'forced state failure';
+END;
+$$ LANGUAGE plpgsql
+SQL);
+            DB::unprepared(<<<'SQL'
+CREATE TRIGGER reject_quota_state_update
+BEFORE UPDATE ON youtube_write_quota_states
+FOR EACH ROW EXECUTE FUNCTION reject_quota_state_update()
+SQL);
+        } else {
+            DB::unprepared(<<<'SQL'
 CREATE TRIGGER reject_quota_state_update
 BEFORE UPDATE ON youtube_write_quota_states
 BEGIN
     SELECT RAISE(ABORT, 'forced state failure');
 END
 SQL);
+        }
 
         try {
             app(AdmitYouTubeWrite::class)->admit(YouTubeWriteOperationType::ManagedExport, 'rollback');
@@ -210,7 +228,12 @@ SQL);
             $this->assertSame(0, YouTubeWriteAdmission::query()->count());
             $this->assertSame(0, YouTubeWriteQuotaState::query()->firstOrFail()->admitted_count);
         } finally {
-            DB::unprepared('DROP TRIGGER IF EXISTS reject_quota_state_update');
+            if ($driver === 'pgsql') {
+                DB::unprepared('DROP TRIGGER IF EXISTS reject_quota_state_update ON youtube_write_quota_states');
+                DB::unprepared('DROP FUNCTION IF EXISTS reject_quota_state_update()');
+            } else {
+                DB::unprepared('DROP TRIGGER IF EXISTS reject_quota_state_update');
+            }
         }
     }
 

@@ -549,10 +549,10 @@ zmiany i nowej decyzji produktowej.
 
 #### Automated
 
-- [x] 2.1 Addytywna migracja, ograniczenia i bezpieczny rollback przechodzą
-- [x] 2.2 Sekwencyjna macierz limitu, retry, konfiguracji, czasu i awarii przechodzi
-- [x] 2.3 Manifest źródła po dodaniu implementacji przechodzi
-- [x] 2.4 Regresje PHP nie występują
+- [x] 2.1 Addytywna migracja, ograniczenia i bezpieczny rollback przechodzą — 8722c66
+- [x] 2.2 Sekwencyjna macierz limitu, retry, konfiguracji, czasu i awarii przechodzi — 8722c66
+- [x] 2.3 Manifest źródła po dodaniu implementacji przechodzi — 8722c66
+- [x] 2.4 Regresje PHP nie występują — 8722c66
 
 #### Manual
 
@@ -563,10 +563,10 @@ zmiany i nowej decyzji produktowej.
 
 #### Automated
 
-- [ ] 3.1 Wyścigi na PostgreSQL przechodzą
-- [ ] 3.2 Pełny zestaw aplikacji przechodzi
-- [ ] 3.3 Formatowanie i produkcyjny frontend przechodzą
-- [ ] 3.4 Kontrakt źródła jest kompletny
+- [x] 3.1 Wyścigi na PostgreSQL przechodzą
+- [x] 3.2 Pełny zestaw aplikacji przechodzi
+- [x] 3.3 Formatowanie i produkcyjny frontend przechodzą
+- [x] 3.4 Kontrakt źródła jest kompletny
 
 #### Manual
 

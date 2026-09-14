@@ -147,6 +147,30 @@ does not include application-user streaming OAuth described above. Never pass
 probe credentials on the command line or write their values to source,
 application storage, output, or logs.
 
+## YouTube write admission
+
+Every future export or synchronization that writes to YouTube must first persist
+its own stable logical operation ID. It then calls the `AdmitYouTubeWrite` port,
+outside any consumer-owned database transaction, with the same operation type
+and ID on every retry. The call returns only after its reservation transaction
+has committed.
+
+Only `admitted-new` and `admitted-existing` permit the consumer to begin its
+first YouTube mutation. `limit-reached` and
+`YouTubeWriteAdmissionUnavailable` both mean that the consumer performs zero
+YouTube mutations. A failure after an admitted result does not refund the
+reservation; retrying the same type-and-ID pair recovers it without consuming a
+second slot.
+
+`YOUTUBE_WRITE_DAILY_LIMIT` is the symbolic runtime setting for the global
+positive daily limit and defaults to `5`. The first new operation after local
+midnight in `America/Los_Angeles` snapshots that day's value. The additive
+`youtube_write_quota_states` and `youtube_write_admissions` schema must be
+applied through the published supervised `schema-release` capability before
+code that uses this port is released. Manager remains an external PaaS: it
+supplies runtime configuration and the schema-release capability, while the
+application owns admission behavior and all future consumer integration.
+
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the

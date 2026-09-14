@@ -283,6 +283,7 @@ tests/Unit/Integrations/StreamingAccounts/YouTubeOAuthGatewayTest.php
 tests/Unit/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionContractTest.php
 tests/Feature/Integrations/YouTubeWriteAdmission/ReserveYouTubeWriteTest.php
 tests/Feature/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionMigrationTest.php
+tests/Feature/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionPostgresTest.php
 tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
