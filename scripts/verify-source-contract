@@ -114,6 +114,11 @@ app/Integrations/ExportMatching/SpotifyClientCredentials.php
 app/Integrations/ExportMatching/SpotifyMatchClassifier.php
 app/Integrations/ExportMatching/YouTubeMatchClassifier.php
 app/Integrations/ExportMatching/YouTubeSearchBudget.php
+app/Integrations/YouTubeWriteAdmission/Contracts/AdmitYouTubeWrite.php
+app/Integrations/YouTubeWriteAdmission/Data/YouTubeWriteAdmissionResult.php
+app/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionStatus.php
+app/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionUnavailable.php
+app/Integrations/YouTubeWriteAdmission/YouTubeWriteOperationType.php
 app/Jobs/PrepareExportReview.php
 app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
@@ -270,6 +275,7 @@ tests/Unit/Integrations/PlatformAccess/YouTubeProbeTest.php
 tests/Unit/Integrations/StreamingAccounts/SpotifyOAuthGatewayTest.php
 tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php
 tests/Unit/Integrations/StreamingAccounts/YouTubeOAuthGatewayTest.php
+tests/Unit/Integrations/YouTubeWriteAdmission/YouTubeWriteAdmissionContractTest.php
 tests/Unit/PostgresStartupWaiterTest.php
 tests/Unit/ProductionInfrastructureTest.php
 tests/Unit/ReleaseManifestContractTest.php
