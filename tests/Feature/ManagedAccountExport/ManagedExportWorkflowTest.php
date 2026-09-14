@@ -253,6 +253,8 @@ class ManagedExportWorkflowTest extends TestCase
     {
         $operation = $this->operation($provider);
         $this->resolveAttempt($operation);
+        // A settled target is outside the initial YouTube visibility grace period.
+        $this->travel(6)->minutes();
         $gateway = new WorkflowManagedPlaylistGateway($provider, missing: true);
         $this->bindWorkflow($gateway, admission: new WorkflowYouTubeAdmission);
 

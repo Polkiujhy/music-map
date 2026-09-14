@@ -481,7 +481,7 @@ playlist. Cleanup dotyczy tylko zatwierdzonych danych testowych, nie S-10.
 
 #### Manual
 
-- [ ] 5.1 Schemat zachowuje własność, restrykcyjne usuwanie i przyszłe relacje S-09
+- [x] 5.1 Schemat zachowuje własność, restrykcyjne usuwanie i przyszłe relacje S-09
 - [ ] 5.2 Persistence i writerzy używają właściwych ID bez sekretów i szczegółów PaaS
 - [ ] 5.3 Produkcyjny kontrakt managed write i rotacji jest potwierdzony dla zwykłego workera
 - [ ] 5.4 Standardowe role queue i scheduler obsługują sync bez rozszerzenia PaaS

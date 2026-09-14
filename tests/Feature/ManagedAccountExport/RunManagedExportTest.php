@@ -240,6 +240,68 @@ class RunManagedExportTest extends TestCase
         $this->assertSame(ExportOperationStatus::Succeeded, $operation->fresh()->status);
     }
 
+    public function test_fresh_youtube_target_missing_retries_same_locator_and_operation_then_succeeds(): void
+    {
+        $operation = $this->operation(StreamingProvider::YouTube);
+        $gateway = new RecordingManagedPlaylistGateway(StreamingProvider::YouTube);
+        $gateway->reconcileFailure = new ManagedProviderFailure(ManagedExportFailureCode::TargetMissing);
+        $admission = new RecordingYouTubeAdmission(new ManagedExportEventLog);
+        $this->bindFakes($gateway, admission: $admission);
+        $action = app(RunManagedExport::class);
+
+        $this->assertSame(60, $action->handle($operation->id));
+        $attempt = $operation->playlistExport->targetAttempts()->firstOrFail();
+        $this->assertSame(ExportOperationStatus::Queued, $operation->fresh()->status);
+        $this->assertSame('provider-target', $attempt->provider_playlist_id);
+
+        $gateway->reconcileFailure = null;
+        $this->travel(61)->seconds();
+        $action->handle($operation->id);
+
+        $this->assertSame(ExportOperationStatus::Succeeded, $operation->fresh()->status);
+        $this->assertSame(['find', 'create', 'reconcile', 'inspect', 'reconcile'], $gateway->calls);
+        $this->assertSame([$operation->id, $operation->id], $admission->operationIds);
+        $this->assertSame($attempt->getAttributes(), $attempt->fresh()->getAttributes());
+    }
+
+    public function test_fresh_youtube_target_missing_exhausts_budget_without_recreate(): void
+    {
+        $operation = $this->operation(StreamingProvider::YouTube);
+        $gateway = new RecordingManagedPlaylistGateway(StreamingProvider::YouTube, missing: true);
+        $gateway->reconcileFailure = new ManagedProviderFailure(ManagedExportFailureCode::TargetMissing);
+        $this->bindFakes($gateway, admission: new RecordingYouTubeAdmission(new ManagedExportEventLog));
+        $action = app(RunManagedExport::class);
+
+        $this->assertSame(60, $action->handle($operation->id));
+        $this->travel(61)->seconds();
+        $this->assertSame(60, $action->handle($operation->id));
+        $this->travel(61)->seconds();
+        $this->assertNull($action->handle($operation->id));
+
+        $this->assertSame(ExportOperationStatus::PartialFailed, $operation->fresh()->status);
+        $this->assertSame(3, $operation->fresh()->automatic_claim_count);
+        $this->assertSame(['find', 'create', 'reconcile', 'inspect', 'inspect'], $gateway->calls);
+        $this->assertSame(1, $operation->playlistExport->targetAttempts()->count());
+    }
+
+    public function test_old_youtube_target_missing_still_requires_explicit_recreate(): void
+    {
+        $operation = $this->operation(StreamingProvider::YouTube);
+        $gateway = new RecordingManagedPlaylistGateway(StreamingProvider::YouTube, missing: true);
+        $operation->playlistExport->targetAttempts()->firstOrFail()->forceFill([
+            'status' => PlaylistExportTargetAttempt::STATUS_RESOLVED,
+            'provider_playlist_id' => 'old-target',
+            'canonical_url' => 'https://www.youtube.com/playlist?list=old-target',
+            'create_started_at' => now()->subMinutes(6),
+            'create_completed_at' => now()->subMinutes(5),
+        ])->save();
+        $this->bindFakes($gateway, admission: new RecordingYouTubeAdmission(new ManagedExportEventLog));
+
+        $this->assertNull(app(RunManagedExport::class)->handle($operation->id));
+        $this->assertSame(ExportOperationStatus::RecreateRequired, $operation->fresh()->status);
+        $this->assertSame(['inspect'], $gateway->calls);
+    }
+
     private function operation(StreamingProvider $provider = StreamingProvider::Spotify): ExportOperation
     {
         $source = Playlist::factory()->create([
