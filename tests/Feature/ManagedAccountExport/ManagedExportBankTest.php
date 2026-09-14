@@ -23,7 +23,10 @@ class ManagedExportBankTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.managed_export.providers.spotify.account_id' => 'runtime-owner']);
+        config([
+            'services.managed_export.providers.spotify.account_id' => 'runtime-owner',
+            'services.managed_export.providers.youtube.account_id' => 'youtube-runtime-owner',
+        ]);
     }
 
     public function test_bank_uses_bounded_latest_per_playlist_provider_and_keeps_historical_link_after_account_change(): void
@@ -69,10 +72,15 @@ class ManagedExportBankTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        $this->actingAs($source->user)->get(route('bank.index'))
+        $response = $this->actingAs($source->user)->get(route('bank.index'))
             ->assertOk()
-            ->assertSee('Nie udało się dokończyć przenoszenia')
-            ->assertDontSee('Rozpocznij przegląd');
+            ->assertSee('Nie udało się dokończyć przenoszenia');
+
+        $this->assertSame(
+            1,
+            substr_count($response->getContent(), '>Rozpocznij przegląd</button>'),
+            'The active Spotify operation must block only the matching Spotify offer; YouTube remains available.',
+        );
     }
 
     public function test_materialized_target_is_rendered_once_read_only_and_direct_mutation_routes_fail_closed(): void
