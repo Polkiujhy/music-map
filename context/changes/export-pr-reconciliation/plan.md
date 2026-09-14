@@ -64,4 +64,11 @@ Live smoke istniejących PR-ów pozostaje warunkiem wdrożenia, poza lokalnym sc
 
 - [x] 4.1 SQLite i PostgreSQL przechodzą na scalonym kodzie
 - [x] 4.2 Pint, build i source contract przechodzą
-- [ ] 4.3 Wynik scalenia zapisany w lokalnych commitach i dokumentacji
+- [x] 4.3 Wynik scalenia zapisany w lokalnych commitach i dokumentacji
+
+### Commit ledger
+
+- Phase 1: #61 `c668166`, #59 `9cd6d7e`, #62 i rozstrzygnięcie integracji `97e1086`.
+- Phase 2–3: `97e1086` — jeden eksport, source guards, import/checkpoint serialization.
+- Phase 4: `97e1086` — kod i testy; wyniki w `implementation.md`, domknięte w epilogu.
+- Publikacja, deploy i live smoke nie są wykonane ani oznaczone jako zakończone.

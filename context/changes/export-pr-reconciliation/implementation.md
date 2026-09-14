@@ -86,6 +86,6 @@ Końcowe wyniki z 2026-09-14:
 - `composer validate --strict --no-interaction`: PASS.
 - `git diff --check`: PASS.
 
-PostgreSQL 15 działa w jednorazowym katalogu poza repo; sterownik pdo_pgsql jest
-ładowany tylko dla procesu testowego. Baza aplikacji i konfiguracja hosta pozostają
+PostgreSQL 15 uruchomiono w jednorazowym katalogu poza repo; sterownik pdo_pgsql
+załadowano tylko dla procesu testowego. Baza aplikacji i konfiguracja hosta pozostały
 bez zmian. CI osobno używa PostgreSQL 18; nie zastępujemy jego wyniku lokalnym testem.
