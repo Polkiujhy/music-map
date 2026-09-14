@@ -871,8 +871,8 @@ observable release precondition, not Manager implementation.
 
 #### Manual
 
-- [ ] 1.6 Schemat nie zawiera poświadczeń ani globalnej blokady publicznego źródła
-- [ ] 1.7 S-02 i S-04 używają jednego kontraktu providera bez nakładających się modeli
+- [x] 1.6 Schemat nie zawiera poświadczeń ani globalnej blokady publicznego źródła
+- [x] 1.7 S-02 i S-04 używają jednego kontraktu providera bez nakładających się modeli
 
 ### Phase 2: Publiczny import YouTube od końca do końca
 
@@ -887,10 +887,10 @@ observable release precondition, not Manager implementation.
 
 #### Manual
 
-- [ ] 2.6 Formularz, błędy i karty przechodzą weryfikację dostępności i responsywności
-- [ ] 2.7 Publiczna playlista YouTube przechodzi import i atomowy reimport live
-- [ ] 2.9 Właściciel akceptuje Terms, Privacy, zgodę i atrybucję przed live smoke
-- [ ] 2.10 PaaS dostarcza ograniczony YOUTUBE_API_KEY bez ujawnienia wartości
+- [x] 2.6 Formularz, błędy i karty przechodzą weryfikację dostępności i responsywności
+- [x] 2.7 Publiczna playlista YouTube przechodzi import i atomowy reimport live
+- [x] 2.9 Właściciel akceptuje Terms, Privacy, zgodę i atrybucję przed live smoke
+- [x] 2.10 PaaS dostarcza ograniczony YOUTUBE_API_KEY bez ujawnienia wartości
 
 ### Phase 3: Świeżość i zgodność danych YouTube
 
@@ -904,8 +904,8 @@ observable release precondition, not Manager implementation.
 
 #### Manual
 
-- [ ] 3.6 Właściciel akceptuje atrybucję, linki i interpretację polityki danych YouTube
-- [ ] 3.7 Bank nie pokazuje przeterminowanych danych API jako aktualnych
+- [x] 3.6 Właściciel akceptuje atrybucję, linki i interpretację polityki danych YouTube
+- [x] 3.7 Bank nie pokazuje przeterminowanych danych API jako aktualnych
 
 ### Phase 4: Import Spotify przez aplikacyjny kontrakt S-04
 
@@ -919,8 +919,8 @@ observable release precondition, not Manager implementation.
 
 #### Manual
 
-- [ ] 4.6 Konto właściciela i współpracownika przechodzą import Spotify live
-- [ ] 4.7 Reconnect i niewłaściwe konto kończą się bezpieczną odmową bez wycieku
+- [x] 4.6 Konto właściciela i współpracownika przechodzą import Spotify live
+- [x] 4.7 Reconnect i niewłaściwe konto kończą się bezpieczną odmową bez wycieku
 
 ### Phase 5: Utwardzenie, zgodność repozytorium i wydanie
 
@@ -935,7 +935,7 @@ observable release precondition, not Manager implementation.
 
 #### Manual
 
-- [ ] 5.7 Kontrolowane wydanie schematu i HTTPS smoke są udokumentowane
-- [ ] 5.8 Oba źródła przechodzą import, reimport i czytelne odmowy
-- [ ] 5.9 Bank przechodzi końcową weryfikację dostępności i atrybucji
-- [ ] 5.10 Baza, joby, HTML i logi nie zawierają sekretów ani surowych danych providera
+- [x] 5.7 Kontrolowane wydanie schematu i HTTPS smoke są udokumentowane
+- [x] 5.8 Oba źródła przechodzą import, reimport i czytelne odmowy
+- [x] 5.9 Bank przechodzi końcową weryfikację dostępności i atrybucji
+- [x] 5.10 Baza, joby, HTML i logi nie zawierają sekretów ani surowych danych providera
