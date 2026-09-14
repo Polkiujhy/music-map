@@ -83,6 +83,30 @@ class PrepareExportReviewTest extends TestCase
         $this->assertTrue($review->items()->get()->every(fn ($item): bool => $item->match_status === ExportMatchStatus::Matched));
     }
 
+    public function test_job_handles_empty_and_twenty_item_fixtures_with_bounded_fake_catalog_calls(): void
+    {
+        $emptyReview = $this->review(0);
+
+        $this->runJob($emptyReview);
+
+        $this->assertSame(ExportReviewStatus::Ready, $emptyReview->fresh()->status);
+        $this->assertSame(0, $emptyReview->items()->count());
+        Http::assertNothingSent();
+
+        $fullReview = $this->review(20);
+        Http::fake(fn (Request $request): mixed => $request->url() === 'https://accounts.spotify.com/api/token'
+            ? Http::response(['access_token' => 'token'])
+            : Http::response(['tracks' => ['items' => []]]));
+
+        $this->runJob($fullReview);
+
+        $fullReview->refresh();
+        $this->assertSame(ExportReviewStatus::Ready, $fullReview->status, (string) $fullReview->failure_code);
+        $this->assertSame(20, $fullReview->items()->count());
+        $this->assertSame(20, $fullReview->items()->where('match_status', ExportMatchStatus::Unavailable->value)->count());
+        Http::assertSentCount(21);
+    }
+
     public function test_operational_failure_never_publishes_partial_item_state(): void
     {
         $review = $this->review(2);
@@ -229,7 +253,7 @@ class PrepareExportReviewTest extends TestCase
     private function playlist(int $items): Playlist
     {
         $playlist = Playlist::factory()->create();
-        foreach (range(0, $items - 1) as $position) {
+        foreach ($items === 0 ? [] : range(0, $items - 1) as $position) {
             PlaylistItem::factory()->for($playlist)->create([
                 'position' => $position,
                 'title' => 'Canary Song '.$position,

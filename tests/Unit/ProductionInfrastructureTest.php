@@ -205,59 +205,33 @@ YAML,
         $this->assertStringNotContainsString('trivy image', strtolower($workflow));
     }
 
-    public function test_ci_runs_critical_application_contracts_against_isolated_postgresql(): void
+    public function test_ci_runs_full_application_suite_against_isolated_postgresql(): void
     {
         $workflow = $this->projectFile('.github/workflows/ci.yml');
+        $this->assertSame(1, preg_match(
+            '/^  postgres-smoke:\n(?<job>.*?)(?=^  source-security:)/ms',
+            $workflow,
+            $matches,
+        ));
+        $postgresJob = $matches['job'];
 
-        $this->assertStringContainsString("postgres-smoke:\n    needs: application", $workflow);
+        $this->assertStringContainsString('    needs: application', $postgresJob);
         $this->assertMatchesRegularExpression(
             '/image: postgres:18\.6-alpine@sha256:[0-9a-f]{64}/',
-            $workflow,
+            $postgresJob,
         );
-        $this->assertStringContainsString('extensions: pdo_pgsql, pcntl', $workflow);
-        $this->assertStringContainsString('DB_CONNECTION: pgsql', $workflow);
-        $this->assertStringContainsString('DB_DATABASE: music_map_ci', $workflow);
-        $this->assertStringContainsString('SESSION_DRIVER: array', $workflow);
-        $this->assertStringContainsString('CACHE_STORE: array', $workflow);
-        $this->assertStringContainsString('QUEUE_CONNECTION: sync', $workflow);
-        $this->assertStringContainsString('php artisan migrate:fresh --force --no-interaction', $workflow);
-        $this->assertStringContainsString('tests/Feature/Auth', $workflow);
+        $this->assertStringContainsString('extensions: pdo_pgsql, pcntl', $postgresJob);
+        $this->assertStringContainsString('DB_CONNECTION: pgsql', $postgresJob);
+        $this->assertStringContainsString('DB_DATABASE: music_map_ci', $postgresJob);
+        $this->assertStringContainsString('SESSION_DRIVER: array', $postgresJob);
+        $this->assertStringContainsString('CACHE_STORE: array', $postgresJob);
+        $this->assertStringContainsString('QUEUE_CONNECTION: sync', $postgresJob);
+        $this->assertStringContainsString('php artisan migrate:fresh --force --no-interaction', $postgresJob);
         $this->assertStringContainsString(
-            'tests/Feature/StreamingAccounts/StreamingAccountModelTest.php',
-            $workflow,
+            "      - name: Run full PHP test suite on PostgreSQL\n        run: php artisan test\n",
+            $postgresJob,
         );
-        $this->assertStringContainsString(
-            'tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/Playlists/PlaylistConcurrentImportTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/Playlists/PlaylistPersistenceTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/Playlists/PlaylistImportTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/Playlists/SpotifyPlaylistImportTest.php',
-            $workflow,
-        );
-        $this->assertStringContainsString(
-            'tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php',
-            $workflow,
-        );
+        $this->assertStringNotContainsString('tests/', $postgresJob);
         $this->assertStringNotContainsString('schema-release music-map --release-file', $workflow);
     }
 

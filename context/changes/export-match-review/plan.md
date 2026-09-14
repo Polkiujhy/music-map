@@ -646,12 +646,12 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [x] 3.1 Trasy egzekwują middleware, CSRF, throttle i owner-scoped 404
-- [x] 3.2 Livewire poprawnie obsługuje polling, progi czasu i trzy klasy wyników
-- [x] 3.3 Potwierdzenie atomowo aktualizuje bank i zamraża dokładny manifest
-- [x] 3.4 Pusty wynik, niekompletne decyzje i double submit są bezpiecznie odrzucane
-- [x] 3.5 Reimport, edycja, unlink, expiry i spóźniony job unieważniają stale review
-- [x] 3.6 Handoff udostępnia wyłącznie potwierdzony manifest bez ponownego matchingu
+- [x] 3.1 Trasy egzekwują middleware, CSRF, throttle i owner-scoped 404 — 704f895
+- [x] 3.2 Livewire poprawnie obsługuje polling, progi czasu i trzy klasy wyników — 704f895
+- [x] 3.3 Potwierdzenie atomowo aktualizuje bank i zamraża dokładny manifest — 704f895
+- [x] 3.4 Pusty wynik, niekompletne decyzje i double submit są bezpiecznie odrzucane — 704f895
+- [x] 3.5 Reimport, edycja, unlink, expiry i spóźniony job unieważniają stale review — 704f895
+- [x] 3.6 Handoff udostępnia wyłącznie potwierdzony manifest bez ponownego matchingu — 704f895
 
 #### Manual
 
@@ -663,13 +663,13 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [ ] 4.1 Targetowane testy S-05 przechodzą
-- [ ] 4.2 Regresje playlist i integracji streamingowych przechodzą
-- [ ] 4.3 Pełny zestaw Composer przechodzi
-- [ ] 4.4 Laravel Pint przechodzi bez zmian
-- [ ] 4.5 Produkcyjny frontend buduje się
-- [ ] 4.6 Kontrakt źródła i audyty zależności przechodzą
-- [ ] 4.7 Pełna macierz PostgreSQL przechodzi bez live providerów
+- [x] 4.1 Targetowane testy S-05 przechodzą
+- [x] 4.2 Regresje playlist i integracji streamingowych przechodzą
+- [x] 4.3 Pełny zestaw Composer przechodzi
+- [x] 4.4 Laravel Pint przechodzi bez zmian
+- [x] 4.5 Produkcyjny frontend buduje się
+- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą
+- [x] 4.7 Pełna macierz PostgreSQL przechodzi bez live providerów
 
 #### Manual
 
