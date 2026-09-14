@@ -214,7 +214,7 @@ YAML,
             '/image: postgres:18\.6-alpine@sha256:[0-9a-f]{64}/',
             $workflow,
         );
-        $this->assertStringContainsString('extensions: pdo_pgsql', $workflow);
+        $this->assertStringContainsString('extensions: pdo_pgsql, pcntl', $workflow);
         $this->assertStringContainsString('DB_CONNECTION: pgsql', $workflow);
         $this->assertStringContainsString('DB_DATABASE: music_map_ci', $workflow);
         $this->assertStringContainsString('SESSION_DRIVER: array', $workflow);
@@ -236,6 +236,10 @@ YAML,
         );
         $this->assertStringContainsString(
             'tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/Playlists/PlaylistConcurrentImportTest.php',
             $workflow,
         );
         $this->assertStringContainsString(

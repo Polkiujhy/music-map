@@ -50,6 +50,12 @@ class SpotifyPlaylistImportTest extends TestCase
         $this->assertSame($account->provider_account_id, $playlist->source_account_id);
         $this->assertSame(['track-canary'], $playlist->items->pluck('catalog_id')->all());
         $this->assertSame(SpotifyPlaylistReader::REQUIRED_SCOPES, $access->requiredScopes);
+        $this->actingAs($account->user)
+            ->get(route('bank.index'))
+            ->assertOk()
+            ->assertSee('/images/spotify-full-logo-white.svg', false)
+            ->assertSee('alt="Spotify"', false)
+            ->assertSee('aria-label="Otwórz playlistę w Spotify"', false);
         Http::assertSentCount(2);
         Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'accounts.spotify.com')
             || str_contains($request->url(), 'platform-access'));
@@ -176,7 +182,7 @@ class SpotifyPlaylistImportTest extends TestCase
             'name' => 'Spotify canary playlist',
             'description' => 'Canary description',
             'snapshot_id' => 'revision-canary',
-            'tracks' => ['total' => $count],
+            'items' => ['total' => $count],
         ];
     }
 

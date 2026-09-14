@@ -146,6 +146,7 @@ package-lock.json
 phpunit.xml
 public/.htaccess
 public/favicon.ico
+public/images/spotify-full-logo-white.svg
 public/index.php
 public/robots.txt
 resources/css/app.css
@@ -168,6 +169,7 @@ storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
+tests/Feature/Playlists/PlaylistConcurrentImportTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php
 tests/Feature/Playlists/PlaylistImportTest.php
 tests/Feature/Playlists/PlaylistPersistenceTest.php

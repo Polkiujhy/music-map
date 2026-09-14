@@ -175,6 +175,28 @@ class YouTubeMetadataLifecycleTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_command_does_not_rewrite_an_already_purged_shell(): void
+    {
+        Queue::fake();
+        $playlist = $this->playlistAt(now()->subDays(30), 'Expired');
+        PlaylistItem::factory()->for($playlist)->create();
+
+        Artisan::call('playlists:refresh-youtube-metadata');
+
+        $purgedAt = $playlist->fresh()->updated_at;
+        Carbon::setTestNow(now()->addDay());
+
+        Artisan::call('playlists:refresh-youtube-metadata');
+
+        $playlist->refresh();
+        $this->assertTrue($purgedAt->equalTo($playlist->updated_at));
+        $this->assertNull($playlist->name);
+        $this->assertDatabaseMissing('playlist_items', [
+            'playlist_id' => $playlist->id,
+        ]);
+        Queue::assertNothingPushed();
+    }
+
     public function test_a_purged_shell_recovers_after_a_later_successful_refresh(): void
     {
         Queue::fake();

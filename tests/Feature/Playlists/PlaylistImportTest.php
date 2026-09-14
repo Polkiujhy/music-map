@@ -9,6 +9,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PlaylistImportTest extends TestCase
@@ -53,8 +54,9 @@ class PlaylistImportTest extends TestCase
     {
         Http::fake();
         Log::spy();
+        $loggedCorrelationId = null;
 
-        $this->actingAs(User::factory()->create())
+        $response = $this->actingAs(User::factory()->create())
             ->post(route('playlists.import'), [
                 'playlist_url' => 'https://attacker.example/private?token=sensitive',
                 'policy_consent' => '1',
@@ -66,10 +68,79 @@ class PlaylistImportTest extends TestCase
         $this->assertDatabaseCount('playlists', 0);
         Log::shouldHaveReceived('warning')->once()->with(
             'playlist_import_failed',
-            Mockery::on(fn (array $context): bool => array_keys($context) === ['correlation_id', 'failure_code', 'provider']
-                && $context['failure_code'] === 'unsupported-provider'
-                && ! str_contains(json_encode($context, JSON_THROW_ON_ERROR), 'sensitive')),
+            Mockery::on(function (array $context) use (&$loggedCorrelationId): bool {
+                $loggedCorrelationId = $context['correlation_id'] ?? null;
+
+                return array_keys($context) === ['correlation_id', 'failure_code', 'provider']
+                    && $context['failure_code'] === 'unsupported-provider'
+                    && ! str_contains(json_encode($context, JSON_THROW_ON_ERROR), 'sensitive');
+            }),
         );
+
+        $message = $response->baseResponse->getSession()->get('error');
+        $this->assertIsString($message);
+        $this->assertSame(
+            1,
+            preg_match('/Identyfikator błędu: ([0-9a-f-]{36})\./', $message, $matches),
+        );
+        $this->assertSame($loggedCorrelationId, $matches[1]);
+    }
+
+    #[DataProvider('youtubeFailureMessages')]
+    public function test_youtube_failures_show_the_expected_actionable_message(
+        string $case,
+        string $expectedMessage,
+        int $expectedRequestCount,
+    ): void {
+        $sequence = Http::fakeSequence();
+
+        match ($case) {
+            'forbidden' => $sequence->push([
+                'error' => ['errors' => [['reason' => 'forbidden']]],
+            ], 403),
+            'not-found' => $sequence->push([], 404),
+            'rate-limited' => $sequence->push([], 429),
+            'quota-limited' => $sequence->push([
+                'error' => ['errors' => [['reason' => 'quotaExceeded']]],
+            ], 403),
+            'server-error' => $sequence->push([], 503),
+            'malformed' => $sequence
+                ->push(['items' => 'malformed'])
+                ->push($this->items([])),
+            'unsupported-item' => $sequence
+                ->push($this->metadata('Canary', 1))
+                ->push($this->unsupportedItems()),
+            'too-many-items' => $sequence
+                ->push($this->metadata('Canary', 21))
+                ->push($this->items(array_map(
+                    static fn (int $index): string => "video-{$index}",
+                    range(1, 21),
+                ))),
+        };
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('playlists.import'), $this->form())
+            ->assertSessionHas(
+                'error',
+                fn (string $message): bool => str_contains($message, $expectedMessage),
+            );
+
+        $this->assertCount($expectedRequestCount, Http::recorded());
+        $this->assertDatabaseCount('playlists', 0);
+    }
+
+    public static function youtubeFailureMessages(): array
+    {
+        return [
+            '403 unavailable' => ['forbidden', 'Playlista jest prywatna lub niedostępna', 1],
+            '404 not found' => ['not-found', 'Nie znaleziono playlisty', 1],
+            '429 rate limited' => ['rate-limited', 'YouTube ograniczył liczbę żądań', 1],
+            'quota exhausted' => ['quota-limited', 'Limit YouTube został wyczerpany', 1],
+            '5xx unavailable' => ['server-error', 'YouTube jest chwilowo niedostępny', 1],
+            'malformed payload' => ['malformed', 'YouTube zwrócił nieprawidłowe dane', 2],
+            'unsupported item' => ['unsupported-item', 'Playlista zawiera nieobsługiwaną pozycję', 2],
+            'over item limit' => ['too-many-items', 'Playlista ma więcej niż 20 pozycji', 2],
+        ];
     }
 
     public function test_public_youtube_import_and_reimport_use_one_private_card(): void
@@ -190,5 +261,13 @@ class PlaylistImportTest extends TestCase
             ], $videoIds, array_keys($videoIds)),
             'pageInfo' => ['totalResults' => count($videoIds)],
         ];
+    }
+
+    private function unsupportedItems(): array
+    {
+        $items = $this->items(['video-canary']);
+        $items['items'][0]['snippet']['resourceId']['kind'] = 'youtube#channel';
+
+        return $items;
     }
 }

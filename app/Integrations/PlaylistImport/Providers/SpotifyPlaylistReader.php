@@ -88,7 +88,7 @@ final class SpotifyPlaylistReader implements PlaylistSourceReader
         $name = $this->nullableString($metadata['name'] ?? null, 255);
         $description = $this->nullableString($metadata['description'] ?? null, 65535);
         $revision = $this->nullableString($metadata['snapshot_id'] ?? null, 255);
-        $metadataTotal = $metadata['tracks']['total'] ?? null;
+        $metadataTotal = $metadata['items']['total'] ?? null;
         $itemsTotal = $payload['total'] ?? null;
 
         if ($id !== $reference->providerPlaylistId

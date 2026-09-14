@@ -65,7 +65,16 @@
                                 && $playlist->provider_metadata_refreshed_at->lte(now()->subDays(30));
                         @endphp
                         <article class="rounded-2xl border border-ash-grey-900 bg-[#1d211e] p-6">
-                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">Źródło: {{ $playlist->source_provider === \App\Enums\StreamingProvider::YouTube ? 'YouTube' : 'Spotify' }}</p>
+                            @if ($playlist->source_provider === \App\Enums\StreamingProvider::YouTube)
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">Źródło: YouTube</p>
+                            @else
+                                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-ash-grey-400">
+                                    <span>Źródło:</span>
+                                    <a href="{{ $playlist->canonical_source_url }}" rel="noreferrer noopener" aria-label="Otwórz playlistę w Spotify" class="-m-3 mt-1 inline-flex p-3">
+                                        <img src="{{ asset('images/spotify-full-logo-white.svg') }}" alt="Spotify" width="88" height="24" class="h-auto w-[88px]">
+                                    </a>
+                                </div>
+                            @endif
                             @if ($youtubeExpired)
                                 <h3 class="mt-3 text-xl font-semibold">Playlista YouTube — dane wymagają odświeżenia</h3>
                                 <p class="mt-3 text-sm leading-6 text-ash-grey-200/70">Dane z YouTube wygasły i nie są teraz wyświetlane. Wklej link ponownie w formularzu powyżej, aby odzyskać aktualny snapshot.</p>

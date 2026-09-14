@@ -16,7 +16,7 @@ use Tests\TestCase;
 class SpotifyPlaylistReaderTest extends TestCase
 {
     #[DataProvider('acceptedItemCounts')]
-    public function test_it_reads_zero_through_twenty_items_using_fixed_bounded_requests(int $count): void
+    public function test_it_reads_current_metadata_shape_for_zero_through_twenty_items_using_fixed_bounded_requests(int $count): void
     {
         Http::fakeSequence()->push($this->metadata($count))->push($this->items($count));
 
@@ -161,7 +161,7 @@ class SpotifyPlaylistReaderTest extends TestCase
             'name' => 'Canary playlist',
             'description' => 'Canary description',
             'snapshot_id' => 'revision-canary',
-            'tracks' => ['total' => $count],
+            'items' => ['total' => $count],
         ];
     }
 
