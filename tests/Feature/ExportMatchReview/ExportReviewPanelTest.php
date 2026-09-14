@@ -79,6 +79,7 @@ class ExportReviewPanelTest extends TestCase
             ->assertSee('Brak tytułu potrzebnego do wyszukania tej pozycji w katalogu celu.')
             ->assertSee('Nie znaleziono wiarygodnego odpowiednika w katalogu celu.')
             ->assertSee('Poza eksportem')
+            ->assertSeeHtml('wire:model="decisions.'.$firstDuplicate->id.'"')
             ->assertSeeHtml('wire:key="review-item-'.$firstDuplicate->id.'"')
             ->assertSeeHtml('wire:key="review-item-'.$secondDuplicate->id.'"')
             ->call('choose', $firstDuplicate->id, 'keep')
