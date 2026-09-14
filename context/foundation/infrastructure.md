@@ -33,7 +33,9 @@ The consumer accepts only the exact versioned response schema and performs no
 provider mutation after a malformed or failure response. Transport failures are
 not retry authorization. A retry is permitted only when a validated broker
 error document explicitly contains `retryable: true`; replacement refresh
-tokens never cross the PaaS boundary into Music Map.
+tokens never cross the PaaS boundary into Music Map. The v1 transport bounds a
+newline-terminated request at 4,096 bytes and a newline-terminated response at
+16,384 bytes; exceeding either published limit fails closed.
 
 ## Platform Comparison
 
