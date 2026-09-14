@@ -901,11 +901,11 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [x] 4.1 Reader Spotify i port efemerycznego dostępu przechodzą macierz bez sieci
-- [x] 4.2 Linked-account import i wszystkie odmowy Spotify przechodzą testy feature
-- [x] 4.3 Unlink zachowuje bank i niesekretne pochodzenie playlisty
-- [x] 4.4 Regresja poprawionego S-04 oraz F-01 przechodzi
-- [x] 4.5 Formatowanie PHP i manifest źródła fazy przechodzą
+- [x] 4.1 Reader Spotify i port efemerycznego dostępu przechodzą macierz bez sieci — a619ba2
+- [x] 4.2 Linked-account import i wszystkie odmowy Spotify przechodzą testy feature — a619ba2
+- [x] 4.3 Unlink zachowuje bank i niesekretne pochodzenie playlisty — a619ba2
+- [x] 4.4 Regresja poprawionego S-04 oraz F-01 przechodzi — a619ba2
+- [x] 4.5 Formatowanie PHP i manifest źródła fazy przechodzą — a619ba2
 
 #### Manual
 
@@ -916,12 +916,12 @@ observable release precondition, not Manager implementation.
 
 #### Automated
 
-- [ ] 5.1 Pełny PHPUnit przechodzi
-- [ ] 5.2 Formatowanie PHP przechodzi
-- [ ] 5.3 Produkcyjny frontend buduje się
-- [ ] 5.4 Manifest źródła przechodzi dla worktree
-- [ ] 5.5 Audyty przypiętych zależności przechodzą
-- [ ] 5.6 PostgreSQL CI wykonuje krytyczną macierz S-02 bez sieci i sekretów
+- [x] 5.1 Pełny PHPUnit przechodzi
+- [x] 5.2 Formatowanie PHP przechodzi
+- [x] 5.3 Produkcyjny frontend buduje się
+- [x] 5.4 Manifest źródła przechodzi dla worktree
+- [x] 5.5 Audyty przypiętych zależności przechodzą
+- [x] 5.6 PostgreSQL CI wykonuje krytyczną macierz S-02 bez sieci i sekretów
 
 #### Manual
 

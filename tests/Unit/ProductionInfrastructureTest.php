@@ -17,6 +17,7 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertStringContainsString("DB_SSLMODE=prefer\n", $environment);
         $this->assertStringContainsString('APP_KEY=__REQUIRED_RUNTIME_SECRET__', $environment);
         $this->assertStringContainsString('DB_PASSWORD=__REQUIRED_RUNTIME_SECRET__', $environment);
+        $this->assertStringContainsString('YOUTUBE_API_KEY=__REQUIRED_RUNTIME_VALUE__', $environment);
         $this->assertDoesNotMatchRegularExpression('/^(APP_KEY|DB_PASSWORD|MAIL_PASSWORD)=$/m', $environment);
     }
 
@@ -204,7 +205,7 @@ YAML,
         $this->assertStringNotContainsString('trivy image', strtolower($workflow));
     }
 
-    public function test_ci_runs_critical_authentication_and_streaming_accounts_against_isolated_postgresql(): void
+    public function test_ci_runs_critical_application_contracts_against_isolated_postgresql(): void
     {
         $workflow = $this->projectFile('.github/workflows/ci.yml');
 
@@ -235,6 +236,22 @@ YAML,
         );
         $this->assertStringContainsString(
             'tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/Playlists/PlaylistPersistenceTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/Playlists/PlaylistImportTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/Playlists/SpotifyPlaylistImportTest.php',
+            $workflow,
+        );
+        $this->assertStringContainsString(
+            'tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php',
             $workflow,
         );
         $this->assertStringNotContainsString('schema-release music-map --release-file', $workflow);

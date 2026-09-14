@@ -11,6 +11,8 @@ case "$mode" in
         ;;
 esac
 
+seen_paths=''
+
 required_paths='AGENTS.md
 .dockerignore
 .editorconfig
@@ -210,6 +212,23 @@ tests/Unit/SourceContractTest.php
 vite.config.js'
 
 printf '%s\n' "$required_paths" | while IFS= read -r path; do
+    case "$path" in
+        context/changes/README.md|context/archive/README.md)
+            ;;
+        context/changes/*|context/archive/*/*)
+            echo "lifecycle-managed change artifact must not be a required source path: $path" >&2
+            exit 1
+            ;;
+    esac
+
+    if printf '%s\n' "$seen_paths" | grep -Fqx -- "$path"; then
+        echo "duplicate required source path: $path" >&2
+        exit 1
+    fi
+
+    seen_paths="${seen_paths}
+${path}"
+
     if [ ! -e "$path" ]; then
         echo "required source path is missing: $path" >&2
         exit 1

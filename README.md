@@ -1,8 +1,9 @@
 # music-map
 
 `music-map` is a Laravel application for keeping a private, platform-independent
-playlist bank. The current slice provides email and Google authentication plus a
-private, initially empty `/bank` area.
+playlist bank. Authenticated, verified users can import bounded public YouTube
+playlists and Spotify playlists available through their linked account into the
+private `/bank` area.
 
 ## Local setup
 
@@ -85,6 +86,7 @@ SPOTIFY_REDIRECT_URI=https://music-map.example.invalid/integrations/spotify/call
 GOOGLE_CLIENT_ID=__REQUIRED_RUNTIME_SECRET__
 GOOGLE_CLIENT_SECRET=__REQUIRED_RUNTIME_SECRET__
 YOUTUBE_REDIRECT_URI=https://music-map.example.invalid/integrations/youtube/callback
+YOUTUBE_API_KEY=__REQUIRED_RUNTIME_VALUE__
 ```
 
 Manager does not handle application-user OAuth callbacks, grants, linked
@@ -92,6 +94,36 @@ accounts, refresh/reconnect, unlink/revoke, or playlist operations. Keep all
 credential values out of source, output, and logs. `APP_PREVIOUS_KEYS` must
 retain old Laravel encryption keys during a controlled `APP_KEY` rotation until
 existing refresh tokens have been re-encrypted or users have reauthorized.
+
+## Playlist imports
+
+The import form accepts only narrow HTTPS share links. Spotify links use the
+exact shape `https://open.spotify.com/playlist/{22-character-base62-id}`.
+YouTube links use `https://www.youtube.com/playlist?list={playlist-id}` or the
+same path on `music.youtube.com`; the playlist ID is 1–128 ASCII letters,
+digits, underscores, or hyphens. Either provider may include one optional `si`
+query parameter, which is discarded when the canonical source link is built.
+Submitted URLs are limited to 512 bytes, and no other hosts, ports, fragments,
+paths, or query parameters are accepted.
+
+An import preserves source order, duplicate tracks, and representable
+unavailable positions, but is limited to at most 20 positions. A source that
+reports more positions is refused without partial persistence. Public YouTube
+reads require the symbolic runtime setting `YOUTUBE_API_KEY`; its value must be
+provided outside the repository and must never be rendered or logged. YouTube
+metadata is refreshed as it approaches 28 days old. At 30 days without a
+successful refresh, API-derived display metadata and items are removed while
+the user-owned bank shell and canonical source link remain available for
+reimport. The bank retains YouTube attribution and links to the applicable
+application, YouTube, and Google policies.
+
+Spotify imports require the user's matching linked streaming account. Provider
+access crosses only the S-04 `WithStreamingAccess` application boundary, which
+supplies a short-lived token solely inside a synchronous callback. Playlist
+imports never fall back to technical or tester probe credentials. Manager's
+only role here is supplying the application's symbolic runtime configuration;
+playlist parsing, account selection, provider reads, persistence, refresh, and
+retention remain application responsibilities.
 
 ## Platform-access probe
 
@@ -118,9 +150,10 @@ application storage, output, or logs.
 ## Disposable PostgreSQL smoke test
 
 CI keeps the full PHPUnit suite on in-memory SQLite and separately rebuilds the
-schema and runs the critical authentication matrix against PostgreSQL. To repeat
-that smoke test locally, point Laravel at a disposable, non-production database
-using local-only credentials:
+schema and runs the critical authentication, streaming-account, and playlist
+import/persistence matrix against PostgreSQL. To repeat that smoke test locally,
+point Laravel at a disposable, non-production database using local-only
+credentials:
 
 ```dotenv
 DB_CONNECTION=pgsql
@@ -140,7 +173,7 @@ run the same critical matrix:
 
 ```bash
 php artisan migrate:fresh --force --no-interaction
-php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountModelTest.php tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
+php artisan test tests/Feature/Auth tests/Feature/BankAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountModelTest.php tests/Feature/StreamingAccounts/StreamingAccountLinkingTest.php tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php tests/Feature/Playlists/PlaylistPersistenceTest.php tests/Feature/Playlists/PlaylistImportTest.php tests/Feature/Playlists/SpotifyPlaylistImportTest.php tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 ```
 
 `migrate:fresh` destroys all tables in the selected database. Verify the target
@@ -158,6 +191,6 @@ composer audit --locked --no-interaction
 npm audit --audit-level=high
 ```
 
-Production schema changes are not automated by CI or normal deployment. They use
-the supervised `s-manager schema-release music-map` workflow with an exact release
-manifest, current release ID, and fresh backup/restore evidence.
+Production schema changes are not automated by CI or normal application release.
+Before an image that reads the additive playlist tables is released, an operator
+must apply the schema through the published supervised schema-release capability.

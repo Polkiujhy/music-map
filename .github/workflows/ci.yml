@@ -135,7 +135,7 @@ jobs:
       - name: Rebuild schema on PostgreSQL
         run: php artisan migrate:fresh --force --no-interaction
 
-      - name: Run critical authentication and streaming-account tests
+      - name: Run critical authentication, streaming-account, and playlist tests
         run: >-
           php artisan test
           tests/Feature/Auth
@@ -145,6 +145,10 @@ jobs:
           tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php
           tests/Feature/StreamingAccounts/StreamingAccountManagementTest.php
           tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
+          tests/Feature/Playlists/PlaylistPersistenceTest.php
+          tests/Feature/Playlists/PlaylistImportTest.php
+          tests/Feature/Playlists/SpotifyPlaylistImportTest.php
+          tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 
   source-security:
     runs-on: ubuntu-24.04
