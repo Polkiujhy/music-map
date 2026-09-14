@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Integrations\PlaylistExport\Actions;
+
+use App\Enums\ExportDestinationType;
+use App\Integrations\ManagedExport\Contracts\ManagedExportAccessBroker;
+use App\Integrations\ManagedExport\ManagedExportAccessException;
+use App\Integrations\PlaylistExport\Contracts\WithExportAccess;
+use App\Integrations\PlaylistExport\PlaylistWriteFailure;
+use App\Models\ExportOperation;
+use Closure;
+use Throwable;
+
+final readonly class WithManagedExportAccess implements WithExportAccess
+{
+    public function __construct(private ManagedExportAccessBroker $broker) {}
+
+    public function handle(ExportOperation $operation, Closure $callback): ?PlaylistWriteFailure
+    {
+        if ($operation->destination_type !== ExportDestinationType::Managed) {
+            return PlaylistWriteFailure::AccessDenied;
+        }
+
+        try {
+            $access = $this->broker->acquire(
+                $operation->target_provider->value,
+                $operation->operation_id,
+            );
+        } catch (ManagedExportAccessException $exception) {
+            return $this->mapFailure($exception);
+        } catch (Throwable) {
+            // An unvalidated transport failure never authorizes automatic retry.
+            return PlaylistWriteFailure::InvalidResponse;
+        }
+
+        if ($access->provider !== $operation->target_provider->value
+            || $access->operationId !== $operation->operation_id) {
+            return PlaylistWriteFailure::InvalidResponse;
+        }
+
+        return $callback($access->accessToken, new AllowManagedExportMutation);
+    }
+
+    private function mapFailure(ManagedExportAccessException $exception): PlaylistWriteFailure
+    {
+        if (! $exception->retryable) {
+            return match ($exception->category) {
+                'reauthorization-required' => PlaylistWriteFailure::ReconnectRequired,
+                'scope-mismatch' => PlaylistWriteFailure::MissingScope,
+                'caller-denied' => PlaylistWriteFailure::AccessDenied,
+                default => PlaylistWriteFailure::InvalidResponse,
+            };
+        }
+
+        return match ($exception->category) {
+            'rate-limited' => PlaylistWriteFailure::RateLimited,
+            'quota-exceeded' => PlaylistWriteFailure::QuotaLimited,
+            default => PlaylistWriteFailure::TemporaryFailure,
+        };
+    }
+}

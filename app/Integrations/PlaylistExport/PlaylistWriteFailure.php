@@ -4,6 +4,8 @@ namespace App\Integrations\PlaylistExport;
 
 enum PlaylistWriteFailure: string
 {
+    case AdmissionLimit = 'admission-limit';
+    case AdmissionUnavailable = 'admission-unavailable';
     case ReconnectRequired = 'reconnect-required';
     case MissingScope = 'missing-scope';
     case StaleCredential = 'stale-credential';

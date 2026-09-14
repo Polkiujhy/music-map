@@ -15,3 +15,7 @@ Schedule::command('playlists:refresh-youtube-metadata')
 Schedule::command('exports:reconcile-queued')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('exports:reconcile-stale')
+    ->everyMinute()
+    ->withoutOverlapping();

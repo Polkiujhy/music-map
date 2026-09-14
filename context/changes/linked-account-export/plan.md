@@ -1010,12 +1010,12 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 2.1 Kontrakt adaptera Spotify przechodzi dla create, replace, scan i awarii
-- [x] 2.2 Kontrakt adaptera YouTube przechodzi dla minimalnego diffu, kolejności i awarii
-- [x] 2.3 Recovery marker nigdy nie powtarza create po niejednoznacznym wyniku
-- [x] 2.4 Source contract i formatowanie przechodzą
-- [x] 2.7 Recovery respektuje limit 20 stron i budżet czasu bez mutacji po przekroczeniu
-- [x] 2.9 Kanoniczny link powstaje lokalnie ze zwalidowanego providerowego ID
+- [x] 2.1 Kontrakt adaptera Spotify przechodzi dla create, replace, scan i awarii — 220b4b5
+- [x] 2.2 Kontrakt adaptera YouTube przechodzi dla minimalnego diffu, kolejności i awarii — 220b4b5
+- [x] 2.3 Recovery marker nigdy nie powtarza create po niejednoznacznym wyniku — 220b4b5
+- [x] 2.4 Source contract i formatowanie przechodzą — 220b4b5
+- [x] 2.7 Recovery respektuje limit 20 stron i budżet czasu bez mutacji po przekroczeniu — 220b4b5
+- [x] 2.9 Kanoniczny link powstaje lokalnie ze zwalidowanego providerowego ID — 220b4b5
 
 #### Manual
 
@@ -1028,12 +1028,12 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [ ] 3.1 Linked i managed create/update używają jednej trwałej relacji i tego samego providerowego ID
-- [ ] 3.2 Admission YouTube poprzedza każdą pierwszą mutację i odmawia bez zapisu
-- [ ] 3.3 Retry, checkpointy, relink i częściowe awarie konwergują bez nowego celu
-- [ ] 3.4 Formatowanie PHP przechodzi
-- [ ] 3.7 Unlink między mutacjami zatrzymuje dalsze zapisy przez efemeryczny guard
-- [ ] 3.8 Timeout i osierocone processing są odzyskiwane bez nadpisania późnego sukcesu
+- [x] 3.1 Linked i managed create/update używają jednej trwałej relacji i tego samego providerowego ID
+- [x] 3.2 Admission YouTube poprzedza każdą pierwszą mutację i odmawia bez zapisu
+- [x] 3.3 Retry, checkpointy, relink i częściowe awarie konwergują bez nowego celu
+- [x] 3.4 Formatowanie PHP przechodzi
+- [x] 3.7 Unlink między mutacjami zatrzymuje dalsze zapisy przez efemeryczny guard
+- [x] 3.8 Timeout i osierocone processing są odzyskiwane bez nadpisania późnego sukcesu
 
 #### Manual
 
