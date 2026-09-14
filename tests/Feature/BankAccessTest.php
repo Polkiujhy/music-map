@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Playlist;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,5 +72,30 @@ class BankAccessTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
+    }
+
+    public function test_each_owned_playlist_card_has_exactly_one_editor_entry(): void
+    {
+        $owner = User::factory()->create();
+        $ownedPlaylists = collect([
+            Playlist::factory()->for($owner)->create(['source_playlist_id' => 'owned-playlist-1']),
+            Playlist::factory()->for($owner)->create(['source_playlist_id' => 'owned-playlist-2']),
+        ]);
+        $foreignPlaylist = Playlist::factory()->create();
+
+        $response = $this->actingAs($owner)
+            ->get(route('bank.index'))
+            ->assertOk()
+            ->assertSee('Przeglądaj i edytuj');
+
+        foreach ($ownedPlaylists as $playlist) {
+            $response->assertSee(route('bank.playlists.edit', $playlist), false);
+        }
+
+        $response
+            ->assertSeeInOrder(['Przeglądaj i edytuj', 'Przeglądaj i edytuj'])
+            ->assertDontSee(route('bank.playlists.edit', $foreignPlaylist), false);
+
+        $this->assertSame(2, substr_count($response->getContent(), 'Przeglądaj i edytuj'));
     }
 }

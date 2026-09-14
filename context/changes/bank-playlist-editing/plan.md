@@ -572,12 +572,12 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [x] 1.1 Addytywna migracja i cast znacznika przechodzą na SQLite
-- [x] 1.2 Kanoniczny fingerprint przechodzi macierz stabilności i zmian treści
-- [x] 1.3 Atomowa akcja zachowuje dane, duplikaty i ciągłe pozycje
-- [x] 1.4 Konflikty i błędy nie wykonują częściowej mutacji
-- [x] 1.5 Wyścig PostgreSQL nie powoduje silent lost update ani konfliktu pozycji
-- [x] 1.6 Formatowanie i manifest źródła fazy przechodzą
+- [x] 1.1 Addytywna migracja i cast znacznika przechodzą na SQLite — df39453
+- [x] 1.2 Kanoniczny fingerprint przechodzi macierz stabilności i zmian treści — df39453
+- [x] 1.3 Atomowa akcja zachowuje dane, duplikaty i ciągłe pozycje — df39453
+- [x] 1.4 Konflikty i błędy nie wykonują częściowej mutacji — df39453
+- [x] 1.5 Wyścig PostgreSQL nie powoduje silent lost update ani konfliktu pozycji — df39453
+- [x] 1.6 Formatowanie i manifest źródła fazy przechodzą — df39453
 
 #### Manual
 
@@ -588,12 +588,12 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Automated
 
-- [ ] 2.1 Trasa i mutacje egzekwują auth, verified i owner-scoped 404
-- [ ] 2.2 Livewire obsługuje szkic, granice ruchów, usunięcia i pojedynczy zapis
-- [ ] 2.3 Pusta lista wymaga jawnego potwierdzenia
-- [ ] 2.4 Stary szkic kończy się konfliktem bez częściowego zapisu
-- [ ] 2.5 Bank zachowuje prywatność i minimalne wejście do edytora
-- [ ] 2.6 Frontend, formatowanie i manifest źródła fazy przechodzą
+- [x] 2.1 Trasa i mutacje egzekwują auth, verified i owner-scoped 404
+- [x] 2.2 Livewire obsługuje szkic, granice ruchów, usunięcia i pojedynczy zapis
+- [x] 2.3 Pusta lista wymaga jawnego potwierdzenia
+- [x] 2.4 Stary szkic kończy się konfliktem bez częściowego zapisu
+- [x] 2.5 Bank zachowuje prywatność i minimalne wejście do edytora
+- [x] 2.6 Frontend, formatowanie i manifest źródła fazy przechodzą
 
 #### Manual
 

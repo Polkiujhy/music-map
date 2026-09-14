@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\PlaylistEditingController;
 use App\Http\Controllers\PlaylistImportController;
 use App\Http\Controllers\StreamingAccountController;
 use App\Http\Controllers\StreamingAccountOAuthController;
@@ -42,6 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware('throttle:streaming-oauth')
         ->name('integrations.accounts.verify');
     Route::get('/bank', [BankController::class, 'index'])->name('bank.index');
+    Route::get('/bank/playlists/{playlist}/edit', PlaylistEditingController::class)
+        ->whereNumber('playlist')
+        ->name('bank.playlists.edit');
     Route::post('/bank/import', [PlaylistImportController::class, 'store'])
         ->middleware('throttle:playlist-import')
         ->name('playlists.import');
