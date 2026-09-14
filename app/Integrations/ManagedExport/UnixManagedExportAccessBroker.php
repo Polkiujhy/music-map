@@ -78,7 +78,7 @@ final readonly class UnixManagedExportAccessBroker implements ManagedExportAcces
             while ($offset < strlen($request)) {
                 $written = @fwrite($stream, substr($request, $offset));
                 if (! is_int($written) || $written < 1) {
-                    throw new ManagedExportAccessException('provider-unavailable', true);
+                    throw new ManagedExportAccessException('provider-unavailable');
                 }
                 $offset += $written;
             }
@@ -89,7 +89,7 @@ final readonly class UnixManagedExportAccessBroker implements ManagedExportAcces
                 || $response === ''
                 || strlen($response) > self::MAX_RESPONSE_BYTES
                 || ($metadata['timed_out'] ?? false) === true) {
-                throw new ManagedExportAccessException('provider-unavailable', true);
+                throw new ManagedExportAccessException('provider-unavailable');
             }
 
             return $response;
