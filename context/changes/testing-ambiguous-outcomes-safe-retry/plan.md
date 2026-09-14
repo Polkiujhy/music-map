@@ -236,18 +236,18 @@ Brak zmian schematu. `migrate:fresh` może być uruchamiane wyłącznie na jawni
 
 #### Automatyczne
 
-- [x] 2.1 Celowany test integracyjny importu przechodzi
-- [x] 2.2 Pełny poprzedni snapshot i świeżość pozostają niezmienione
-- [x] 2.3 Test używa zewnętrznej granicy HTTP bez mocków collaboratorów
+- [x] 2.1 Celowany test integracyjny importu przechodzi — 8e7bd20
+- [x] 2.2 Pełny poprzedni snapshot i świeżość pozostają niezmienione — 8e7bd20
+- [x] 2.3 Test używa zewnętrznej granicy HTTP bez mocków collaboratorów — 8e7bd20
 
 ### Faza 3: Zachowanie istniejącej bramy PostgreSQL
 
 #### Automatyczne
 
-- [ ] 3.1 Kontrakty admission przechodzą
-- [ ] 3.2 Deterministyczny zestaw admission przechodzi
-- [ ] 3.3 Celowany zestaw PostgreSQL lub odpowiadający job CI przechodzi
-- [ ] 3.4 Nie dodano zduplikowanego wyścigu prymitywu
+- [x] 3.1 Kontrakty admission przechodzą
+- [x] 3.2 Deterministyczny zestaw admission przechodzi
+- [x] 3.3 Celowany zestaw PostgreSQL lub odpowiadający job CI przechodzi
+- [x] 3.4 Nie dodano zduplikowanego wyścigu prymitywu
 
 ### Faza 4: Podręcznik dostarczonych wzorców
 
