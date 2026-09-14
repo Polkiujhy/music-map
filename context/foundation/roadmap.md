@@ -42,7 +42,7 @@ milestone_status: open
 | ID | Change ID | Wynik (użytkownik może …) | Wymagania wstępne | Odniesienia do PRD | Status |
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
 | F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |
-| F-02 | `youtube-write-admission` | (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją | F-01 | NFR-006 | in-progress |
+| F-02 | `youtube-write-admission` | (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją | F-01 | NFR-006 | done |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
@@ -102,7 +102,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** niezależne liczniki w kolejnych wycinkach mogłyby dopuścić więcej niż pięć operacji, naliczać ponowienia ponownie albo rozpocząć zapis mimo wyczerpanej kwoty.
-- **Status:** in-progress
+- **Status:** done
 
 ## Wycinki
 
@@ -263,6 +263,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zrobione
 
+- **F-02: (fundament) aplikacja atomowo dopuszcza globalnie najwyżej skonfigurowaną dodatnią liczbę nowych logicznych operacji eksportu lub synchronizacji zapisujących dane w YouTube podczas jednego dnia kwoty API, domyślnie pięć, dzień resetuje o północy w `America/Los_Angeles`, po wyczerpaniu limitu odmawia przed pierwszą zmianą, a ponowienia bezterminowo wiąże z pierwotną rezerwacją.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-youtube-write-admission/`. Lekcja: —.
 - **S-05: użytkownik może wybrać dozwoloną platformę docelową, zobaczyć dopasowane, błędnie dopasowane i niedostępne utwory, zdecydować o ich pozostawieniu lub usunięciu i świadomie potwierdzić eksport.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-export-match-review/`. Lekcja: —.
 - **S-03: użytkownik może przeglądać i edytować utwory playlisty zapisanej w niezależnym banku, zachowując jej pochodzenie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-bank-playlist-editing/`. Lekcja: —.
 - **S-02: zalogowany użytkownik może zaimportować publiczną playlistę YouTube z linku albo playlistę Spotify należącą do powiązanego konta lub z nim współdzieloną, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-playlist-link-import/`. Lekcja: —.
