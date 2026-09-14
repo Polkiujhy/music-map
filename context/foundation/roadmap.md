@@ -46,7 +46,7 @@ milestone_status: open
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
-| S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | in-progress |
+| S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | done |
 | S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
 | S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
 | S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
@@ -149,7 +149,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** dostęp do katalogów utworów Spotify i YouTube.
 - **Niewiadome:** —
 - **Ryzyko:** błędne rozróżnienie utworu brakującego od źle dopasowanego mogłoby skłonić użytkownika do zatwierdzenia innej zawartości niż pokazana.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-06: Eksport na konto techniczne music-map
 
@@ -220,9 +220,9 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Zakończono i zarchiwizowano. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
-| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Implementacja w toku po integracji S-02 i S-03. |
-| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Czeka na S-05. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 zakończone; czeka na S-05. |
+| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Zakończono i zarchiwizowano. |
+| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | S-05 zakończone; gotowe do `/10x-plan`. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
 | S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
 | S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na S-07 i S-08. |
 | S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
@@ -247,6 +247,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zrobione
 
+- **S-05: użytkownik może wybrać dozwoloną platformę docelową, zobaczyć dopasowane, błędnie dopasowane i niedostępne utwory, zdecydować o ich pozostawieniu lub usunięciu i świadomie potwierdzić eksport.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-export-match-review/`. Lekcja: —.
 - **S-03: użytkownik może przeglądać i edytować utwory playlisty zapisanej w niezależnym banku, zachowując jej pochodzenie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-bank-playlist-editing/`. Lekcja: —.
 - **S-02: zalogowany użytkownik może zaimportować publiczną playlistę YouTube z linku albo playlistę Spotify należącą do powiązanego konta lub z nim współdzieloną, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-playlist-link-import/`. Lekcja: —.
 - **S-04: użytkownik może bezpiecznie powiązać lub odłączyć konto Spotify albo YouTube, a odłączenie wyłącza synchronizację wszystkich zależnych playlist.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-streaming-account-linking/`. Lekcja: —.
