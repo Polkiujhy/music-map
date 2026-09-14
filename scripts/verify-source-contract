@@ -58,9 +58,11 @@ app/Http/Requests/StartExportReviewRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
 app/Enums/ExportDestinationType.php
+app/Enums/ExportOperationStatus.php
 app/Enums/ExportMatchStatus.php
 app/Enums/ExportReviewDecision.php
 app/Enums/ExportReviewStatus.php
+app/Enums/PlaylistOrigin.php
 app/Integrations/PlaylistImport/Data/PlaylistItemSnapshot.php
 app/Integrations/PlaylistImport/Data/PlaylistReference.php
 app/Integrations/PlaylistImport/Data/PlaylistSnapshot.php
@@ -104,6 +106,7 @@ app/Integrations/ManagedExport/Contracts/ManagedExportAccessBroker.php
 app/Integrations/ManagedExport/Data/ManagedExportAccess.php
 app/Integrations/ManagedExport/ManagedExportAccessException.php
 app/Integrations/ManagedExport/UnixManagedExportAccessBroker.php
+app/Integrations/ManagedAccountExport/ManagedExportFailureCode.php
 app/Livewire/PlaylistEditor.php
 app/Integrations/ExportMatching/Contracts/CatalogSearch.php
 app/Integrations/ExportMatching/Data/CatalogCandidate.php
@@ -129,9 +132,12 @@ app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Livewire/ExportReviewPanel.php
 app/Models/AuthIdentity.php
+app/Models/ExportOperation.php
 app/Models/ExportReview.php
 app/Models/ExportReviewItem.php
 app/Models/Playlist.php
+app/Models/PlaylistExport.php
+app/Models/PlaylistExportTargetAttempt.php
 app/Models/PlaylistItem.php
 app/Models/StreamingAccount.php
 app/Models/User.php
@@ -170,6 +176,9 @@ context/foundation/prd.md
 context/foundation/shape-notes.md
 context/foundation/tech-stack.md
 database/.gitignore
+database/factories/ExportOperationFactory.php
+database/factories/PlaylistExportFactory.php
+database/factories/PlaylistExportTargetAttemptFactory.php
 database/factories/PlaylistFactory.php
 database/factories/ExportReviewFactory.php
 database/factories/ExportReviewItemFactory.php
@@ -190,6 +199,10 @@ database/migrations/2026_09_14_000000_add_market_to_streaming_accounts_table.php
 database/migrations/2026_09_14_000100_create_export_reviews_table.php
 database/migrations/2026_09_14_000200_create_export_review_items_table.php
 database/migrations/2026_09_14_000300_create_youtube_write_admission_tables.php
+database/migrations/2026_09_14_000400_add_origin_to_playlists_table.php
+database/migrations/2026_09_14_000500_create_playlist_exports_table.php
+database/migrations/2026_09_14_000600_create_playlist_export_target_attempts_table.php
+database/migrations/2026_09_14_000700_create_export_operations_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -238,6 +251,9 @@ tests/Feature/ExportMatchReview/PrepareExportReviewTest.php
 tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
+tests/Feature/ManagedAccountExport/ManagedExportMigrationTest.php
+tests/Feature/ManagedAccountExport/ManagedExportModelTest.php
+tests/Feature/ManagedAccountExport/ManagedExportPostgresTest.php
 tests/Feature/ManagedExport/ManagedExportBrokerBindingTest.php
 tests/Feature/Playlists/PlaylistConcurrentImportTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php

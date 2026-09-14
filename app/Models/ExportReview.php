@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'target_provider', 'destination_type', 'streaming_account_id', 'target_account_id',
@@ -44,6 +45,12 @@ class ExportReview extends Model
     public function items(): HasMany
     {
         return $this->hasMany(ExportReviewItem::class)->orderBy('position');
+    }
+
+    /** @return HasOne<ExportOperation, $this> */
+    public function exportOperation(): HasOne
+    {
+        return $this->hasOne(ExportOperation::class);
     }
 
     /** @return array<string, string> */

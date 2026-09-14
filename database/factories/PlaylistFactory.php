@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Models\Playlist;
 use App\Models\User;
@@ -16,6 +17,7 @@ class PlaylistFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'origin' => PlaylistOrigin::Imported,
             'source_provider' => StreamingProvider::YouTube,
             'source_playlist_id' => 'PL-canary-playlist',
             'source_account_id' => null,
