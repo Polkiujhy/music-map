@@ -44,7 +44,7 @@ milestone_status: open
 | F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
-| S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | in-progress |
+| S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | proposed |
 | S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
@@ -125,7 +125,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** edycja nie może zatrzeć nadrzędnego źródła ani identyfikatora platformy, bo późniejsza synchronizacja używa ich do aktualizacji właściwej playlisty.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-04: Powiązanie kont streamingowych
 
@@ -247,6 +247,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 ## Zrobione
 
+- **S-03: użytkownik może przeglądać i edytować utwory playlisty zapisanej w niezależnym banku, zachowując jej pochodzenie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-14-bank-playlist-editing/`. Lekcja: —.
 - **S-02: zalogowany użytkownik może zaimportować publiczną playlistę YouTube z linku albo playlistę Spotify należącą do powiązanego konta lub z nim współdzieloną, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-playlist-link-import/`. Lekcja: —.
 - **S-04: użytkownik może bezpiecznie powiązać lub odłączyć konto Spotify albo YouTube, a odłączenie wyłącza synchronizację wszystkich zależnych playlist.** — Zarchiwizowano 2026-09-14 → `context/archive/2026-09-13-streaming-account-linking/`. Lekcja: —.
 - **F-01: (fundament) aplikacja udostępnia `music-map.platform-access.v1`, przez który Manager weryfikuje minimalny dostęp technicznych i testowych kont Spotify oraz YouTube bez przenoszenia OAuth i cyklu poświadczeń do repozytorium.** — Zarchiwizowano 2026-09-13 → `context/archive/2026-09-12-platform-access-readiness/`. Lekcja: —.
