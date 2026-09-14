@@ -15,7 +15,7 @@ use Tests\TestCase;
 class YouTubePlaylistReaderTest extends TestCase
 {
     #[DataProvider('acceptedItemCounts')]
-    public function test_it_reads_zero_through_twenty_ordered_items_with_two_bounded_requests(int $count): void
+    public function test_it_reads_one_through_twenty_ordered_items_with_two_bounded_requests(int $count): void
     {
         Http::fakeSequence()
             ->push($this->metadata($count))
@@ -25,7 +25,7 @@ class YouTubePlaylistReaderTest extends TestCase
 
         $this->assertInstanceOf(PlaylistSnapshot::class, $result);
         $this->assertCount($count, $result->items);
-        $this->assertSame($count === 0 ? [] : range(0, $count - 1), array_column($result->items, 'position'));
+        $this->assertSame(range(0, $count - 1), array_column($result->items, 'position'));
         Http::assertSentCount(2);
         Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&id=PL_canary&key=api-key-canary');
         Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.googleapis.com/youtube/v3/playlistItems?part=id%2Csnippet%2Cstatus&playlistId=PL_canary&maxResults=21&key=api-key-canary');
@@ -33,7 +33,20 @@ class YouTubePlaylistReaderTest extends TestCase
 
     public static function acceptedItemCounts(): array
     {
-        return [[0], [1], [20]];
+        return [[1], [20]];
+    }
+
+    public function test_it_returns_an_empty_snapshot_for_a_consistent_zero_item_playlist(): void
+    {
+        Http::fakeSequence()
+            ->push($this->metadata(0))
+            ->push($this->items(0));
+
+        $result = $this->reader()->read($this->reference());
+
+        $this->assertInstanceOf(PlaylistSnapshot::class, $result);
+        $this->assertSame([], $result->items);
+        Http::assertSentCount(2);
     }
 
     public function test_it_preserves_duplicates_and_normalizes_private_or_deleted_items_as_placeholders(): void
@@ -89,7 +102,7 @@ class YouTubePlaylistReaderTest extends TestCase
         $this->assertStringNotContainsString('sensitive', $result->value);
     }
 
-    public function test_it_rejects_a_malformed_payload(): void
+    public function test_it_rejects_a_malformed_http_200_response_as_invalid_response(): void
     {
         Http::fakeSequence()->push($this->metadata(1))->push(['items' => 'invalid']);
 
