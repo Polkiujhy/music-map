@@ -24,9 +24,9 @@ class ExportReviewRouteTest extends TestCase
     {
         parent::setUp();
         config([
-            'services.platform_access.spotify.technical.account_id' => 'managed-spotify',
-            'services.platform_access.spotify.technical.market' => 'GB',
-            'services.platform_access.youtube.technical.account_id' => 'managed-youtube',
+            'services.managed_export.providers.spotify.account_id' => 'managed-spotify',
+            'services.managed_export.providers.spotify.market' => 'GB',
+            'services.managed_export.providers.youtube.account_id' => 'managed-youtube',
         ]);
     }
 
@@ -138,7 +138,7 @@ class ExportReviewRouteTest extends TestCase
     public function test_backend_rejects_a_source_and_target_on_the_same_provider_account(): void
     {
         Queue::fake();
-        config(['services.platform_access.youtube.technical.account_id' => 'same-account']);
+        config(['services.managed_export.providers.youtube.account_id' => 'same-account']);
         $playlist = $this->playlist([
             'source_provider' => StreamingProvider::YouTube,
             'source_account_id' => 'same-account',

@@ -57,8 +57,8 @@ class ManagedExportPostgresTest extends TestCase
         $this->requirePostgresConcurrency();
         Queue::fake();
         config([
-            'services.platform_access.spotify.technical.account_id' => 'postgres-managed-owner',
-            'services.platform_access.spotify.technical.market' => 'GB',
+            'services.managed_export.providers.spotify.account_id' => 'postgres-managed-owner',
+            'services.managed_export.providers.spotify.market' => 'GB',
         ]);
         $review = $this->readyManagedReview();
 

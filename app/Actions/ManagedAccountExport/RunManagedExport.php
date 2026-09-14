@@ -85,12 +85,15 @@ final readonly class RunManagedExport
         }
 
         $code = $result->failure ?? ManagedExportFailureCode::InvalidResponse;
-        $retryable = $failure?->retryable ?? in_array($code, [
-            ManagedExportFailureCode::RateLimited,
-            ManagedExportFailureCode::TransportUnavailable,
-        ], true);
+        $retryable = $failure?->retryable ?? $result->retryable;
 
-        return $this->fail($operation, $generation, $code, $retryable, $failure?->retryAfter);
+        return $this->fail(
+            $operation,
+            $generation,
+            $code,
+            $retryable,
+            $failure?->retryAfter ?? $result->retryAfter,
+        );
     }
 
     /** @return null|array{ExportOperation, int} */

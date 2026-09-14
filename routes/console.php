@@ -14,4 +14,4 @@ Schedule::command('playlists:refresh-youtube-metadata')
 
 Schedule::command('managed-exports:recover')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);

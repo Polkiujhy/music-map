@@ -26,8 +26,9 @@ published rotation-contract confirmation below.
 - Release: PENDING
 - Verifier: PENDING
 - UTC window: PENDING
-- Public technical refresh-token rotation contract version: PENDING
-- Contract compatibility and synchronous hand-off confirmed: PENDING
+- Public technical refresh-token rotation contract version: `music-map.managed-export.v1`
+- Static contract compatibility and synchronous hand-off guarantee: PASS — consumer schema matches the published `s-manager-use/references/music-map-managed-export.md` contract
+- Live/operator confirmation on the exact candidate: PENDING
 
 ## Spotify technical account
 

@@ -23,7 +23,7 @@ class ManagedExportBankTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.platform_access.spotify.technical.account_id' => 'runtime-owner']);
+        config(['services.managed_export.providers.spotify.account_id' => 'runtime-owner']);
     }
 
     public function test_bank_uses_bounded_latest_per_playlist_provider_and_keeps_historical_link_after_account_change(): void

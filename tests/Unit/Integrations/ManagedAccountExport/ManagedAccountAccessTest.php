@@ -76,19 +76,68 @@ class ManagedAccountAccessTest extends TestCase
         $this->assertSame(ManagedExportFailureCode::RefreshRotationRequired, $result->failure);
         $this->assertStringNotContainsString('secret-access-canary', serialize($result));
     }
+
+    public function test_published_broker_retry_decision_and_delay_are_preserved(): void
+    {
+        config()->set('services.managed_export.providers.youtube', [
+            'account_id' => 'channel-owner',
+            'scopes' => StreamingProvider::YouTube->requiredScopes(),
+        ]);
+        $this->app->instance(
+            ManagedExportAccessBroker::class,
+            new FakeBroker('provider-unavailable', retryable: true, retryAfter: 17),
+        );
+
+        $result = $this->app->make(WithManagedAccountAccessContract::class)->handle(
+            StreamingProvider::YouTube,
+            self::OPERATION_ID,
+            'channel-owner',
+            StreamingProvider::YouTube->requiredScopes(),
+            fn () => $this->fail('Callback must not run.'),
+        );
+
+        $this->assertSame(ManagedExportFailureCode::TransportUnavailable, $result->failure);
+        $this->assertTrue($result->retryable);
+        $this->assertSame(17, $result->retryAfter);
+    }
+
+    public function test_unexpected_callback_failure_is_not_disguised_as_a_transport_result(): void
+    {
+        config()->set('services.managed_export.providers.spotify', [
+            'account_id' => 'technical-owner',
+            'scopes' => StreamingProvider::Spotify->requiredScopes(),
+        ]);
+        $this->app->instance(ManagedExportAccessBroker::class, new FakeBroker);
+        $access = $this->app->make(WithManagedAccountAccessContract::class);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('callback-canary');
+
+        $access->handle(
+            StreamingProvider::Spotify,
+            self::OPERATION_ID,
+            'technical-owner',
+            StreamingProvider::Spotify->requiredScopes(),
+            fn () => throw new \RuntimeException('callback-canary'),
+        );
+    }
 }
 
 final class FakeBroker implements ManagedExportAccessBroker
 {
     public int $calls = 0;
 
-    public function __construct(private readonly ?string $failure = null) {}
+    public function __construct(
+        private readonly ?string $failure = null,
+        private readonly bool $retryable = false,
+        private readonly ?int $retryAfter = null,
+    ) {}
 
     public function acquire(string $provider, string $operationId): ManagedExportAccess
     {
         $this->calls++;
         if ($this->failure !== null) {
-            throw new ManagedExportAccessException($this->failure);
+            throw new ManagedExportAccessException($this->failure, $this->retryable, $this->retryAfter);
         }
 
         return new ManagedExportAccess($provider, 'secret-access-canary', new DateTimeImmutable('+5 minutes'), $operationId);

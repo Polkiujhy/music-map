@@ -83,6 +83,7 @@ return [
         'providers' => [
             'spotify' => [
                 'account_id' => env('MUSIC_MAP_MANAGED_EXPORT_SPOTIFY_ACCOUNT_ID'),
+                'market' => env('MUSIC_MAP_MANAGED_EXPORT_SPOTIFY_MARKET'),
                 'scopes' => env('MUSIC_MAP_MANAGED_EXPORT_SPOTIFY_SCOPES'),
             ],
             'youtube' => [

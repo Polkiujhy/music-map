@@ -22,7 +22,7 @@ class ManagedExportPanelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.platform_access.spotify.technical.account_id' => 'managed-owner']);
+        config(['services.managed_export.providers.spotify.account_id' => 'managed-owner']);
     }
 
     public function test_operation_polling_announces_only_a_change_and_stops_at_terminal_status(): void

@@ -48,7 +48,11 @@ final readonly class WithManagedAccountAccess implements WithManagedAccountAcces
         try {
             $access = $this->broker->acquire($provider->value, $operationId);
         } catch (ManagedExportAccessException $exception) {
-            return ManagedAccessResult::failure($this->mapBrokerFailure($exception));
+            return ManagedAccessResult::failure(
+                $this->mapBrokerFailure($exception),
+                $exception->retryable,
+                $exception->retryAfter,
+            );
         } catch (Throwable) {
             return ManagedAccessResult::failure(ManagedExportFailureCode::TransportUnavailable);
         }
@@ -67,8 +71,6 @@ final readonly class WithManagedAccountAccess implements WithManagedAccountAcces
 
         try {
             $outcome = $callback($context);
-        } catch (Throwable) {
-            return ManagedAccessResult::failure(ManagedExportFailureCode::TransportUnavailable);
         } finally {
             unset($context, $access);
         }

@@ -24,8 +24,8 @@ class ExportReviewPanelTest extends TestCase
     {
         parent::setUp();
         config([
-            'services.platform_access.spotify.technical.account_id' => 'managed-spotify',
-            'services.platform_access.spotify.technical.market' => 'GB',
+            'services.managed_export.providers.spotify.account_id' => 'managed-spotify',
+            'services.managed_export.providers.spotify.market' => 'GB',
         ]);
     }
 

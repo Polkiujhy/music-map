@@ -76,9 +76,9 @@ final readonly class ResolveExportDestination
             $this->invalid('Dla tego providera użyj aktywnego połączonego konta.');
         }
 
-        $accountId = (string) config("services.platform_access.{$provider->value}.technical.account_id");
+        $accountId = (string) config("services.managed_export.providers.{$provider->value}.account_id");
         $market = $provider === StreamingProvider::Spotify
-            ? $this->market(config('services.platform_access.spotify.technical.market'))
+            ? $this->market(config('services.managed_export.providers.spotify.market'))
             : null;
 
         if ($accountId === '') {

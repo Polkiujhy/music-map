@@ -117,8 +117,8 @@ class ExportReviewDecisionConcurrencyTest extends TestCase
     private function readyReview(): ExportReview
     {
         config([
-            'services.platform_access.spotify.technical.account_id' => 'managed-spotify',
-            'services.platform_access.spotify.technical.market' => 'GB',
+            'services.managed_export.providers.spotify.account_id' => 'managed-spotify',
+            'services.managed_export.providers.spotify.market' => 'GB',
         ]);
 
         $playlist = Playlist::factory()->create();

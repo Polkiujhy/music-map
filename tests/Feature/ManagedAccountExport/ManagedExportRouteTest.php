@@ -29,8 +29,8 @@ class ManagedExportRouteTest extends TestCase
         parent::setUp();
         Queue::fake();
         config([
-            'services.platform_access.spotify.technical.account_id' => 'managed-owner',
-            'services.platform_access.spotify.technical.market' => 'GB',
+            'services.managed_export.providers.spotify.account_id' => 'managed-owner',
+            'services.managed_export.providers.spotify.market' => 'GB',
         ]);
     }
 
@@ -78,7 +78,7 @@ class ManagedExportRouteTest extends TestCase
         $this->assertSame(ExportOperationStatus::PartialFailed, $operation->fresh()->status);
 
         $operation->update(['retry_available_at' => now()->subSecond()]);
-        config(['services.platform_access.spotify.technical.account_id' => 'replacement-owner']);
+        config(['services.managed_export.providers.spotify.account_id' => 'replacement-owner']);
         $this->actingAs($operation->user)->post(route('managed-exports.retry', [
             $operation->playlistExport->source_playlist_id,
             $operation,

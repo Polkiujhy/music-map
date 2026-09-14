@@ -116,7 +116,7 @@
                                                 $destinationType = $linked ? \App\Enums\ExportDestinationType::Linked : \App\Enums\ExportDestinationType::Managed;
                                                 $targetAccountId = $linked
                                                     ? $account->provider_account_id
-                                                    : (string) config("services.platform_access.{$provider->value}.technical.account_id");
+                                                    : (string) config("services.managed_export.providers.{$provider->value}.account_id");
                                                 $sameSource = $playlist->source_provider === $provider
                                                     && $playlist->source_account_id !== null
                                                     && $targetAccountId !== ''

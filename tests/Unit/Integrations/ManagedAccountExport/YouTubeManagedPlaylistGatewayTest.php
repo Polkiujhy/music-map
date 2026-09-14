@@ -38,6 +38,22 @@ class YouTubeManagedPlaylistGatewayTest extends TestCase
         });
     }
 
+    public function test_provider_daily_quota_exhaustion_is_not_retryable(): void
+    {
+        Http::fake([
+            'www.googleapis.com/*' => Http::response([
+                'error' => ['errors' => [['reason' => 'dailyLimitExceeded']]],
+            ], 403),
+        ]);
+
+        $failure = (new YouTubeManagedPlaylistGateway)->create($this->access(), $this->metadata());
+
+        $this->assertInstanceOf(ManagedProviderFailure::class, $failure);
+        $this->assertSame(ManagedExportFailureCode::QuotaExceeded, $failure->code);
+        $this->assertFalse($failure->retryable);
+        $this->assertNull($failure->retryAfter);
+    }
+
     public function test_marker_recovery_requires_two_identical_complete_paginated_reads(): void
     {
         Http::fakeSequence('www.googleapis.com/*')
@@ -87,7 +103,7 @@ class YouTubeManagedPlaylistGatewayTest extends TestCase
                 return Http::response($this->playlist());
             }
             if ($request->method() === 'DELETE') {
-                $mutations[] = ['delete', $request->data()];
+                $mutations[] = ['delete', $request->url(), $request->data()];
                 array_pop($items);
 
                 return Http::response([], 204);
@@ -115,6 +131,10 @@ class YouTubeManagedPlaylistGatewayTest extends TestCase
             'status' => ['privacyStatus' => 'unlisted'],
         ], $mutations[0][1]);
         $this->assertSame(['delete', 'delete', 'insert', 'insert', 'insert'], array_column(array_slice($mutations, 1), 0));
+        $this->assertSame('https://www.googleapis.com/youtube/v3/playlistItems?id=occurrence-1', $mutations[1][1]);
+        $this->assertSame([], $mutations[1][2]);
+        $this->assertSame('https://www.googleapis.com/youtube/v3/playlistItems?id=occurrence-0', $mutations[2][1]);
+        $this->assertSame([], $mutations[2][2]);
     }
 
     public function test_failed_item_mutation_uses_closed_taxonomy_without_provider_body(): void
@@ -132,6 +152,28 @@ class YouTubeManagedPlaylistGatewayTest extends TestCase
         $this->assertInstanceOf(ManagedProviderFailure::class, $failure);
         $this->assertSame(ManagedExportFailureCode::AmbiguousMutation, $failure->code);
         $this->assertStringNotContainsString('secret-canary', serialize($failure));
+    }
+
+    public function test_item_not_found_does_not_report_the_target_playlist_as_missing(): void
+    {
+        Http::fakeSequence('www.googleapis.com/*')
+            ->push(['items' => [$this->playlist()]])
+            ->push(['items' => []])
+            ->push(['items' => [$this->playlist()]])
+            ->push(['items' => []])
+            ->push($this->playlist())
+            ->push(['error' => ['errors' => [['reason' => 'videoNotFound']]]], 404);
+
+        $failure = (new YouTubeManagedPlaylistGateway)->reconcile(
+            $this->access(),
+            $this->reference(),
+            $this->metadata(),
+            ['missing-video'],
+        );
+
+        $this->assertInstanceOf(ManagedProviderFailure::class, $failure);
+        $this->assertSame(ManagedExportFailureCode::ItemRejected, $failure->code);
+        $this->assertNotSame(ManagedExportFailureCode::TargetMissing, $failure->code);
     }
 
     private function access(): ManagedAccessContext

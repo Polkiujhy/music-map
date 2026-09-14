@@ -125,7 +125,7 @@ class BankController extends Controller
             $linked ? ExportDestinationType::Linked : ExportDestinationType::Managed,
             $linked
                 ? $account->provider_account_id
-                : (string) config("services.platform_access.{$provider->value}.technical.account_id"),
+                : (string) config("services.managed_export.providers.{$provider->value}.account_id"),
         ];
     }
 

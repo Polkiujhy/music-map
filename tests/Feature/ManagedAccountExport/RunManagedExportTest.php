@@ -127,6 +127,43 @@ class RunManagedExportTest extends TestCase
         $this->assertSame(ExportOperationStatus::Failed, $operation->fresh()->status);
     }
 
+    public function test_access_broker_retry_decision_and_delay_control_the_operation_lifecycle(): void
+    {
+        $operation = $this->operation();
+        $gateway = new RecordingManagedPlaylistGateway;
+        $access = new ImmediateManagedAccess(
+            failure: ManagedExportFailureCode::TransportUnavailable,
+            retryable: true,
+            retryAfter: 17,
+        );
+        $this->bindFakes($gateway, $access);
+
+        $retryAfter = app(RunManagedExport::class)->handle($operation->id);
+
+        $operation->refresh();
+        $this->assertSame(17, $retryAfter);
+        $this->assertSame(ExportOperationStatus::Queued, $operation->status);
+        $this->assertSame(ManagedExportFailureCode::TransportUnavailable, $operation->failure_code);
+        $this->assertTrue($operation->retry_available_at->between(now()->addSeconds(16), now()->addSeconds(18)));
+        $this->assertSame([], $gateway->calls);
+    }
+
+    public function test_provider_quota_failure_does_not_queue_an_automatic_retry(): void
+    {
+        $operation = $this->operation();
+        $gateway = new RecordingManagedPlaylistGateway;
+        $gateway->createFailure = new ManagedProviderFailure(ManagedExportFailureCode::QuotaExceeded);
+        $this->bindFakes($gateway);
+
+        $retryAfter = app(RunManagedExport::class)->handle($operation->id);
+
+        $operation->refresh();
+        $this->assertNull($retryAfter);
+        $this->assertSame(ExportOperationStatus::PartialFailed, $operation->status);
+        $this->assertSame(ManagedExportFailureCode::QuotaExceeded, $operation->failure_code);
+        $this->assertSame(1, $operation->automatic_claim_count);
+    }
+
     public function test_ambiguous_create_is_never_repeated_and_exhaustion_requires_manual_recovery(): void
     {
         $operation = $this->operation();
@@ -255,6 +292,8 @@ final class ImmediateManagedAccess implements WithManagedAccountAccess
     public function __construct(
         private ?ManagedExportEventLog $events = null,
         private ?ManagedExportFailureCode $failure = null,
+        private bool $retryable = false,
+        private ?int $retryAfter = null,
     ) {}
 
     public function handle(StreamingProvider $provider, string $operationId, string $expectedAccountId, array $requiredScopes, Closure $callback): ManagedAccessResult
@@ -264,7 +303,7 @@ final class ImmediateManagedAccess implements WithManagedAccountAccess
             $this->events->entries[] = 'access';
         }
         if ($this->failure !== null) {
-            return ManagedAccessResult::failure($this->failure);
+            return ManagedAccessResult::failure($this->failure, $this->retryable, $this->retryAfter);
         }
 
         $result = $callback(new ManagedAccessContext(

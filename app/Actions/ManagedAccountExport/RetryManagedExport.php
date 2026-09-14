@@ -61,7 +61,7 @@ final readonly class RetryManagedExport
     private function guardManagedAccount(ExportOperation $operation): void
     {
         $export = $operation->playlistExport;
-        $currentAccount = (string) config("services.platform_access.{$export->target_provider->value}.technical.account_id");
+        $currentAccount = (string) config("services.managed_export.providers.{$export->target_provider->value}.account_id");
 
         if ($export->destination_type !== ExportDestinationType::Managed
             || $currentAccount === ''

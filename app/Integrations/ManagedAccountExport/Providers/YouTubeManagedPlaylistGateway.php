@@ -324,14 +324,20 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
     private function deleteItem(ManagedAccessContext $access, string $occurrenceId): ?ManagedProviderFailure
     {
         try {
-            $response = $this->request($access)->delete(self::API_URL.'/playlistItems', ['id' => $occurrenceId]);
+            $response = $this->request($access)
+                ->withQueryParameters(['id' => $occurrenceId])
+                ->delete(self::API_URL.'/playlistItems');
         } catch (Throwable) {
             return ManagedProviderFailureMapper::transport(true);
         }
 
         return $response->successful() ? null : ($response->serverError()
             ? ManagedProviderFailureMapper::transport(true)
-            : ManagedProviderFailureMapper::response($response, ManagedExportFailureCode::ItemRejected));
+            : ManagedProviderFailureMapper::response(
+                $response,
+                ManagedExportFailureCode::ItemRejected,
+                ManagedExportFailureCode::ItemRejected,
+            ));
     }
 
     private function insertItem(ManagedAccessContext $access, string $playlistId, string $videoId, int $position): ?ManagedProviderFailure
@@ -350,7 +356,11 @@ final class YouTubeManagedPlaylistGateway implements ManagedPlaylistGateway
 
         return $response->successful() ? null : ($response->serverError()
             ? ManagedProviderFailureMapper::transport(true)
-            : ManagedProviderFailureMapper::response($response, ManagedExportFailureCode::ItemRejected));
+            : ManagedProviderFailureMapper::response(
+                $response,
+                ManagedExportFailureCode::ItemRejected,
+                ManagedExportFailureCode::ItemRejected,
+            ));
     }
 
     private function request(ManagedAccessContext $access): PendingRequest

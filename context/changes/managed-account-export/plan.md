@@ -119,15 +119,12 @@ Operacja jest durable outboxem. `afterCommit()` jest szybką ścieżką, natomia
 ograniczona komenda harmonogramu ponownie dispatchuje osierocone `queued` i
 bezpiecznie stare `processing` dopiero po przekroczeniu pełnego lease.
 
-Publiczny, wersjonowany kontrakt PaaS rotacji technical refresh tokenu dla
-zwykłych workerów jest oczekującą zależnością zewnętrzną. Phase 2 może rozwijać
-niezależne kontrakty domenowe i gatewaye z test doubles, ale jej integracja
-produkcyjna jest zablokowana do publikacji tego kontraktu. Po publikacji, a
-przed implementacją dostępu produkcyjnego, plan musi zostać uzupełniony o
-dokładną przyjętą wersję oraz trwałe publiczne źródło kontraktu.
-music-map zależy
-wyłącznie od jego consumer-visible wersji, locatora/entrypointu, zamkniętego
-schematu, potwierdzenia synchronicznego przejęcia i semantyki błędów; bez tej
+Przyjętym publicznym kontraktem PaaS dla zwykłych workerów jest
+`music-map.managed-export.v1`, opublikowany w globalnej referencji
+`s-manager-use/references/music-map-managed-export.md`. Gwarantuje on, że
+replacement refresh token zostaje synchronicznie i trwale przejęty przed
+ujawnieniem access tokenu. music-map zależy wyłącznie od consumer-visible
+wersji, locatora/entrypointu, zamkniętego schematu i semantyki błędów; bez tych
 gwarancji worker kończy fail-closed przed użyciem access tokenu.
 
 ## Krytyczne szczegóły implementacji
@@ -291,12 +288,11 @@ sprawdzeniu konfiguracji, exact scope i tożsamości technicznego konta.
 **Kontrakt**: Dostęp używa wyłącznie publicznych nazw runtime dla principal
 technical, nie przyjmuje tester session ani `StreamingAccount` i nie ma
 fallbacku. Replacement refresh token musi zostać synchronicznie przekazany
-przez opublikowany, wersjonowany kontrakt rotacji dla zwykłego workera przed
-użyciem access tokenu; implementacja zapisuje w referencjach dokładną przyjętą
-wersję kontraktu. Brak kontraktu, jego niezgodność albo brak potwierdzenia
-przejęcia daje `refresh-rotation-required` bez lokalnego zapisu sekretu. Testy
-obejmują wyłącznie publiczne wejścia, wyjścia i gwarancje konsumenta, bez
-mechaniki Managera.
+przez przyjęty kontrakt `music-map.managed-export.v1` przed użyciem access
+tokenu. Brak kontraktu, jego niezgodność albo brak potwierdzenia przejęcia daje
+`refresh-rotation-required` bez lokalnego zapisu sekretu. Testy obejmują
+wyłącznie publiczne wejścia, wyjścia i gwarancje konsumenta, bez mechaniki
+Managera.
 
 #### 2. Neutralny kontrakt playlisty zarządzanej
 
@@ -375,9 +371,9 @@ description i visibility, aby nie usunąć markera.
 - Przegląd gatewayów potwierdza, że marker nigdy nie zastępuje owner, scope i
   visibility check oraz że niepełna paginacja nie prowadzi do create.
 
-**Uwaga implementacyjna**: Produkcyjnej części dostępu technicznego nie wolno
-rozpoczynać ani oznaczyć jako ukończonej przed publikacją kontraktu oraz
-wpisaniem tutaj jego dokładnej wersji i trwałego publicznego źródła.
+**Uwaga implementacyjna**: Produkcyjna część dostępu technicznego korzysta z
+opublikowanego kontraktu `music-map.managed-export.v1`; przed wydaniem wymaga
+jeszcze ręcznego potwierdzenia zgodności na dokładnym kandydacie.
 Po tej fazie zatrzymaj się do akceptacji kontraktu technicznego dostępu i
 providerowych payloadów.
 
@@ -803,10 +799,11 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
   `app/Integrations/ExportMatching/Data/ConfirmedExportManifest.php`.
 - Admission F-02: `context/archive/2026-09-14-youtube-write-admission/plan.md`
   oraz `app/Integrations/YouTubeWriteAdmission/Actions/ReserveYouTubeWrite.php`.
-- Publiczna granica PaaS: `AGENTS.md` i
-  `context/archive/2026-09-12-platform-access-readiness/plan.md`.
-- Zewnętrzny blocker: oczekujący publiczny kontrakt rotacji dla zwykłych
-  workerów; po publikacji wpisać dokładną wersję i trwałe publiczne źródło.
+- Publiczna granica PaaS: `AGENTS.md`, globalna referencja
+  `s-manager-use/references/music-map-managed-export.md` dla przyjętego
+  kontraktu `music-map.managed-export.v1` oraz
+  `context/archive/2026-09-12-platform-access-readiness/plan.md` dla osobnego
+  probe'u `music-map.platform-access.v1`.
 - Spotify Create Playlist:
   `https://developer.spotify.com/documentation/web-api/reference/create-playlist`.
 - Spotify Current User's Playlists:

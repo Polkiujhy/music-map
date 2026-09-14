@@ -7,7 +7,7 @@
             ->first();
         $targetUrl = $targetAttempt?->canonical_url ?? $operation?->playlistExport?->targetPlaylist?->canonical_source_url;
         $currentManagedAccount = $operation
-            ? (string) config("services.platform_access.{$operation->playlistExport->target_provider->value}.technical.account_id")
+            ? (string) config("services.managed_export.providers.{$operation->playlistExport->target_provider->value}.account_id")
             : null;
         $canUseHistoricalAccount = $operation
             && $currentManagedAccount !== ''

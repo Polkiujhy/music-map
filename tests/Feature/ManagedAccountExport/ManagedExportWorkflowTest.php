@@ -55,9 +55,9 @@ class ManagedExportWorkflowTest extends TestCase
         parent::setUp();
         Queue::fake();
         config([
-            'services.platform_access.spotify.technical.account_id' => 'workflow-managed-owner',
-            'services.platform_access.spotify.technical.market' => 'GB',
-            'services.platform_access.youtube.technical.account_id' => 'workflow-managed-owner',
+            'services.managed_export.providers.spotify.account_id' => 'workflow-managed-owner',
+            'services.managed_export.providers.spotify.market' => 'GB',
+            'services.managed_export.providers.youtube.account_id' => 'workflow-managed-owner',
         ]);
     }
 
