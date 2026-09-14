@@ -220,9 +220,9 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 | S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Zakończono i zarchiwizowano. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Zakończono i zarchiwizowano. |
 | S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
-| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Implementacja w toku po integracji S-02 i S-03. |
-| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Czeka na S-05. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 zakończone; czeka na S-05. |
+| S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Zakończono i zarchiwizowano. |
+| S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | yes | S-05 zakończone; gotowe do `/10x-plan`. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | yes | S-04 i S-05 zakończone; gotowe do `/10x-plan`. |
 | S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | yes | S-03 i S-04 zakończone; gotowe do `/10x-plan`. |
 | S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na S-07 i S-08. |
 | S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
