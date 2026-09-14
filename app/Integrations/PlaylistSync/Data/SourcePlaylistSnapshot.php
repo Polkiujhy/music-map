@@ -7,7 +7,7 @@ use InvalidArgumentException;
 final readonly class SourcePlaylistSnapshot
 {
     /**
-     * @param  list<string>  $itemIdentifiers
+     * @param  list<string|null>  $itemIdentifiers
      * @param  list<string|null>  $providerItemIdentifiers
      * @param  list<array<string, mixed>>  $items
      */
@@ -23,8 +23,8 @@ final readonly class SourcePlaylistSnapshot
         }
 
         foreach ($itemIdentifiers as $identifier) {
-            if (! is_string($identifier) || trim($identifier) === '') {
-                throw new InvalidArgumentException('Source playlist item identifiers must be non-empty strings.');
+            if ($identifier !== null && (! is_string($identifier) || trim($identifier) === '')) {
+                throw new InvalidArgumentException('Source playlist item identifiers must be null or non-empty strings.');
             }
         }
 
@@ -48,11 +48,11 @@ final readonly class SourcePlaylistSnapshot
         }
     }
 
-    /** @return list<string> */
+    /** @return list<string|null> */
     public function normalizedItemIdentifiers(): array
     {
         return array_map(
-            static fn (string $identifier): string => trim($identifier),
+            static fn (?string $identifier): ?string => $identifier === null ? null : trim($identifier),
             $this->itemIdentifiers,
         );
     }

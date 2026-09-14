@@ -59,8 +59,12 @@ class PlaylistSynchronizationTest extends TestCase
         $snapshot = (new SpotifySourcePlaylistReader)->read('playlist-canary', $this->spotifyAccess());
 
         $this->assertInstanceOf(SourcePlaylistSnapshot::class, $snapshot);
-        $this->assertSame($identifiers, $snapshot->itemIdentifiers);
-        $this->assertSame($identifiers, $snapshot->normalizedItemIdentifiers());
+        $expectedIdentifiers = $identifiers;
+        if ($identifiers !== []) {
+            $expectedIdentifiers[1] = null;
+        }
+        $this->assertSame($expectedIdentifiers, $snapshot->itemIdentifiers);
+        $this->assertSame($expectedIdentifiers, $snapshot->normalizedItemIdentifiers());
         $this->assertCount(count($identifiers), $snapshot->items);
         if ($identifiers !== []) {
             $this->assertFalse($snapshot->items[1]['is_available']);

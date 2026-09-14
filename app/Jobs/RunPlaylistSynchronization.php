@@ -6,14 +6,14 @@ use App\Actions\PlaylistSync\FailPlaylistSyncRun;
 use App\Actions\PlaylistSync\RunPlaylistSynchronization as RunSynchronization;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Models\PlaylistSyncRun;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-final class RunPlaylistSynchronization implements ShouldBeUnique, ShouldQueue
+final class RunPlaylistSynchronization implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Queueable;
 

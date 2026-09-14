@@ -120,9 +120,11 @@ final readonly class PreparePlaylistSynchronization
 
     private function initialDirection(Playlist $playlist, SourcePlaylistSnapshot $source): PlaylistSyncDirection
     {
-        $bankIdentifiers = $playlist->items->map(function ($item) use ($playlist): string {
+        $bankIdentifiers = $playlist->items->map(function ($item) use ($playlist): ?string {
             if ($playlist->source_provider === StreamingProvider::Spotify) {
-                return (string) ($item->catalog_id ?? $item->catalog_uri);
+                return $item->is_available
+                    ? ($item->catalog_id ?? $item->catalog_uri)
+                    : null;
             }
 
             return (string) $item->catalog_id;

@@ -18,6 +18,7 @@ use App\Models\PlaylistSyncRun;
 use App\Models\StreamingAccount;
 use App\Models\User;
 use Closure;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use RuntimeException;
@@ -39,6 +40,7 @@ class PlaylistSynchronizationJobTest extends TestCase
         $serialized = serialize($job);
 
         $this->assertSame((string) $sync->id, $job->uniqueId());
+        $this->assertInstanceOf(ShouldBeUniqueUntilProcessing::class, $job);
         $this->assertSame(3, $job->tries);
         $this->assertSame([60, 300], $job->backoff);
         $this->assertSame(450, $job->timeout);

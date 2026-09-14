@@ -102,11 +102,17 @@ final class SpotifySourcePlaylistReader implements SourcePlaylistReader
     /** @return array<string, mixed>|SourceSyncFailure */
     private function item(mixed $value, int $position): array|SourceSyncFailure
     {
-        if (! is_array($value) || ! is_array($value['item'] ?? null)) {
+        if (! is_array($value)) {
             return SourceSyncFailure::InvalidResponse;
         }
 
-        $item = $value['item'];
+        $item = $value['item'] ?? null;
+        if ($item === null) {
+            return $this->unavailableItem($position);
+        }
+        if (! is_array($item)) {
+            return SourceSyncFailure::InvalidResponse;
+        }
         $id = $this->string($item['id'] ?? null);
         $uri = $this->string($item['uri'] ?? null, 512);
         $title = $this->nullableString($item['name'] ?? null);
@@ -126,6 +132,10 @@ final class SpotifySourcePlaylistReader implements SourcePlaylistReader
             $creators[] = $name;
         }
 
+        if (($item['is_playable'] ?? true) === false) {
+            return $this->unavailableItem($position);
+        }
+
         return [
             'position' => $position,
             'provider_item_id' => null,
@@ -136,7 +146,24 @@ final class SpotifySourcePlaylistReader implements SourcePlaylistReader
             'album' => $this->nullableString($item['album']['name'] ?? null),
             'duration_milliseconds' => is_int($item['duration_ms'] ?? null) ? $item['duration_ms'] : null,
             'isrc' => $this->nullableString($item['external_ids']['isrc'] ?? null, 32),
-            'is_available' => ($item['is_playable'] ?? true) !== false,
+            'is_available' => true,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function unavailableItem(int $position): array
+    {
+        return [
+            'position' => $position,
+            'provider_item_id' => null,
+            'catalog_id' => null,
+            'catalog_uri' => null,
+            'title' => null,
+            'creators' => [],
+            'album' => null,
+            'duration_milliseconds' => null,
+            'isrc' => null,
+            'is_available' => false,
         ];
     }
 

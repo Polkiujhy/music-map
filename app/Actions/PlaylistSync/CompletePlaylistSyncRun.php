@@ -27,8 +27,12 @@ final readonly class CompletePlaylistSyncRun
                 return null;
             }
             $sync = $run->synchronization()->lockForUpdate()->firstOrFail();
-            if ($sync->status === PlaylistSyncStatus::Disabled || $sync->streaming_account_id === null) {
-                $run->update(['state' => 'cancelled']);
+            if ($sync->status !== PlaylistSyncStatus::Enabled || $sync->streaming_account_id === null) {
+                $run->update([
+                    'state' => $sync->status === PlaylistSyncStatus::Disabled
+                        ? 'cancelled'
+                        : 'superseded',
+                ]);
 
                 return null;
             }

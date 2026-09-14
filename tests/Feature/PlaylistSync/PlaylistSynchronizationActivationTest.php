@@ -9,6 +9,7 @@ use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessResult;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Models\PlaylistSyncRun;
 use App\Models\StreamingAccount;
 use App\Models\User;
 use Closure;
@@ -49,8 +50,12 @@ class PlaylistSynchronizationActivationTest extends TestCase
             'status' => PlaylistSyncStatus::Enabled->value,
             'automatic_enabled' => false,
         ]);
-        $this->assertDatabaseHas('playlist_sync_runs', ['trigger' => 'activation', 'state' => 'pending']);
-        $this->assertDatabaseCount('youtube_write_admissions', 0);
+        $run = PlaylistSyncRun::query()->where('trigger', 'activation')->firstOrFail();
+        $this->assertSame('pending', $run->state);
+        $this->assertDatabaseMissing('youtube_write_admissions', [
+            'operation_type' => 'source-sync',
+            'operation_id' => $run->operation_id,
+        ]);
         Http::assertSentCount(4);
 
         $this->actingAs($user)

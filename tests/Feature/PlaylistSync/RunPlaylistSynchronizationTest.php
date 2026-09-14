@@ -26,6 +26,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RunPlaylistSynchronizationTest extends TestCase
@@ -176,6 +177,62 @@ class RunPlaylistSynchronizationTest extends TestCase
         $this->assertFalse($sync->automatic_enabled);
         $this->assertNull($sync->streaming_account_id);
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT');
+    }
+
+    #[DataProvider('supersedingSynchronizationStates')]
+    public function test_new_activation_state_during_provider_write_supersedes_the_old_run_without_overwriting_it(
+        PlaylistSyncStatus $status,
+        ?string $failureCode,
+    ): void {
+        [$playlist, $sync, $run] = $this->scenario();
+        $playlist->items()->first()->update([
+            'catalog_id' => 'track-bank',
+            'catalog_uri' => 'spotify:track:track-bank',
+        ]);
+        $playlist->update(['bank_content_edited_at' => now()]);
+        $baseline = $sync->only([
+            'baseline_bank_fingerprint',
+            'baseline_source_fingerprint',
+            'baseline_provider_revision',
+        ]);
+        $responses = [
+            $this->metadata('revision-a'),
+            $this->items('track-a'),
+            ['snapshot_id' => 'revision-pushed'],
+            $this->metadata('revision-pushed'),
+            $this->items('track-bank'),
+        ];
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) use ($sync, $status, $failureCode, &$responses) {
+            if ($request->method() === 'PUT') {
+                $sync->update([
+                    'status' => $status,
+                    'automatic_enabled' => false,
+                    'last_failure_code' => $failureCode,
+                ]);
+            }
+
+            return Http::response(array_shift($responses));
+        });
+
+        $this->app->make(RunPlaylistSynchronization::class)->handle($run->id);
+
+        $this->assertSame('superseded', $run->refresh()->state);
+        $this->assertSame($status, $sync->refresh()->status);
+        $this->assertFalse($sync->automatic_enabled);
+        $this->assertSame($failureCode, $sync->last_failure_code);
+        $this->assertSame($baseline, $sync->only(array_keys($baseline)));
+        $this->assertNull($sync->last_outcome);
+        $this->assertSame('track-bank', $playlist->refresh()->items()->value('catalog_id'));
+    }
+
+    /** @return array<string, array{PlaylistSyncStatus, string|null}> */
+    public static function supersedingSynchronizationStates(): array
+    {
+        return [
+            'fresh preview awaits confirmation' => [PlaylistSyncStatus::PendingConfirmation, null],
+            'new preparation failure needs attention' => [PlaylistSyncStatus::Attention, 'provider-unavailable'],
+        ];
     }
 
     /** @return array{Playlist, PlaylistSynchronization, PlaylistSyncRun, StreamingAccount} */

@@ -42,6 +42,26 @@ class SpotifySourcePlaylistReaderTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_it_preserves_null_and_unplayable_positions_as_unavailable_placeholders(): void
+    {
+        $unplayable = $this->item('track-b');
+        $unplayable['item']['is_playable'] = false;
+        Http::preventStrayRequests();
+        Http::fakeSequence()
+            ->push($this->metadata(3))
+            ->push(['items' => [$this->item('track-a'), ['item' => null], $unplayable], 'next' => null]);
+
+        $snapshot = $this->reader()->read('playlist-canary', $this->access());
+
+        $this->assertInstanceOf(SourcePlaylistSnapshot::class, $snapshot);
+        $this->assertSame(['track-a', null, null], $snapshot->itemIdentifiers);
+        $this->assertTrue($snapshot->items[0]['is_available']);
+        $this->assertFalse($snapshot->items[1]['is_available']);
+        $this->assertFalse($snapshot->items[2]['is_available']);
+        $this->assertNull($snapshot->items[1]['catalog_id']);
+        $this->assertNull($snapshot->items[2]['catalog_uri']);
+    }
+
     #[DataProvider('failures')]
     public function test_it_maps_provider_failures(int $status, SourceSyncFailure $failure): void
     {
