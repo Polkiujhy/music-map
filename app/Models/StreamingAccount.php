@@ -46,6 +46,12 @@ class StreamingAccount extends Model
         return $this->hasMany(ExportReview::class);
     }
 
+    /** @return HasMany<PlaylistSynchronization, $this> */
+    public function playlistSynchronizations(): HasMany
+    {
+        return $this->hasMany(PlaylistSynchronization::class);
+    }
+
     public function connectionState(): string
     {
         return $this->refresh_token === null

@@ -35,6 +35,8 @@ app/Actions/Playlists/ReconcileEditedYouTubePlaylist.php
 app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
+app/Actions/PlaylistSync/DeterminePlaylistSyncDirection.php
+app/Actions/PlaylistSync/FingerprintSourcePlaylist.php
 app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
@@ -61,6 +63,10 @@ app/Enums/ExportDestinationType.php
 app/Enums/ExportMatchStatus.php
 app/Enums/ExportReviewDecision.php
 app/Enums/ExportReviewStatus.php
+app/Enums/PlaylistSyncDirection.php
+app/Enums/PlaylistSyncOutcome.php
+app/Enums/PlaylistSyncStatus.php
+app/Enums/PlaylistSyncTrigger.php
 app/Integrations/PlaylistImport/Data/PlaylistItemSnapshot.php
 app/Integrations/PlaylistImport/Data/PlaylistReference.php
 app/Integrations/PlaylistImport/Data/PlaylistSnapshot.php
@@ -72,6 +78,7 @@ app/Integrations/PlaylistImport/PlaylistSourceReaderRegistry.php
 app/Integrations/PlaylistImport/ProviderImportFailureMapper.php
 app/Integrations/PlaylistImport/Providers/SpotifyPlaylistReader.php
 app/Integrations/PlaylistImport/Providers/YouTubePlaylistReader.php
+app/Integrations/PlaylistSync/Data/SourcePlaylistSnapshot.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
 app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
@@ -129,6 +136,8 @@ app/Models/ExportReview.php
 app/Models/ExportReviewItem.php
 app/Models/Playlist.php
 app/Models/PlaylistItem.php
+app/Models/PlaylistSyncRun.php
+app/Models/PlaylistSynchronization.php
 app/Models/StreamingAccount.php
 app/Models/User.php
 app/Models/YouTubeWriteAdmission.php
@@ -240,6 +249,8 @@ tests/Feature/Playlists/PlaylistImportTest.php
 tests/Feature/Playlists/PlaylistPersistenceTest.php
 tests/Feature/Playlists/SpotifyPlaylistImportTest.php
 tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationMigrationTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationModelTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
@@ -290,6 +301,8 @@ tests/Unit/ReleaseManifestContractTest.php
 tests/Unit/RuntimeFilesystemContractTest.php
 tests/Unit/Services/Auth/ResolveGoogleIdentityTest.php
 tests/Unit/Playlists/FingerprintPlaylistContentTest.php
+tests/Unit/PlaylistSync/DeterminePlaylistSyncDirectionTest.php
+tests/Unit/PlaylistSync/FingerprintSourcePlaylistTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'
 

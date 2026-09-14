@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'source_provider',
@@ -58,6 +59,12 @@ class Playlist extends Model
     public function exportReviews(): HasMany
     {
         return $this->hasMany(ExportReview::class);
+    }
+
+    /** @return HasOne<PlaylistSynchronization, $this> */
+    public function synchronization(): HasOne
+    {
+        return $this->hasOne(PlaylistSynchronization::class);
     }
 
     /**
