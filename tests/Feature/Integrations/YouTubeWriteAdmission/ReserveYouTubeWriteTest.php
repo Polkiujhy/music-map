@@ -65,6 +65,21 @@ class ReserveYouTubeWriteTest extends TestCase
         $this->assertSame(2, YouTubeWriteQuotaState::query()->firstOrFail()->admitted_count);
     }
 
+    public function test_admitted_at_preserves_the_instant_when_the_quota_clock_uses_pacific_time(): void
+    {
+        app(AdmitYouTubeWrite::class)->admit(YouTubeWriteOperationType::ManagedExport, 'timestamp');
+
+        $admittedAt = YouTubeWriteAdmission::query()
+            ->where('operation_id', 'timestamp')
+            ->firstOrFail()
+            ->admitted_at;
+
+        $this->assertSame(
+            Carbon::parse('2026-09-14 12:00:00 UTC')->getTimestamp(),
+            $admittedAt->getTimestamp(),
+        );
+    }
+
     public function test_retry_is_permanent_across_days_instances_and_a_later_consumer_failure(): void
     {
         $first = app(AdmitYouTubeWrite::class)->admit(YouTubeWriteOperationType::ManagedExport, 'stable');

@@ -134,7 +134,7 @@ final class ReserveYouTubeWrite implements AdmitYouTubeWrite
             'operation_type' => $operationType,
             'operation_id' => $operationId,
             'quota_day' => $currentQuotaDay,
-            'admitted_at' => $now,
+            'admitted_at' => $now->utc(),
         ]);
 
         $state->admitted_count++;

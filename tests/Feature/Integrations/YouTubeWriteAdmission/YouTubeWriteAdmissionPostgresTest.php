@@ -10,6 +10,8 @@ use App\Models\YouTubeWriteAdmission;
 use App\Models\YouTubeWriteQuotaState;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -32,8 +34,10 @@ class YouTubeWriteAdmissionPostgresTest extends TestCase
     {
         parent::setUp();
 
-        if (DB::getDriverName() !== 'pgsql' || ! function_exists('pcntl_fork')) {
-            $this->markTestSkipped('This admission proof requires PostgreSQL and pcntl.');
+        if (DB::getDriverName() !== 'pgsql'
+            || ! function_exists('pcntl_fork')
+            || ! function_exists('posix_kill')) {
+            $this->markTestSkipped('This admission proof requires PostgreSQL, pcntl, and posix.');
         }
 
         DB::table('youtube_write_admissions')->delete();
@@ -162,7 +166,7 @@ class YouTubeWriteAdmissionPostgresTest extends TestCase
             }
 
             touch("{$barrier}/go");
-            pcntl_waitpid($pid, $status, WNOHANG);
+            $this->reapChildren([$pid]);
             DB::purge();
             File::deleteDirectory($barrier);
         }
@@ -305,13 +309,43 @@ SQL);
         yield 'deadlock detected' => ['40P01'];
     }
 
-    public function test_retry_in_a_new_process_recovers_a_committed_result(): void
+    public function test_retry_recovers_after_commit_acknowledgement_is_lost(): void
     {
-        $first = $this->runConcurrent([[
-            YouTubeWriteOperationType::LinkedExport,
-            'ambiguous-commit-key',
-            '5',
-        ]])[0];
+        $connection = DB::connection();
+        $originalDispatcher = $connection->getEventDispatcher();
+        $ambiguousDispatcher = new Dispatcher;
+        $ambiguousDispatcher->listen(
+            TransactionCommitted::class,
+            static function (): never {
+                throw new RuntimeException('Simulated lost commit acknowledgement.');
+            },
+        );
+        $connection->setEventDispatcher($ambiguousDispatcher);
+
+        try {
+            (new ReserveYouTubeWrite)->admit(
+                YouTubeWriteOperationType::LinkedExport,
+                'ambiguous-commit-key',
+            );
+            $this->fail('A lost commit acknowledgement must not return an admission result.');
+        } catch (YouTubeWriteAdmissionUnavailable $exception) {
+            $this->assertSame(
+                'Simulated lost commit acknowledgement.',
+                $exception->getPrevious()?->getMessage(),
+            );
+        } finally {
+            if ($originalDispatcher === null) {
+                $connection->unsetEventDispatcher();
+            } else {
+                $connection->setEventDispatcher($originalDispatcher);
+            }
+        }
+
+        $this->assertDatabaseHas('youtube_write_admissions', [
+            'operation_type' => YouTubeWriteOperationType::LinkedExport->value,
+            'operation_id' => 'ambiguous-commit-key',
+        ]);
+        $this->assertSame(1, YouTubeWriteQuotaState::query()->firstOrFail()->admitted_count);
 
         DB::purge();
 
@@ -321,9 +355,7 @@ SQL);
             '5',
         ]])[0];
 
-        $this->assertSame(YouTubeWriteAdmissionStatus::AdmittedNew->value, $first['status']);
         $this->assertSame(YouTubeWriteAdmissionStatus::AdmittedExisting->value, $retry['status']);
-        $this->assertSame($first['reservation_id'], $retry['reservation_id']);
         $this->assertSame(1, YouTubeWriteAdmission::query()->count());
         $this->assertSame(1, YouTubeWriteQuotaState::query()->firstOrFail()->admitted_count);
     }
@@ -398,9 +430,7 @@ SQL);
         } finally {
             touch("{$barrier}/go");
 
-            foreach ($pids as $pid) {
-                pcntl_waitpid($pid, $status, WNOHANG);
-            }
+            $this->reapChildren($pids);
 
             DB::purge();
             File::deleteDirectory($barrier);
@@ -450,13 +480,83 @@ SQL);
 
     private function assertChildSucceeded(int $pid, string $barrier, int $index): void
     {
-        pcntl_waitpid($pid, $status);
+        $deadline = microtime(true) + 10;
+
+        do {
+            $waited = pcntl_waitpid($pid, $status, WNOHANG);
+
+            if ($waited === $pid) {
+                break;
+            }
+
+            if ($waited === -1) {
+                $this->fail("Admission child {$pid} could not be reaped.");
+            }
+
+            usleep(1000);
+        } while (microtime(true) < $deadline);
+
+        if ($waited !== $pid) {
+            $this->reapChildren([$pid]);
+            $this->fail("Admission child {$pid} did not exit within 10 seconds.");
+        }
+
         $error = is_file("{$barrier}/error-{$index}")
             ? file_get_contents("{$barrier}/error-{$index}")
             : 'No child error was recorded.';
 
         $this->assertTrue(pcntl_wifexited($status), $error);
         $this->assertSame(0, pcntl_wexitstatus($status), $error);
+    }
+
+    /** @param  list<int>  $pids */
+    private function reapChildren(array $pids): void
+    {
+        $remaining = array_values(array_unique($pids));
+        $deadline = microtime(true) + 1;
+
+        do {
+            foreach ($remaining as $index => $pid) {
+                $waited = pcntl_waitpid($pid, $status, WNOHANG);
+
+                if ($waited === $pid || $waited === -1) {
+                    unset($remaining[$index]);
+                }
+            }
+
+            if ($remaining === []) {
+                return;
+            }
+
+            usleep(1000);
+        } while (microtime(true) < $deadline);
+
+        foreach ($remaining as $pid) {
+            posix_kill($pid, SIGTERM);
+        }
+
+        $deadline = microtime(true) + 0.25;
+
+        do {
+            foreach ($remaining as $index => $pid) {
+                $waited = pcntl_waitpid($pid, $status, WNOHANG);
+
+                if ($waited === $pid || $waited === -1) {
+                    unset($remaining[$index]);
+                }
+            }
+
+            if ($remaining === []) {
+                return;
+            }
+
+            usleep(1000);
+        } while (microtime(true) < $deadline);
+
+        foreach ($remaining as $pid) {
+            posix_kill($pid, SIGKILL);
+            pcntl_waitpid($pid, $status);
+        }
     }
 
     private function recordChildError(string $barrier, int $index, Throwable $exception): void

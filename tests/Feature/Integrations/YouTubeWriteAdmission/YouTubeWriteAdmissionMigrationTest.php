@@ -3,9 +3,9 @@
 namespace Tests\Feature\Integrations\YouTubeWriteAdmission;
 
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use PHPUnit\Framework\AssertionFailedError;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -80,8 +80,8 @@ class YouTubeWriteAdmissionMigrationTest extends TestCase
         try {
             $operation();
             $this->fail('Expected the database constraint to reject the write.');
-        } catch (\Throwable $exception) {
-            $this->assertNotInstanceOf(AssertionFailedError::class, $exception);
+        } catch (QueryException $exception) {
+            $this->assertSame('23000', (string) $exception->getCode());
         }
     }
 }
