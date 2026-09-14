@@ -184,6 +184,50 @@ class PlaylistImportTest extends TestCase
         $this->assertSame($before, Playlist::query()->with('items')->firstOrFail()->toArray());
     }
 
+    public function test_transport_failure_after_valid_metadata_leaves_the_previous_snapshot_and_freshness_unchanged(): void
+    {
+        $user = User::factory()->create();
+        Http::fakeSequence()
+            ->push($this->metadata('Original', 2))
+            ->push($this->items(['video-first', 'video-second']))
+            ->push($this->metadata('Replacement', 2))
+            ->pushFailedConnection('provider transport failed');
+
+        $this->travelTo('2026-09-14 10:00:00');
+        $this->actingAs($user)->post(route('playlists.import'), $this->form())
+            ->assertSessionHas('status', 'Playlista została dodana do Twojego banku.');
+
+        $before = Playlist::query()->with('items')->firstOrFail();
+        $beforeAttributes = $before->getAttributes();
+        $beforeItems = $before->items->map->only([
+            'position',
+            'occurrence_id',
+            'catalog_id',
+        ])->all();
+        $requestsBeforeReimport = Http::recorded()->count();
+
+        $this->travelTo('2026-09-15 10:00:00');
+        $this->actingAs($user)->post(route('playlists.import'), $this->form())
+            ->assertSessionHas(
+                'error',
+                fn (string $message): bool => str_contains($message, 'YouTube jest chwilowo niedostępny'),
+            );
+
+        $after = Playlist::query()->with('items')->firstOrFail();
+
+        $this->assertSame($requestsBeforeReimport + 2, Http::recorded()->count());
+        $this->assertSame($beforeAttributes, $after->getAttributes());
+        $this->assertSame([
+            ['position' => 0, 'occurrence_id' => 'occurrence-0', 'catalog_id' => 'video-first'],
+            ['position' => 1, 'occurrence_id' => 'occurrence-1', 'catalog_id' => 'video-second'],
+        ], $beforeItems);
+        $this->assertSame($beforeItems, $after->items->map->only([
+            'position',
+            'occurrence_id',
+            'catalog_id',
+        ])->all());
+    }
+
     public function test_bank_never_displays_another_users_playlist(): void
     {
         $owner = User::factory()->create();
