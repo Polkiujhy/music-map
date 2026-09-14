@@ -5,6 +5,7 @@ namespace Tests\Feature\ExportMatchReview;
 use App\Actions\ExportReviews\ConfirmExportReview;
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
+use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
 use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Models\ExportReview;
@@ -96,6 +97,17 @@ class ConfirmExportReviewTest extends TestCase
         $this->assertNull($review->playlist->fresh()->bank_content_edited_at);
         $this->assertSame(['target-0', 'target-1'], array_column($second->items, 'catalog_id'));
         $this->assertSame(['source-0', 'source-1'], $review->playlist->items()->pluck('catalog_id')->all());
+    }
+
+    public function test_confirmation_uses_a_decision_already_persisted_by_the_component(): void
+    {
+        [$review, $items] = $this->readyReview([ExportMatchStatus::Matched, ExportMatchStatus::Suspicious]);
+        $items[1]->forceFill(['decision' => ExportReviewDecision::Keep])->save();
+
+        $manifest = app(ConfirmExportReview::class)->handle($review->user, $review, []);
+
+        $this->assertSame(ExportReviewStatus::Confirmed, $review->fresh()->status);
+        $this->assertSame(['target-0', 'target-1'], array_column($manifest->items, 'catalog_id'));
     }
 
     /**

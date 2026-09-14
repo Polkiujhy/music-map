@@ -89,7 +89,7 @@ final readonly class ConfirmExportReview
             foreach ($items as $item) {
                 $decision = $item->match_status === ExportMatchStatus::Matched
                     ? ExportReviewDecision::Keep
-                    : $this->decision($decisions[$item->getKey()] ?? null, (int) $item->getKey());
+                    : $this->decision($decisions[$item->getKey()] ?? $item->decision, (int) $item->getKey());
                 $normalized[(int) $item->getKey()] = $decision;
             }
 

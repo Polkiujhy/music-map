@@ -57,8 +57,12 @@
             @endphp
             <div class="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Podsumowanie decyzji">
                 <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Do eksportu</span><strong class="mt-1 block text-2xl">{{ $kept }}</strong></div>
-                <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Poza manifestem</span><strong class="mt-1 block text-2xl">{{ $skipped }}</strong></div>
+                <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Poza eksportem</span><strong class="mt-1 block text-2xl">{{ $skipped }}</strong></div>
                 <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Do usunięcia z banku</span><strong class="mt-1 block text-2xl">{{ $removed }}</strong></div>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+                <button type="button" wire:click="keepAll" wire:loading.attr="disabled" wire:target="keepAll" class="secondary-button">Zachowaj wszystkie w banku</button>
             </div>
 
             <div class="mt-8 space-y-5">
@@ -106,7 +110,7 @@
                                 <div class="mt-3 flex flex-col gap-3 sm:flex-row">
                                     @foreach (['keep' => 'Zachowaj w banku', 'remove' => 'Usuń z banku przy potwierdzeniu'] as $value => $text)
                                         <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-ash-grey-700 p-4 focus-within:ring-2 focus-within:ring-ash-grey-300">
-                                            <input type="radio" name="decisions[{{ $item->id }}]" value="{{ $value }}" wire:click="choose({{ $item->id }}, '{{ $value }}')" @checked(($decisions[$item->id] ?? null) === $value) class="mt-1">
+                                            <input type="radio" name="decisions[{{ $item->id }}]" value="{{ $value }}" wire:click="choose({{ $item->id }}, '{{ $value }}')" @checked(($decisions[$item->id] ?? null) === $value) class="mt-1 size-4 border-ash-grey-700 bg-[#171717] text-ash-grey-400 accent-ash-grey-400 focus:ring-ash-grey-400">
                                             <span class="text-sm">{{ $text }}</span>
                                         </label>
                                     @endforeach

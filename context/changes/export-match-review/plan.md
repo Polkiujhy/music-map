@@ -628,8 +628,8 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [ ] 1.6 Schema review potwierdza kompletny handoff bez sekretów
-- [ ] 1.7 Konfiguracja zachowuje minimalną publiczną granicę PaaS
+- [x] 1.6 Schema review potwierdza kompletny handoff bez sekretów
+- [x] 1.7 Konfiguracja zachowuje minimalną publiczną granicę PaaS
 
 ### Phase 2: Matching katalogowy i wykonanie w kolejce
 
@@ -644,8 +644,8 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [ ] 2.7 Fixture'y potwierdzają konserwatywne traktowanie cover, remix i live
-- [ ] 2.8 Podgląd e-maila jest czytelny i nie ujawnia danych playlisty
+- [x] 2.7 Fixture'y potwierdzają konserwatywne traktowanie cover, remix i live
+- [x] 2.8 Podgląd e-maila jest czytelny i nie ujawnia danych playlisty
 
 ### Phase 3: Przegląd, decyzje i świadome potwierdzenie
 
