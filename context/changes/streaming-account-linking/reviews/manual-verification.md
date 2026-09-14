@@ -7,13 +7,15 @@ channel identifiers, authorization codes, or provider payloads.
 ## Candidate
 
 - Prepared on: 2026-09-13
-- Verification date: PENDING
-- Environment: PENDING (dedicated non-production live-smoke environment)
-- Commit: PENDING (record the exact committed candidate before schema release)
-- Overall status: NOT PERFORMED
+- Verification date: 2026-09-14
+- Environment: live (pre-launch production environment approved for this smoke)
+- Commit: `12b9837633bc1bf455af6e063ab3d11a9b7aabc7`
+- Release: `mm-12b9837633bc-34790134642-1`
+- Overall status: PASS
 
-No supervised schema release or live provider smoke has been performed or
-claimed by this artifact yet.
+The observations below apply only to the exact commit and release recorded
+above. No credential values, tokens, account or channel identifiers,
+authorization codes, provider payloads, or personal data were retained.
 
 ## Required runtime settings
 
@@ -21,48 +23,58 @@ Record presence only; never copy values into this file.
 
 | Setting | Present | Notes |
 | --- | --- | --- |
-| `APP_KEY` | PENDING | Laravel encryption key |
-| `APP_PREVIOUS_KEYS` | PENDING | Required when prior keys must decrypt existing records |
-| `SPOTIFY_CLIENT_ID` | PENDING | Shared application client identifier |
-| `SPOTIFY_CLIENT_SECRET` | PENDING | Application client credential |
-| `SPOTIFY_REDIRECT_URI` | PENDING | Exact HTTPS application callback |
-| `GOOGLE_CLIENT_ID` | PENDING | Shared application client identifier |
-| `GOOGLE_CLIENT_SECRET` | PENDING | Application client credential |
-| `YOUTUBE_REDIRECT_URI` | PENDING | Exact HTTPS application callback |
+| `APP_KEY` | PASS | Presence only; Laravel encryption key |
+| `APP_PREVIOUS_KEYS` | N/A | No key rotation required for this release |
+| `SPOTIFY_CLIENT_ID` | PASS | Presence only; shared application client identifier |
+| `SPOTIFY_CLIENT_SECRET` | PASS | Presence only; application client credential |
+| `SPOTIFY_REDIRECT_URI` | PASS | Exact canonical HTTPS application callback |
+| `GOOGLE_CLIENT_ID` | PASS | Presence only; shared application client identifier |
+| `GOOGLE_CLIENT_SECRET` | PASS | Presence only; application client credential |
+| `YOUTUBE_REDIRECT_URI` | PASS | Exact canonical HTTPS application callback |
 
 ## Supervised schema release
 
 - Public PaaS operation: `schema-release`
-- Exact candidate matched the commit above: PENDING
-- Additive migration completed before application smoke: PENDING
-- Result and non-sensitive operator observation: NOT PERFORMED
+- Exact candidate matched the commit above: PASS
+- Additive migration completed before application smoke: PASS
+- Result and non-sensitive operator observation: PASS — the first attempt
+  refused before mutation because existing backup evidence was not an exact
+  fresh backup/restore pair. A fresh PostgreSQL backup and isolated restore
+  test both passed, after which `schema-release` verified the additive
+  `streaming_accounts` migration and advanced the baseline. The exact release
+  was then reconciled successfully with all four roles healthy.
 
 The Manager implementation, secret transport, host paths, and lifecycle
 mechanics are outside this application's evidence and must not be recorded here.
 
 ## Spotify live smoke
 
-- Dedicated product account used (no identifier recorded): PENDING
-- Consent showed the four expected application scopes: PENDING
-- Link succeeded and displayed only the minimal label: PENDING
-- Relink of the same account succeeded: PENDING
-- Refresh/verify succeeded: PENDING
-- Invalid grant produced `reconnect-required`: PENDING
-- Unlink succeeded locally and displayed the `Remove Access` instruction: PENDING
-- Client owner has active Premium (no identifier recorded): PENDING
-- Occupied Development Mode allowlist seats: PENDING (record count only)
-- Technical, tester, and product accounts fit within the five-user limit: PENDING
+- Dedicated product smoke account used (no identifier recorded): PASS — the
+  existing tester account was reused for the product smoke; the technical
+  account and credential remained separate.
+- Consent showed the four expected application scopes: PASS
+- Link succeeded and displayed only the minimal label: PASS
+- Relink of the same account succeeded: PASS
+- Refresh/verify succeeded: PASS
+- Invalid grant produced `reconnect-required`: PASS
+- Unlink succeeded locally and displayed the `Remove Access` instruction: PASS
+- Final provider-side `Remove Access` completed: PASS
+- Client owner has active Premium (no identifier recorded): PASS — Premium Individual
+- Occupied Development Mode allowlist seats: 2
+- Technical and shared tester/product roles fit within the five-user limit: PASS — 2/5 unique seats
 
 ## YouTube live smoke
 
-- Dedicated Google/Brand Account used (no identifier recorded): PENDING
-- Provider channel selection completed during consent/login: PENDING
-- Link succeeded and displayed only the minimal channel label: PENDING
-- Relink of the same channel succeeded: PENDING
-- Refresh/verify succeeded: PENDING
-- Invalid grant produced `reconnect-required`: PENDING
-- Unlink succeeded locally and attempted provider revoke: PENDING
-- Google login identity and the active `music-map` session remained intact: PENDING
+- Dedicated Google/Brand Account used (no identifier recorded): PASS
+- Provider channel selection completed during consent/login: PASS
+- Link succeeded and displayed only the minimal channel label: PASS
+- Relink of the same channel succeeded: PASS
+- Refresh/verify succeeded: PASS
+- Invalid grant produced `reconnect-required`: PASS
+- Reconnect after invalid grant succeeded: PASS
+- Unlink succeeded locally and provider revoke was confirmed: PASS
+- Final provider dashboard check confirmed no active grant: PASS
+- Google login identity and the active `music-map` session remained intact: PASS
 
 ## Secret-absence observations
 
@@ -71,12 +83,19 @@ Record a pass/fail observation, never the inspected values.
 
 | Surface | Access token absent | Authorization code absent | Plaintext refresh token absent | Provider payload absent |
 | --- | --- | --- | --- | --- |
-| Database | PENDING | PENDING | PENDING | PENDING |
-| Rendered HTML | PENDING | PENDING | PENDING | PENDING |
-| Limited application logs | PENDING | PENDING | PENDING | PENDING |
+| Database | PASS | PASS | PASS | PASS |
+| Rendered HTML | PASS | PASS | PASS | PASS |
+| Limited application logs | PASS | PASS | PASS | PASS |
 
 ## Sign-off
 
-- Operator/reviewer: PENDING (role or initials only)
-- Observations: NOT PERFORMED
-- Final result: PENDING
+- Operator/reviewer: owner/operator; two independent manual reviewers
+- Observations: Exact HTTPS root returned success and both unauthenticated
+  callback paths returned the expected same-origin login redirect. Both
+  provider lifecycles completed, the secret-absence matrix passed 12/12, final
+  local streaming-account count was zero, provider grants were removed, the
+  Google login identities remained present, and the reconciler timer was
+  restored to its active state. Both independent reviewers assessed 4.7, 4.8,
+  and 4.9 as PASS and confirmed the exact healthy release; their only blocking
+  finding before this update was the previously pending evidence artifact.
+- Final result: PASS
