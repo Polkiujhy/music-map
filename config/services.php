@@ -80,6 +80,16 @@ return [
             'MUSIC_MAP_MANAGED_EXPORT_SOCKET',
             '/run/s-manager-music-map-managed-export/broker.sock',
         ),
+        'providers' => [
+            'spotify' => [
+                'account_id' => env('MUSIC_MAP_MANAGED_EXPORT_SPOTIFY_ACCOUNT_ID'),
+                'scopes' => env('MUSIC_MAP_MANAGED_EXPORT_SPOTIFY_SCOPES'),
+            ],
+            'youtube' => [
+                'account_id' => env('MUSIC_MAP_MANAGED_EXPORT_YOUTUBE_ACCOUNT_ID'),
+                'scopes' => env('MUSIC_MAP_MANAGED_EXPORT_YOUTUBE_SCOPES'),
+            ],
+        ],
     ],
 
     'platform_access' => [

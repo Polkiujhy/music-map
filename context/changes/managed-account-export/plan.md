@@ -828,10 +828,10 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [x] 1.1 Zweryfikować migracje i ograniczenia na SQLite
-- [x] 1.2 Zweryfikować modele, enumy, relacje i write-once locator
-- [x] 1.3 Udowodnić unikalność operacji i kopii na PostgreSQL
-- [x] 1.4 Uruchomić regresję playlist, review i F-02
+- [x] 1.1 Zweryfikować migracje i ograniczenia na SQLite — cd4fc50
+- [x] 1.2 Zweryfikować modele, enumy, relacje i write-once locator — cd4fc50
+- [x] 1.3 Udowodnić unikalność operacji i kopii na PostgreSQL — cd4fc50
+- [x] 1.4 Uruchomić regresję playlist, review i F-02 — cd4fc50
 
 #### Manual
 
@@ -842,11 +842,11 @@ playlisty, dopóki przyszła orkiestracja S-10 nie usunie zasobu zewnętrznego.
 
 #### Automated
 
-- [ ] 2.1 Zweryfikować efemeryczny dostęp techniczny i rotację
-- [ ] 2.2 Zweryfikować marker i deterministyczne metadane
-- [ ] 2.3 Zweryfikować kontrakt Spotify przez fake HTTP
-- [ ] 2.4 Zweryfikować kontrakt YouTube przez fake HTTP
-- [ ] 2.5 Uruchomić regresję F-01 i Google login
+- [x] 2.1 Zweryfikować efemeryczny dostęp techniczny i rotację
+- [x] 2.2 Zweryfikować marker i deterministyczne metadane
+- [x] 2.3 Zweryfikować kontrakt Spotify przez fake HTTP
+- [x] 2.4 Zweryfikować kontrakt YouTube przez fake HTTP
+- [x] 2.5 Uruchomić regresję F-01 i Google login
 
 #### Manual
 
