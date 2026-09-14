@@ -33,10 +33,12 @@ class PlaylistSynchronizationModelTest extends TestCase
             'trigger' => PlaylistSyncTrigger::Automatic,
             'direction' => PlaylistSyncDirection::Pull,
         ]);
+        $latestRun = PlaylistSyncRun::factory()->for($sync, 'synchronization')->create();
 
         $this->assertTrue($sync->playlist->synchronization->is($sync));
         $this->assertTrue($account->playlistSynchronizations->contains($sync));
         $this->assertTrue($sync->runs->contains($run));
+        $this->assertTrue($sync->latestRun->is($latestRun));
         $this->assertTrue($run->synchronization->is($sync));
         $this->assertSame(PlaylistSyncStatus::Enabled, $sync->status);
         $this->assertSame(PlaylistSyncOutcome::Pulled, $sync->last_outcome);

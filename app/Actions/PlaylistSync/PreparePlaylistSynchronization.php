@@ -181,6 +181,7 @@ final readonly class PreparePlaylistSynchronization
             SourceSyncFailure::Unauthorized,
             SourceSyncFailure::ReconnectRequired => 'Konto wymaga ponownego połączenia.',
             SourceSyncFailure::RateLimited => 'Dostawca ograniczył liczbę żądań. Spróbuj ponownie później.',
+            SourceSyncFailure::QuotaLimited => 'Dzienny limit dostawcy został wyczerpany. Spróbuj ponownie po jego odnowieniu.',
             default => 'Nie udało się odczytać kompletnego stanu playlisty źródłowej.',
         };
     }

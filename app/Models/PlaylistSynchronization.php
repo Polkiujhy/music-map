@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'streaming_account_id', 'status', 'automatic_enabled',
@@ -38,6 +39,12 @@ class PlaylistSynchronization extends Model
     public function runs(): HasMany
     {
         return $this->hasMany(PlaylistSyncRun::class);
+    }
+
+    /** @return HasOne<PlaylistSyncRun, $this> */
+    public function latestRun(): HasOne
+    {
+        return $this->hasOne(PlaylistSyncRun::class)->latestOfMany();
     }
 
     /** @return array<string, string> */

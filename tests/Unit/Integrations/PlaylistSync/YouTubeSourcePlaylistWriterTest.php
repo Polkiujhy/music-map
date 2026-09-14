@@ -6,6 +6,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\Providers\YouTubeSourcePlaylistReader;
 use App\Integrations\PlaylistSync\Providers\YouTubeSourcePlaylistWriter;
+use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Integrations\PlaylistSync\YouTube\PlanYouTubePlaylistMutations;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Models\PlaylistSyncRun;
@@ -67,6 +68,25 @@ class YouTubeSourcePlaylistWriterTest extends TestCase
 
         $this->assertSame(['b'], $result->itemIdentifiers);
         Http::assertNothingSent();
+    }
+
+    public function test_it_maps_youtube_write_quota_responses_without_treating_them_as_forbidden(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence()->push([
+            'error' => ['errors' => [['reason' => 'quotaExceeded']]],
+        ], 403);
+        $run = PlaylistSyncRun::factory()->create(['checkpoint' => null]);
+
+        $result = $this->writer()->write(
+            'playlist-canary',
+            $this->snapshot(['a'], ['item-a']),
+            [['catalog_id' => 'b']],
+            $this->access(),
+            $run,
+        );
+
+        $this->assertSame(SourceSyncFailure::QuotaLimited, $result);
     }
 
     private function writer(): YouTubeSourcePlaylistWriter

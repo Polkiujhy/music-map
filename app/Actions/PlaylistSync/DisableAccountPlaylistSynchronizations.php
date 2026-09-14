@@ -22,7 +22,7 @@ final class DisableAccountPlaylistSynchronizations implements DisableDependentSt
 
         PlaylistSyncRun::query()
             ->whereIn('playlist_synchronization_id', $ids)
-            ->where('state', 'pending')
+            ->whereIn('state', ['pending', 'running'])
             ->update(['state' => 'cancelled', 'updated_at' => now()]);
 
         PlaylistSynchronization::query()

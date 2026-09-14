@@ -3,6 +3,7 @@
 namespace Tests\Feature\PlaylistSync;
 
 use App\Actions\Playlists\RefreshYouTubePlaylistMetadata as RefreshMetadata;
+use App\Actions\PlaylistSync\RunPlaylistSynchronization;
 use App\Enums\PlaylistSyncStatus;
 use App\Enums\StreamingProvider;
 use App\Integrations\StreamingAccounts\Contracts\DisableDependentStreamingSynchronizations;
@@ -49,6 +50,11 @@ class PlaylistSynchronizationLifecycleTest extends TestCase
         $this->assertNull($sync->next_check_at);
         $this->assertNull($sync->streaming_account_id);
         Http::assertNothingSent();
+
+        $this->app->make(RunPlaylistSynchronization::class)->handle($pending->id);
+
+        $this->assertSame('cancelled', $pending->refresh()->state);
+        $this->assertSame(PlaylistSyncStatus::Disabled, $sync->refresh()->status);
     }
 
     public function test_historical_youtube_refresh_job_skips_playlist_owned_by_sync_coordinator(): void

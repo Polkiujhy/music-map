@@ -134,7 +134,7 @@ class PlaylistSynchronizationFailureTest extends TestCase
             $run,
         );
 
-        $this->assertSame(SourceSyncFailure::OverLimit, $result);
+        $this->assertSame(SourceSyncFailure::WriteAdmissionLimited, $result);
         $this->assertSame($before, $this->completeState($playlist, $sync));
         $this->assertSame(['video-a'], $remote->identifiers());
         $this->assertDatabaseCount('youtube_write_admissions', 0);
@@ -190,6 +190,27 @@ class PlaylistSynchronizationFailureTest extends TestCase
         Http::assertSentCount(10);
     }
 
+    public function test_coordinator_resumes_a_partial_youtube_push_from_its_checkpoint(): void
+    {
+        [$playlist, $sync, $run] = $this->youtubeScenario(['a', 'b', 'c'], ['b', 'd', 'a']);
+        $remote = new StatefulYouTubePlaylist(['a', 'b', 'c'], 1);
+        $this->app->instance(WithStreamingAccess::class, new SuccessfulFailureMatrixAccess(StreamingProvider::YouTube));
+        Http::preventStrayRequests();
+        Http::fake(fn (Request $request) => $remote->respond($request));
+        $coordinator = $this->app->make(RunPlaylistSynchronization::class);
+
+        $first = $coordinator->handle($run->id);
+        $second = $coordinator->handle($run->id);
+
+        $this->assertSame(SourceSyncFailure::ProviderUnavailable, $first);
+        $this->assertNull($second);
+        $this->assertSame('completed', $run->refresh()->state);
+        $this->assertSame('pushed', $sync->refresh()->last_outcome->value);
+        $this->assertSame(['b', 'd', 'a'], $remote->identifiers());
+        $this->assertSame(['b', 'd', 'a'], $playlist->refresh()->items()->orderBy('position')->pluck('catalog_id')->all());
+        $this->assertDatabaseCount('youtube_write_admissions', 1);
+    }
+
     public function test_source_change_after_partial_youtube_push_resolves_source_wins_without_double_admission(): void
     {
         [$playlist, $sync, $run] = $this->youtubeScenario(['a', 'b', 'c'], ['b', 'd', 'a']);
@@ -211,8 +232,8 @@ class PlaylistSynchronizationFailureTest extends TestCase
         $this->assertSame('pulled', $sync->refresh()->last_outcome->value);
         $this->assertSame(['external-video'], $playlist->refresh()->items()->pluck('catalog_id')->all());
         $this->assertDatabaseCount('youtube_write_admissions', 1);
-        $this->assertSame(8, $remote->requestCount);
-        Http::assertSentCount(8);
+        $this->assertSame(10, $remote->requestCount);
+        Http::assertSentCount(10);
     }
 
     /** @return array{PlaylistSynchronization, PlaylistSyncRun} */

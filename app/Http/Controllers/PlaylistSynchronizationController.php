@@ -213,7 +213,10 @@ final class PlaylistSynchronizationController extends Controller
             'over-limit' => 'Playlista źródłowa przekracza limit 20 pozycji. Zmniejsz ją, a następnie przygotuj synchronizację ponownie.',
             'not-found' => 'Nie można odnaleźć playlisty źródłowej. Sprawdź ją na platformie i przygotuj synchronizację ponownie.',
             'unauthorized', 'forbidden', 'owner-mismatch', 'missing-access', 'reconnect-required' => 'Połącz konto ponownie, a następnie przygotuj i potwierdź synchronizację.',
-            'rate-limited', 'provider-unavailable' => 'Platforma jest chwilowo niedostępna. Spróbuj przygotować synchronizację ponownie później.',
+            'rate-limited' => 'Platforma chwilowo ograniczyła żądania. Spróbuj ponownie później.',
+            'quota-limited' => 'Dzienny limit YouTube został wyczerpany. Spróbuj ponownie po odnowieniu limitu.',
+            'write-admission-limited' => 'Dzienny limit zapisów aplikacji został osiągnięty. Spróbuj ponownie później.',
+            'provider-unavailable' => 'Platforma jest chwilowo niedostępna. Spróbuj przygotować synchronizację ponownie później.',
             default => 'Synchronizacja wymaga ponownego przygotowania i potwierdzenia.',
         };
     }

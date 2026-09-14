@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 final class DispatchDuePlaylistSynchronizations extends Command
 {
+    private const SCHEDULER_INTERVAL_MINUTES = 5;
+
     protected $signature = 'playlist-sync:dispatch-due';
 
     protected $description = 'Queue due automatic source-playlist synchronizations';
@@ -49,10 +51,11 @@ final class DispatchDuePlaylistSynchronizations extends Command
 
     private function jitterMinutes(int $synchronizationId): int
     {
-        $maximum = min(240, max(1, (int) config('playlist-sync.maximum_check_interval_minutes', 240)));
+        $configuredMaximum = min(240, max(1, (int) config('playlist-sync.maximum_check_interval_minutes', 240)));
+        $maximumJitter = max(1, $configuredMaximum - self::SCHEDULER_INTERVAL_MINUTES);
         $bucket = now()->format('Y-m-d-H');
         $hash = hexdec(substr(hash('sha256', $synchronizationId.'|'.$bucket), 0, 8));
 
-        return 1 + ($hash % $maximum);
+        return 1 + ($hash % $maximumJitter);
     }
 }

@@ -16,32 +16,45 @@ final readonly class CompletePlaylistSyncRun
         private ApplySourcePlaylistToBank $applySource,
         private FingerprintPlaylistContent $bankFingerprint,
         private FingerprintSourcePlaylist $sourceFingerprint,
+        private DispatchPlaylistSynchronization $dispatch,
     ) {}
 
     public function handle(int $runId, PlaylistSyncDirection $direction, SourcePlaylistSnapshot $source): void
     {
-        DB::transaction(function () use ($runId, $direction, $source): void {
+        $retry = DB::transaction(function () use ($runId, $direction, $source): ?array {
             $run = PlaylistSyncRun::query()->whereKey($runId)->lockForUpdate()->firstOrFail();
             if (! in_array($run->state, ['pending', 'running'], true)) {
-                return;
+                return null;
             }
             $sync = $run->synchronization()->lockForUpdate()->firstOrFail();
+            if ($sync->status === PlaylistSyncStatus::Disabled || $sync->streaming_account_id === null) {
+                $run->update(['state' => 'cancelled']);
+
+                return null;
+            }
             $playlist = $direction === PlaylistSyncDirection::Pull
                 ? $this->applySource->handle((int) $sync->playlist_id, $source)
                 : $sync->playlist()->lockForUpdate()->with('items')->firstOrFail();
+            $currentBankFingerprint = $this->bankFingerprint->handle($playlist);
+            $bankChangedDuringRun = $direction !== PlaylistSyncDirection::Pull
+                && ! hash_equals($run->input_bank_fingerprint, $currentBankFingerprint);
 
             if ($direction !== PlaylistSyncDirection::Pull) {
                 $playlist->update([
                     'provider_revision' => $source->providerRevision,
                     'provider_metadata_refreshed_at' => now(),
-                    'bank_content_edited_at' => $direction === PlaylistSyncDirection::Push ? null : $playlist->bank_content_edited_at,
+                    'bank_content_edited_at' => $direction === PlaylistSyncDirection::Push && ! $bankChangedDuringRun
+                        ? null
+                        : $playlist->bank_content_edited_at,
                 ]);
                 $playlist->refresh()->load('items');
             }
 
             $sync->update([
                 'status' => PlaylistSyncStatus::Enabled,
-                'baseline_bank_fingerprint' => $this->bankFingerprint->handle($playlist),
+                'baseline_bank_fingerprint' => $bankChangedDuringRun
+                    ? $run->input_bank_fingerprint
+                    : $this->bankFingerprint->handle($playlist),
                 'baseline_source_fingerprint' => $this->sourceFingerprint->handle($source),
                 'baseline_provider_revision' => $source->providerRevision,
                 'last_checked_at' => now(),
@@ -54,6 +67,17 @@ final readonly class CompletePlaylistSyncRun
                 'last_failure_code' => null,
             ]);
             $run->update(['direction' => $direction, 'state' => 'completed']);
+
+            return $bankChangedDuringRun
+                ? [
+                    'synchronization_id' => (int) $sync->getKey(),
+                    'trigger' => $run->trigger,
+                ]
+                : null;
         });
+
+        if ($retry !== null) {
+            $this->dispatch->handle($retry['synchronization_id'], $retry['trigger']);
+        }
     }
 }

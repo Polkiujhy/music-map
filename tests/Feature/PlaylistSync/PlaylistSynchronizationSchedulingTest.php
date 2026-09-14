@@ -25,6 +25,7 @@ class PlaylistSynchronizationSchedulingTest extends TestCase
     {
         Queue::fake();
         config()->set('playlist-sync.dispatch_batch_size', 2);
+        config()->set('playlist-sync.maximum_check_interval_minutes', 240);
         $syncs = collect(range(1, 3))->map(fn (): PlaylistSynchronization => $this->synchronization([
             'automatic_enabled' => true,
             'next_check_at' => now()->subMinute(),
@@ -37,7 +38,7 @@ class PlaylistSynchronizationSchedulingTest extends TestCase
         $syncs->take(2)->each(function (PlaylistSynchronization $sync): void {
             $next = $sync->refresh()->next_check_at;
             $this->assertTrue($next->isFuture());
-            $this->assertTrue($next->lessThanOrEqualTo(now()->addHours(4)));
+            $this->assertTrue($next->lessThanOrEqualTo(now()->addMinutes(235)));
         });
 
         $this->artisan('playlist-sync:dispatch-due')->assertSuccessful();
@@ -65,6 +66,22 @@ class PlaylistSynchronizationSchedulingTest extends TestCase
 
         Event::dispatch(new Login('web', $user, false));
         Queue::assertPushed(RunPlaylistSynchronization::class, 1);
+    }
+
+    public function test_login_dispatch_is_limited_to_the_configured_batch(): void
+    {
+        Queue::fake();
+        config()->set('playlist-sync.dispatch_batch_size', 2);
+        $user = User::factory()->create();
+        $due = collect(range(1, 3))->map(fn (): PlaylistSynchronization => $this->synchronization([
+            'last_checked_at' => now()->subHour(),
+        ], $user));
+
+        Event::dispatch(new Login('web', $user, false));
+
+        Queue::assertPushed(RunPlaylistSynchronization::class, 2);
+        $this->assertSame(2, $due->sum(fn (PlaylistSynchronization $sync): int => $sync->runs()->count()));
+        $this->assertSame(0, $due->last()->runs()->count());
     }
 
     private function synchronization(array $attributes = [], ?User $user = null): PlaylistSynchronization

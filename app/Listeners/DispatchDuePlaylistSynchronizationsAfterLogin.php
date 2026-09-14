@@ -17,6 +17,7 @@ final readonly class DispatchDuePlaylistSynchronizationsAfterLogin
     public function handle(Login $event): void
     {
         $threshold = now()->subMinutes(max(15, (int) config('playlist-sync.login_check_threshold_minutes', 15)));
+        $limit = max(1, (int) config('playlist-sync.dispatch_batch_size', 50));
 
         PlaylistSynchronization::query()
             ->where('status', PlaylistSyncStatus::Enabled->value)
@@ -25,6 +26,7 @@ final readonly class DispatchDuePlaylistSynchronizationsAfterLogin
                 $query->whereNull('last_checked_at')->orWhere('last_checked_at', '<=', $threshold);
             })
             ->orderBy('id')
+            ->limit($limit)
             ->pluck('id')
             ->each(fn (int $id) => $this->dispatch->handle($id, PlaylistSyncTrigger::Login));
     }

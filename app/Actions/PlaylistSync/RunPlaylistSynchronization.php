@@ -4,6 +4,7 @@ namespace App\Actions\PlaylistSync;
 
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\PlaylistSyncDirection;
+use App\Enums\PlaylistSyncStatus;
 use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourcePlaylistReaderRegistry;
 use App\Integrations\PlaylistSync\SourcePlaylistWriterRegistry;
@@ -46,13 +47,14 @@ final readonly class RunPlaylistSynchronization
 
             return null;
         }
+        $accountId = (int) $account->getKey();
 
         $outcome = null;
         $accessResult = $this->withStreamingAccess->handle(
             $owner,
             $account,
             $playlist->source_provider->requiredScopes(),
-            function (StreamingAccessContext $access) use ($runId, $reader, $playlist, &$outcome): void {
+            function (StreamingAccessContext $access) use ($runId, $reader, $playlist, $accountId, &$outcome): void {
                 $source = $reader->read($playlist->source_playlist_id, $access);
                 if (! $source instanceof SourcePlaylistSnapshot) {
                     $outcome = $source;
@@ -65,12 +67,18 @@ final readonly class RunPlaylistSynchronization
                     return;
                 }
 
-                $prepared = DB::transaction(function () use ($runId, $source): ?array {
+                $prepared = DB::transaction(function () use ($runId, $source, $accountId): ?array {
                     $run = PlaylistSyncRun::query()->whereKey($runId)->lockForUpdate()->firstOrFail();
                     if (! in_array($run->state, ['pending', 'running'], true)) {
                         return ['skip' => true];
                     }
                     $sync = $run->synchronization()->lockForUpdate()->firstOrFail();
+                    if ($sync->status !== PlaylistSyncStatus::Enabled
+                        || (int) $sync->streaming_account_id !== $accountId) {
+                        $run->update(['state' => 'cancelled']);
+
+                        return ['skip' => true];
+                    }
                     $activeRunId = $sync->runs()
                         ->whereIn('state', ['pending', 'running'])
                         ->orderBy('id')
@@ -79,6 +87,15 @@ final readonly class RunPlaylistSynchronization
                         $run->update(['state' => 'superseded']);
 
                         return ['skip' => true];
+                    }
+                    if ($run->state === 'running'
+                        && $run->direction === PlaylistSyncDirection::Push
+                        && is_array($run->checkpoint)) {
+                        return [
+                            'direction' => PlaylistSyncDirection::Push,
+                            'items' => $run->bank_snapshot,
+                            'run' => $run,
+                        ];
                     }
                     $bank = Playlist::query()->whereKey($sync->playlist_id)->lockForUpdate()->with('items')->firstOrFail();
                     $bankFingerprint = $this->bankFingerprint->handle($bank);
@@ -164,7 +181,7 @@ final readonly class RunPlaylistSynchronization
                 StreamingAccessFailure::ReconnectRequired,
                 StreamingAccessFailure::MissingScope,
                 StreamingAccessFailure::StaleCredential => SourceSyncFailure::ReconnectRequired,
-                StreamingAccessFailure::QuotaExceeded => SourceSyncFailure::OverLimit,
+                StreamingAccessFailure::QuotaExceeded => SourceSyncFailure::QuotaLimited,
                 null => null,
             };
 

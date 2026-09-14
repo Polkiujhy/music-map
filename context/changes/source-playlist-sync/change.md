@@ -1,7 +1,7 @@
 ---
 change_id: source-playlist-sync
 title: Synchronizacja playlisty źródłowej
-status: implemented
+status: impl_reviewed
 created: 2026-09-14
 updated: 2026-09-14
 ---

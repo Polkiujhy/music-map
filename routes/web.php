@@ -80,9 +80,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('bank.playlists.reimport');
     Route::post('/bank/playlists/{playlist}/synchronization/prepare', [PlaylistSynchronizationController::class, 'prepare'])
         ->whereNumber('playlist')
+        ->middleware('throttle:playlist-sync-provider')
         ->name('playlist-synchronizations.prepare');
     Route::post('/bank/playlists/{playlist}/synchronization/confirm', [PlaylistSynchronizationController::class, 'confirm'])
         ->whereNumber('playlist')
+        ->middleware('throttle:playlist-sync-provider')
         ->name('playlist-synchronizations.confirm');
     Route::get('/bank/playlists/{playlist}/synchronization', [PlaylistSynchronizationController::class, 'show'])
         ->whereNumber('playlist')

@@ -32,12 +32,11 @@ final readonly class ConfirmPlaylistSynchronization
 
     public function handle(User $user, Playlist $playlist, string $previewToken): PlaylistSyncRun
     {
-        $preview = Cache::get(PreparePlaylistSynchronization::cacheKey($previewToken));
-        if (! is_array($preview)
-            || ($preview['user_id'] ?? null) !== (int) $user->getKey()
-            || ($preview['playlist_id'] ?? null) !== (int) $playlist->getKey()) {
-            $this->stale();
-        }
+        $preview = $this->consumePreview(
+            $previewToken,
+            (int) $user->getKey(),
+            (int) $playlist->getKey(),
+        );
 
         $playlist = $user->playlists()->whereKey($playlist->getKey())->with('items')->firstOrFail();
         $account = $user->streamingAccounts()
@@ -49,7 +48,6 @@ final readonly class ConfirmPlaylistSynchronization
         }
 
         if (! hash_equals((string) $preview['bank_fingerprint'], $this->bankFingerprint->handle($playlist))) {
-            Cache::forget(PreparePlaylistSynchronization::cacheKey($previewToken));
             $this->stale();
         }
 
@@ -69,7 +67,6 @@ final readonly class ConfirmPlaylistSynchronization
         );
 
         if (! $result->successful || $snapshot instanceof SourceSyncFailure || ! $snapshot instanceof SourcePlaylistSnapshot) {
-            Cache::forget(PreparePlaylistSynchronization::cacheKey($previewToken));
             $this->stale();
         }
 
@@ -77,7 +74,6 @@ final readonly class ConfirmPlaylistSynchronization
         if (! hash_equals((string) $preview['source_fingerprint'], $sourceFingerprint)
             || ($preview['provider_revision'] ?? null) !== $snapshot->providerRevision
             || ! hash_equals($account->provider_account_id, (string) $snapshot->ownerAccountId)) {
-            Cache::forget(PreparePlaylistSynchronization::cacheKey($previewToken));
             $this->stale();
         }
 
@@ -114,10 +110,35 @@ final readonly class ConfirmPlaylistSynchronization
             ]);
         });
 
-        Cache::forget(PreparePlaylistSynchronization::cacheKey($previewToken));
         $this->dispatch->dispatchRun($run);
 
         return $run;
+    }
+
+    /** @return array<string, mixed> */
+    private function consumePreview(string $token, int $userId, int $playlistId): array
+    {
+        $key = PreparePlaylistSynchronization::cacheKey($token);
+        $lock = Cache::lock($key.':confirm-lock', 10);
+
+        if (! $lock->get()) {
+            $this->stale();
+        }
+
+        try {
+            $preview = Cache::get($key);
+            if (! is_array($preview)
+                || ($preview['user_id'] ?? null) !== $userId
+                || ($preview['playlist_id'] ?? null) !== $playlistId) {
+                $this->stale();
+            }
+
+            Cache::forget($key);
+
+            return $preview;
+        } finally {
+            $lock->release();
+        }
     }
 
     private function stale(): never

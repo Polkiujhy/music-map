@@ -3,6 +3,7 @@
 namespace Tests\Feature\PlaylistSync;
 
 use App\Actions\Playlists\FingerprintPlaylistContent;
+use App\Actions\PlaylistSync\DisableAccountPlaylistSynchronizations;
 use App\Actions\PlaylistSync\RunPlaylistSynchronization;
 use App\Enums\PlaylistSyncDirection;
 use App\Enums\PlaylistSyncOutcome;
@@ -12,6 +13,7 @@ use App\Enums\StreamingProvider;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessResult;
+use App\Jobs\RunPlaylistSynchronization as RunPlaylistSynchronizationJob;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\PlaylistSynchronization;
@@ -23,6 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class RunPlaylistSynchronizationTest extends TestCase
@@ -77,6 +80,49 @@ class RunPlaylistSynchronizationTest extends TestCase
             && $request['uris'] === ['spotify:track:track-bank']);
     }
 
+    public function test_bank_change_during_push_preserves_the_edit_and_queues_another_run(): void
+    {
+        Queue::fake();
+        [$playlist, $sync, $run] = $this->scenario();
+        $playlist->items()->first()->update([
+            'catalog_id' => 'track-pushed',
+            'catalog_uri' => 'spotify:track:track-pushed',
+        ]);
+        $playlist->update(['bank_content_edited_at' => now()]);
+        $playlist->refresh()->load('items');
+        $pushedFingerprint = (new FingerprintPlaylistContent)->handle($playlist);
+        $responses = [
+            $this->metadata('revision-a'),
+            $this->items('track-a'),
+            ['snapshot_id' => 'revision-pushed'],
+            $this->metadata('revision-pushed'),
+            $this->items('track-pushed'),
+        ];
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) use ($playlist, &$responses) {
+            if ($request->method() === 'PUT') {
+                $playlist->items()->first()->update([
+                    'catalog_id' => 'track-edited-during-push',
+                    'catalog_uri' => 'spotify:track:track-edited-during-push',
+                ]);
+                $playlist->update(['bank_content_edited_at' => now()->addSecond()]);
+            }
+
+            return Http::response(array_shift($responses));
+        });
+
+        $this->app->make(RunPlaylistSynchronization::class)->handle($run->id);
+
+        $this->assertSame('completed', $run->refresh()->state);
+        $this->assertSame(PlaylistSyncOutcome::Pushed, $sync->refresh()->last_outcome);
+        $this->assertSame($pushedFingerprint, $sync->baseline_bank_fingerprint);
+        $this->assertNotNull($playlist->refresh()->bank_content_edited_at);
+        $this->assertSame('track-edited-during-push', $playlist->items()->value('catalog_id'));
+        $this->assertSame('pending', $sync->runs()->latest('id')->value('state'));
+        $this->assertSame(2, $sync->runs()->count());
+        Queue::assertPushed(RunPlaylistSynchronizationJob::class, 1);
+    }
+
     public function test_conflict_is_resolved_source_wins_and_provider_http_never_runs_in_a_transaction(): void
     {
         [$playlist, $sync, $run] = $this->scenario();
@@ -95,6 +141,41 @@ class RunPlaylistSynchronizationTest extends TestCase
 
         $this->assertSame(['track-source'], $playlist->refresh()->items()->pluck('catalog_id')->all());
         $this->assertSame(PlaylistSyncOutcome::Pulled, $sync->refresh()->last_outcome);
+    }
+
+    public function test_unlink_during_provider_write_keeps_the_run_cancelled_and_sync_disabled(): void
+    {
+        [$playlist, $sync, $run, $account] = $this->scenario();
+        $playlist->items()->first()->update([
+            'catalog_id' => 'track-bank',
+            'catalog_uri' => 'spotify:track:track-bank',
+        ]);
+        $playlist->update(['bank_content_edited_at' => now()]);
+        $responses = [
+            $this->metadata('revision-a'),
+            $this->items('track-a'),
+            ['snapshot_id' => 'revision-pushed'],
+            $this->metadata('revision-pushed'),
+            $this->items('track-bank'),
+        ];
+        $disable = $this->app->make(DisableAccountPlaylistSynchronizations::class);
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) use ($account, $disable, &$responses) {
+            if ($request->method() === 'PUT') {
+                $disable->handle($account);
+                $account->delete();
+            }
+
+            return Http::response(array_shift($responses));
+        });
+
+        $this->app->make(RunPlaylistSynchronization::class)->handle($run->id);
+
+        $this->assertSame('cancelled', $run->refresh()->state);
+        $this->assertSame(PlaylistSyncStatus::Disabled, $sync->refresh()->status);
+        $this->assertFalse($sync->automatic_enabled);
+        $this->assertNull($sync->streaming_account_id);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT');
     }
 
     /** @return array{Playlist, PlaylistSynchronization, PlaylistSyncRun, StreamingAccount} */

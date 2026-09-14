@@ -14,7 +14,7 @@ final class FailPlaylistSyncRun
     {
         DB::transaction(function () use ($runId, $failure): void {
             $run = PlaylistSyncRun::query()->whereKey($runId)->lockForUpdate()->firstOrFail();
-            if ($run->state === 'completed') {
+            if (in_array($run->state, ['completed', 'failed', 'superseded', 'cancelled'], true)) {
                 return;
             }
             $code = $failure instanceof SourceSyncFailure ? $failure->value : $failure;

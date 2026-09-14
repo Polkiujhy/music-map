@@ -173,7 +173,7 @@ class YouTubeSourceSyncAdmissionTest extends TestCase
             $run,
         );
 
-        $this->assertSame(SourceSyncFailure::OverLimit, $result);
+        $this->assertSame(SourceSyncFailure::WriteAdmissionLimited, $result);
         $this->assertDatabaseCount('youtube_write_admissions', 0);
         Http::assertNothingSent();
     }

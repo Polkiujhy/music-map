@@ -101,6 +101,7 @@ app/Integrations/PlaylistSync/Providers/YouTubeSourcePlaylistWriter.php
 app/Integrations/PlaylistSync/SourcePlaylistReaderRegistry.php
 app/Integrations/PlaylistSync/SourcePlaylistWriterRegistry.php
 app/Integrations/PlaylistSync/SourceSyncFailure.php
+app/Integrations/PlaylistSync/YouTubeSourceSyncFailureMapper.php
 app/Integrations/PlaylistSync/YouTube/PlanYouTubePlaylistMutations.php
 app/Integrations/PlaylistSync/YouTube/YouTubePlaylistMutation.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php

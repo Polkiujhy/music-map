@@ -52,6 +52,36 @@ class PlaylistSynchronizationActivationTest extends TestCase
         $this->assertDatabaseHas('playlist_sync_runs', ['trigger' => 'activation', 'state' => 'pending']);
         $this->assertDatabaseCount('youtube_write_admissions', 0);
         Http::assertSentCount(4);
+
+        $this->actingAs($user)
+            ->postJson(route('playlist-synchronizations.confirm', $playlist), [
+                'preview_token' => $preview['preview_token'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('preview_token');
+        Http::assertSentCount(4);
+    }
+
+    public function test_provider_backed_prepare_is_rate_limited_per_user_and_provider(): void
+    {
+        [$user, $playlist] = $this->spotifyPlaylist();
+        $this->app->instance(WithStreamingAccess::class, new SyncAccessFake(StreamingProvider::Spotify, 'owner-canary'));
+        Http::preventStrayRequests();
+        $responses = Http::fakeSequence();
+        foreach (range(1, 5) as $attempt) {
+            $responses->push($this->spotifyMetadata())->push($this->spotifyItems());
+        }
+
+        foreach (range(1, 5) as $attempt) {
+            $this->actingAs($user)
+                ->postJson(route('playlist-synchronizations.prepare', $playlist))
+                ->assertOk();
+        }
+
+        $this->actingAs($user)
+            ->postJson(route('playlist-synchronizations.prepare', $playlist))
+            ->assertStatus(429);
+        Http::assertSentCount(10);
     }
 
     public function test_changed_bank_invalidates_the_preview_without_creating_an_activation_run(): void

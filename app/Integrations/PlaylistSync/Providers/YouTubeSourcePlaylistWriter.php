@@ -8,6 +8,7 @@ use App\Integrations\PlaylistSync\Data\SourcePlaylistSnapshot;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Integrations\PlaylistSync\YouTube\PlanYouTubePlaylistMutations;
 use App\Integrations\PlaylistSync\YouTube\YouTubePlaylistMutation;
+use App\Integrations\PlaylistSync\YouTubeSourceSyncFailureMapper;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\YouTubeWriteAdmission\Contracts\AdmitYouTubeWrite;
 use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
@@ -62,7 +63,7 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
                     $run->operation_id,
                 );
                 if ($admission->status === YouTubeWriteAdmissionStatus::LimitReached) {
-                    return SourceSyncFailure::OverLimit;
+                    return SourceSyncFailure::WriteAdmissionLimited;
                 }
             }
 
@@ -129,13 +130,6 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
 
     private function failure(Response $response): SourceSyncFailure
     {
-        return match (true) {
-            $response->status() === 401 => SourceSyncFailure::Unauthorized,
-            $response->status() === 403 => SourceSyncFailure::Forbidden,
-            $response->status() === 404 => SourceSyncFailure::NotFound,
-            $response->status() === 429 => SourceSyncFailure::RateLimited,
-            $response->status() >= 500 => SourceSyncFailure::ProviderUnavailable,
-            default => SourceSyncFailure::InvalidResponse,
-        };
+        return YouTubeSourceSyncFailureMapper::response($response);
     }
 }
