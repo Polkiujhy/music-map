@@ -44,7 +44,10 @@
             <div class="mt-8 rounded-2xl border border-ash-grey-800 p-6">
                 <p class="font-semibold">{{ $review->status === \App\Enums\ExportReviewStatus::Expired ? 'Ten wynik wygasł.' : 'Przygotowanie wyniku nie powiodło się.' }}</p>
                 <p class="mt-2 text-sm text-ash-grey-200/70">Ponowienie utworzy świeży przegląd i jeszcze raz sprawdzi aktualną zawartość oraz cel.</p>
-                <button type="button" wire:click="retry" wire:loading.attr="disabled" class="primary-button mt-5">Przygotuj nowy wynik</button>
+                <form method="POST" action="{{ route('export-reviews.retry', [$review->playlist_id, $review->getKey()]) }}" class="mt-5">
+                    @csrf
+                    <button type="submit" class="primary-button">Przygotuj nowy wynik</button>
+                </form>
             </div>
         @elseif ($review->status === \App\Enums\ExportReviewStatus::Ready)
             @php
@@ -54,17 +57,23 @@
             @endphp
             <div class="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Podsumowanie decyzji">
                 <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Do eksportu</span><strong class="mt-1 block text-2xl">{{ $kept }}</strong></div>
-                <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Niedostępne</span><strong class="mt-1 block text-2xl">{{ $skipped }}</strong></div>
+                <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Poza manifestem</span><strong class="mt-1 block text-2xl">{{ $skipped }}</strong></div>
                 <div class="rounded-xl bg-ash-grey-900 p-4"><span class="text-sm text-ash-grey-400">Do usunięcia z banku</span><strong class="mt-1 block text-2xl">{{ $removed }}</strong></div>
             </div>
 
             <div class="mt-8 space-y-5">
                 @foreach ($review->items as $item)
                     @php
-                        $label = match ($item->match_status) {
-                            \App\Enums\ExportMatchStatus::Matched => 'Pewne dopasowanie',
-                            \App\Enums\ExportMatchStatus::Suspicious => 'Wymaga decyzji',
-                            \App\Enums\ExportMatchStatus::Unavailable => 'Niedostępne w celu',
+                        $sourceUnavailable = ! $item->source_is_available;
+                        $sourceMissingTitle = $item->source_title === null;
+                        $label = match (true) {
+                            $sourceUnavailable => 'Źródło niedostępne',
+                            $sourceMissingTitle => 'Brak danych źródłowych',
+                            default => match ($item->match_status) {
+                                \App\Enums\ExportMatchStatus::Matched => 'Pewne dopasowanie',
+                                \App\Enums\ExportMatchStatus::Suspicious => 'Wymaga decyzji',
+                                \App\Enums\ExportMatchStatus::Unavailable => 'Niedostępne w celu',
+                            },
                         };
                     @endphp
                     <article wire:key="review-item-{{ $item->id }}" class="rounded-2xl border border-ash-grey-800 p-5 sm:p-6">
@@ -81,7 +90,13 @@
                                     <p class="mt-1 break-words text-sm text-ash-grey-200/70">{{ implode(', ', $item->target_creators ?? []) }}</p>
                                 </div>
                             @else
-                                <p class="text-sm text-ash-grey-200/70">Ta pozycja nie trafi do manifestu eksportu.</p>
+                                @if ($sourceUnavailable)
+                                    <p class="text-sm text-ash-grey-200/70">Pozycja źródłowa jest niedostępna i nie została wyszukana w katalogu celu.</p>
+                                @elseif ($sourceMissingTitle)
+                                    <p class="text-sm text-ash-grey-200/70">Brak tytułu potrzebnego do wyszukania tej pozycji w katalogu celu.</p>
+                                @else
+                                    <p class="text-sm text-ash-grey-200/70">Nie znaleziono wiarygodnego odpowiednika w katalogu celu.</p>
+                                @endif
                             @endif
                         </div>
 

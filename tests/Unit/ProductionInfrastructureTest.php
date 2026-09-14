@@ -15,10 +15,20 @@ class ProductionInfrastructureTest extends TestCase
         $this->assertStringContainsString("SESSION_SECURE_COOKIE=true\n", $environment);
         $this->assertStringContainsString("DB_HOST=shared-postgres\n", $environment);
         $this->assertStringContainsString("DB_SSLMODE=prefer\n", $environment);
+        $this->assertStringContainsString("DB_QUEUE_RETRY_AFTER=510\n", $environment);
         $this->assertStringContainsString('APP_KEY=__REQUIRED_RUNTIME_SECRET__', $environment);
         $this->assertStringContainsString('DB_PASSWORD=__REQUIRED_RUNTIME_SECRET__', $environment);
         $this->assertStringContainsString('YOUTUBE_API_KEY=__REQUIRED_RUNTIME_VALUE__', $environment);
         $this->assertDoesNotMatchRegularExpression('/^(APP_KEY|DB_PASSWORD|MAIL_PASSWORD)=$/m', $environment);
+    }
+
+    public function test_queue_timeout_is_shorter_than_the_database_retry_lease(): void
+    {
+        $dockerfile = $this->projectFile('Dockerfile');
+        $queue = $this->projectFile('config/queue.php');
+
+        $this->assertStringContainsString('"--timeout=450"', $dockerfile);
+        $this->assertStringContainsString("env('DB_QUEUE_RETRY_AFTER', 510)", $queue);
     }
 
     public function test_ci_actions_are_commit_pinned_and_permissions_are_least_privilege(): void

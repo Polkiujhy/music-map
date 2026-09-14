@@ -12,9 +12,9 @@ use App\Integrations\ExportMatching\Providers\SpotifyCatalogSearch;
 use App\Integrations\ExportMatching\Providers\YouTubeCatalogSearch;
 use App\Integrations\ExportMatching\YouTubeSearchBudget;
 use App\Models\ExportReview;
-use App\Notifications\ExportReviewCompleted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -25,10 +25,24 @@ final class PrepareExportReview implements ShouldQueue
 
     public int $tries = 3;
 
+    public int $timeout = 450;
+
+    public bool $failOnTimeout = true;
+
     /** @var list<int> */
     public array $backoff = [60, 300];
 
     public function __construct(public readonly int $exportReviewId) {}
+
+    /** @return list<WithoutOverlapping> */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping("export-review:{$this->exportReviewId}"))
+                ->expireAfter(510)
+                ->dontRelease(),
+        ];
+    }
 
     public function handle(
         SpotifyCatalogSearch $spotify,
@@ -38,8 +52,17 @@ final class PrepareExportReview implements ShouldQueue
     ): void {
         $review = ExportReview::query()->with(['items', 'playlist.items', 'user'])->find($this->exportReviewId);
 
-        if (! $review instanceof ExportReview
-            || ! in_array($review->status, [ExportReviewStatus::Queued, ExportReviewStatus::Processing], true)) {
+        if (! $review instanceof ExportReview) {
+            return;
+        }
+
+        if (in_array($review->status, [ExportReviewStatus::Ready, ExportReviewStatus::Failed], true)) {
+            $this->queueNotificationIfLong($review);
+
+            return;
+        }
+
+        if (! in_array($review->status, [ExportReviewStatus::Queued, ExportReviewStatus::Processing], true)) {
             return;
         }
 
@@ -136,7 +159,7 @@ final class PrepareExportReview implements ShouldQueue
         });
 
         if ($publication === 'published') {
-            $this->notifyIfLong($review->fresh(['user']));
+            $this->queueNotificationIfLong($review->fresh());
         } elseif ($publication === 'expired') {
             $this->terminal($review, ExportReviewStatus::Expired, null);
         } elseif ($publication === 'source-changed') {
@@ -170,35 +193,29 @@ final class PrepareExportReview implements ShouldQueue
             ]);
 
         if ($updated === 1) {
-            $this->notifyIfLong($review->fresh(['user']));
+            $this->queueNotificationIfLong($review->fresh());
         }
     }
 
-    private function notifyIfLong(?ExportReview $review): void
+    private function queueNotificationIfLong(?ExportReview $review): void
     {
         if (! $review instanceof ExportReview || $review->started_at === null
-            || $review->started_at->diffInSeconds($review->completed_at ?? now()) < 60) {
+            || $review->completed_at === null
+            || $review->started_at->diffInSeconds($review->completed_at) < 60
+            || $review->notification_sent_at !== null
+            || ! in_array($review->status, [ExportReviewStatus::Ready, ExportReviewStatus::Failed], true)) {
             return;
         }
 
-        $claimed = ExportReview::query()->whereKey($review->getKey())
-            ->whereNull('notification_sent_at')
-            ->whereIn('status', [ExportReviewStatus::Ready->value, ExportReviewStatus::Failed->value])
-            ->update(['notification_sent_at' => now(), 'updated_at' => now()]);
-
-        if ($claimed === 1) {
-            $review->user->notify(new ExportReviewCompleted(
-                (int) $review->getKey(),
-                $review->target_provider,
-                $review->status,
-            ));
-        }
+        SendExportReviewCompletedNotification::dispatch((int) $review->getKey());
     }
 
     private function cacheKey(ExportReview $review, SourceTrack $track): string
     {
         return 'export-matching:result:'.hash('sha256', implode('|', [
             $review->target_provider->value,
+            $review->destination_type->value,
+            hash('sha256', $review->target_account_id),
             $review->target_market ?? '-',
             $track->fingerprint(),
         ]));

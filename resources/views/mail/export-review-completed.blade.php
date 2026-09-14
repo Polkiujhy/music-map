@@ -10,7 +10,7 @@ Nie udało się przygotować wyniku. W Music Map znajdziesz bezpieczne informacj
 @endif
 
 <x-mail::button :url="$url">
-Wróć do mojego banku
+Otwórz przegląd eksportu
 </x-mail::button>
 
 Pozdrawiamy,<br>

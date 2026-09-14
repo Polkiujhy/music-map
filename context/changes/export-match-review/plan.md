@@ -265,7 +265,10 @@ zapisu playlist.
 **Kontrakt**: Wejście zawiera snapshot źródła, provider i market celu; wyjście
 zawiera dokładnie jeden wynik domenowy albo typowane niepowodzenie operacyjne.
 DTO nie serializują tokenów ani surowych payloadów. `unavailable` wolno zwrócić
-wyłącznie po poprawnej odpowiedzi katalogu bez wiarygodnego kandydata.
+po poprawnej odpowiedzi katalogu bez wiarygodnego kandydata. Wyjątkiem jest
+lokalny short-circuit dla niedostępnego źródła albo braku tytułu: nie wykonuje
+requestu i musi być pokazany użytkownikowi jako problem danych źródłowych, nie
+jako potwierdzony brak w katalogu celu.
 
 #### 2. Klient i klasyfikator Spotify
 
@@ -402,7 +405,9 @@ sekundach informacja o bezpiecznym opuszczeniu strony i e-mailu. Każde
 wystąpienie zachowuje kolejność i osobną decyzję. `matched` ma domyślne `keep`,
 `suspicious` wymaga jawnego `keep|remove`, a `unavailable` pozwala zachować w
 banku albo usunąć, lecz nigdy nie jest wliczane do eksportu. `aria-live` ogłasza
-wyłącznie zmianę stanu, nie każde odpytywanie.
+wyłącznie zmianę stanu, nie każde odpytywanie. Lokalny short-circuit dla
+niedostępnego źródła albo braku tytułu jest odróżniony w copy od potwierdzonego
+braku wiarygodnego kandydata w katalogu celu.
 
 #### 3. Wejście z banku i podsumowanie celu
 

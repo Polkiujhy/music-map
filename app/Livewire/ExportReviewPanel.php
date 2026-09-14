@@ -3,13 +3,12 @@
 namespace App\Livewire;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
-use App\Actions\ExportReviews\ResolveExportDestination;
-use App\Actions\ExportReviews\StartExportReview;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
 use App\Models\ExportReview;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -64,27 +63,34 @@ final class ExportReviewPanel extends Component
             "decisions.{$itemId}" => ['nullable'],
         ]);
 
-        $review = $this->ownedReview($this->reviewId);
-        if ($review->status !== ExportReviewStatus::Ready) {
-            $this->addError('review', 'Decyzje można zmieniać dopiero dla gotowego przeglądu.');
-
-            return;
-        }
-
         $validated = validator(
             ['decision' => $decision],
             ['decision' => ['required', Rule::enum(ExportReviewDecision::class)]],
         )->validate();
-        $item = $review->items()->whereKey($itemId)->firstOrFail();
 
-        if ($item->match_status === ExportMatchStatus::Matched && $validated['decision'] !== ExportReviewDecision::Keep->value) {
-            $this->addError("decisions.{$itemId}", 'Pewne dopasowanie pozostaje w eksporcie.');
+        DB::transaction(function () use ($itemId, $validated): void {
+            $review = Auth::user()?->exportReviews()
+                ->whereKey($this->reviewId)
+                ->lockForUpdate()
+                ->firstOrFail() ?? abort(404);
 
-            return;
-        }
+            if ($review->status !== ExportReviewStatus::Ready) {
+                $this->addError('review', 'Decyzje można zmieniać dopiero dla gotowego przeglądu.');
 
-        $item->forceFill(['decision' => $validated['decision']])->save();
-        $this->decisions[$itemId] = $validated['decision'];
+                return;
+            }
+
+            $item = $review->items()->whereKey($itemId)->lockForUpdate()->firstOrFail();
+
+            if ($item->match_status === ExportMatchStatus::Matched && $validated['decision'] !== ExportReviewDecision::Keep->value) {
+                $this->addError("decisions.{$itemId}", 'Pewne dopasowanie pozostaje w eksporcie.');
+
+                return;
+            }
+
+            $item->forceFill(['decision' => $validated['decision']])->save();
+            $this->decisions[$itemId] = $validated['decision'];
+        });
     }
 
     public function confirm(ConfirmExportReview $confirm): void
@@ -93,28 +99,6 @@ final class ExportReviewPanel extends Component
         $confirm->handle(Auth::user(), $review, $this->decisions);
         session()->flash('status', 'Przegląd został potwierdzony. Dokładny manifest jest gotowy do eksportu.');
         $this->redirectRoute('export-reviews.show', [$review->playlist_id, $review->getKey()], navigate: false);
-    }
-
-    public function retry(ResolveExportDestination $destinations, StartExportReview $start): void
-    {
-        $review = $this->ownedReview($this->reviewId);
-        if (! in_array($review->status, [ExportReviewStatus::Failed, ExportReviewStatus::Expired], true)) {
-            $this->addError('review', 'Ten przegląd nie może zostać ponowiony.');
-
-            return;
-        }
-
-        $playlist = Auth::user()->playlists()->whereKey($review->playlist_id)->firstOrFail();
-        $destination = $destinations->handle(
-            Auth::user(),
-            $playlist,
-            $review->target_provider,
-            $review->destination_type,
-            $review->streaming_account_id === null ? null : (int) $review->streaming_account_id,
-        );
-        $replacement = $start->handle(Auth::user(), $playlist, $destination);
-
-        $this->redirectRoute('export-reviews.show', [$playlist->getKey(), $replacement->getKey()], navigate: false);
     }
 
     public function getIsPollingProperty(): bool

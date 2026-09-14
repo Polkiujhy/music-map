@@ -46,7 +46,7 @@ milestone_status: open
 | S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | done |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | done |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
-| S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | proposed |
+| S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | in-progress |
 | S-06 | `managed-account-export` | przenieść playlistę na konto techniczne `music-map`, poznać jej właściciela i bezpiecznie ponowić niepełny eksport | S-05 | US-01, FR-010, FR-011, NFR-006 | proposed |
 | S-07 | `linked-account-export` | utworzyć albo zaktualizować playlistę na powiązanym koncie i zobaczyć jednoznaczny wynik | S-04, S-05 | US-01, FR-009, FR-011, NFR-006 | proposed |
 | S-08 | `source-playlist-sync` | ręcznie lub automatycznie synchronizować własne źródło z bankiem przy jasnej regule konfliktu | S-03, S-04 | US-02, FR-005, NFR-004, NFR-006 | proposed |
@@ -149,7 +149,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Blokery:** dostęp do katalogów utworów Spotify i YouTube.
 - **Niewiadome:** —
 - **Ryzyko:** błędne rozróżnienie utworu brakującego od źle dopasowanego mogłoby skłonić użytkownika do zatwierdzenia innej zawartości niż pokazana.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-06: Eksport na konto techniczne music-map
 

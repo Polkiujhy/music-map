@@ -116,6 +116,7 @@ app/Integrations/ExportMatching/SpotifyMatchClassifier.php
 app/Integrations/ExportMatching/YouTubeMatchClassifier.php
 app/Integrations/ExportMatching/YouTubeSearchBudget.php
 app/Jobs/PrepareExportReview.php
+app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Livewire/ExportReviewPanel.php
 app/Models/AuthIdentity.php
@@ -215,6 +216,7 @@ tests/Feature/ExportMatchReview/ExportReviewContractTest.php
 tests/Feature/ExportMatchReview/ExportReviewMigrationTest.php
 tests/Feature/ExportMatchReview/ConfirmExportReviewTest.php
 tests/Feature/ExportMatchReview/ConfirmedExportManifestTest.php
+tests/Feature/ExportMatchReview/ExportReviewDecisionConcurrencyTest.php
 tests/Feature/ExportMatchReview/ExportReviewPanelTest.php
 tests/Feature/ExportMatchReview/ExportReviewRaceTest.php
 tests/Feature/ExportMatchReview/ExportReviewRouteTest.php

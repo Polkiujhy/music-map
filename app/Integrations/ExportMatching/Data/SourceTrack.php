@@ -2,10 +2,13 @@
 
 namespace App\Integrations\ExportMatching\Data;
 
+use App\Integrations\ExportMatching\MatchNormalizer;
 use App\Models\ExportReviewItem;
 
 final readonly class SourceTrack
 {
+    private const FINGERPRINT_VERSION = 'catalog-match:v1';
+
     /** @param list<string> $creators */
     public function __construct(
         public int $position,
@@ -34,14 +37,15 @@ final readonly class SourceTrack
 
     public function fingerprint(): string
     {
-        return hash('sha256', json_encode([
-            'catalog_id' => $this->catalogId,
-            'title' => $this->title,
-            'creators' => $this->creators,
-            'album' => $this->album,
-            'duration' => $this->durationMilliseconds,
-            'isrc' => $this->isrc,
+        $json = json_encode([
+            'title' => MatchNormalizer::text($this->title),
+            'creators' => MatchNormalizer::names($this->creators),
+            'album' => MatchNormalizer::text($this->album),
+            'duration_milliseconds' => $this->durationMilliseconds,
+            'isrc' => MatchNormalizer::text($this->isrc),
             'available' => $this->available,
-        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return hash('sha256', self::FINGERPRINT_VERSION."\n".$json);
     }
 }

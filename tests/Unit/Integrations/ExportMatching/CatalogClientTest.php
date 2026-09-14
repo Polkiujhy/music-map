@@ -51,6 +51,30 @@ class CatalogClientTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer ephemeral-token'));
     }
 
+    public function test_unsearchable_source_short_circuits_without_catalog_requests(): void
+    {
+        $unavailable = new SourceTrack(0, null, 'Canary Song', [], null, null, null, false);
+        $missingTitle = new SourceTrack(0, null, null, [], null, null, null, true);
+
+        $this->assertSame(
+            ExportMatchStatus::Unavailable,
+            $this->spotify()->search($unavailable, StreamingProvider::Spotify, 'GB')->status,
+        );
+        $this->assertSame(
+            ExportMatchStatus::Unavailable,
+            $this->youtube()->search($unavailable, StreamingProvider::YouTube, null)->status,
+        );
+        $this->assertSame(
+            ExportMatchStatus::Unavailable,
+            $this->spotify()->search($missingTitle, StreamingProvider::Spotify, 'GB')->status,
+        );
+        $this->assertSame(
+            ExportMatchStatus::Unavailable,
+            $this->youtube()->search($missingTitle, StreamingProvider::YouTube, null)->status,
+        );
+        Http::assertNothingSent();
+    }
+
     public function test_spotify_falls_back_to_bounded_title_and_all_artists_after_empty_isrc_search(): void
     {
         Http::fakeSequence()

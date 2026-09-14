@@ -13,7 +13,6 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -65,6 +64,8 @@ class ExportReviewPanelTest extends TestCase
         $firstDuplicate = $this->reviewItem($review, 1, ExportMatchStatus::Suspicious, 'Duplicate title');
         $secondDuplicate = $this->reviewItem($review, 2, ExportMatchStatus::Suspicious, 'Duplicate title');
         $unavailable = $this->reviewItem($review, 3, ExportMatchStatus::Unavailable, 'Unavailable title');
+        $this->reviewItem($review, 4, ExportMatchStatus::Unavailable, 'Source unavailable', false);
+        $this->reviewItem($review, 5, ExportMatchStatus::Unavailable, null);
 
         Livewire::actingAs($review->user)
             ->test(ExportReviewPanel::class, ['exportReview' => $review])
@@ -72,6 +73,12 @@ class ExportReviewPanelTest extends TestCase
             ->assertSee('Pewne dopasowanie')
             ->assertSee('Wymaga decyzji')
             ->assertSee('Niedostępne w celu')
+            ->assertSee('Źródło niedostępne')
+            ->assertSee('Brak danych źródłowych')
+            ->assertSee('Pozycja źródłowa jest niedostępna i nie została wyszukana w katalogu celu.')
+            ->assertSee('Brak tytułu potrzebnego do wyszukania tej pozycji w katalogu celu.')
+            ->assertSee('Nie znaleziono wiarygodnego odpowiednika w katalogu celu.')
+            ->assertSee('Poza manifestem')
             ->assertSeeHtml('wire:key="review-item-'.$firstDuplicate->id.'"')
             ->assertSeeHtml('wire:key="review-item-'.$secondDuplicate->id.'"')
             ->call('choose', $firstDuplicate->id, 'keep')
@@ -102,22 +109,15 @@ class ExportReviewPanelTest extends TestCase
         $this->assertSame(ExportReviewStatus::Ready, $review->fresh()->status);
     }
 
-    public function test_failed_review_can_retry_and_redirects_to_a_fresh_review(): void
+    public function test_failed_review_uses_the_throttled_http_retry_route(): void
     {
-        Queue::fake();
         $review = $this->review(ExportReviewStatus::Failed);
 
         Livewire::actingAs($review->user)
             ->test(ExportReviewPanel::class, ['exportReview' => $review])
             ->assertSee('Przygotuj nowy wynik')
-            ->call('retry')
-            ->assertRedirect();
-
-        $this->assertDatabaseCount('export_reviews', 2);
-        $this->assertDatabaseHas('export_reviews', [
-            'playlist_id' => $review->playlist_id,
-            'status' => ExportReviewStatus::Queued->value,
-        ]);
+            ->assertSeeHtml('method="POST"')
+            ->assertSeeHtml('action="'.route('export-reviews.retry', [$review->playlist_id, $review->getKey()]).'"');
     }
 
     private function review(
@@ -140,11 +140,13 @@ class ExportReviewPanelTest extends TestCase
         ExportReview $review,
         int $position,
         ExportMatchStatus $status,
-        string $title = 'Canary title',
+        ?string $title = 'Canary title',
+        bool $sourceAvailable = true,
     ): ExportReviewItem {
         return ExportReviewItem::factory()->for($review)->create([
             'position' => $position,
             'source_title' => $title,
+            'source_is_available' => $sourceAvailable,
             'source_occurrence_id' => 'occurrence-'.$position,
             'match_status' => $status,
             'target_catalog_id' => $status === ExportMatchStatus::Unavailable ? null : 'target-'.$position,

@@ -15,6 +15,7 @@ final class ExportReviewCompleted extends Notification implements ShouldQueue
 
     public function __construct(
         public readonly int $reviewId,
+        public readonly int $playlistId,
         public readonly StreamingProvider $provider,
         public readonly ExportReviewStatus $status,
     ) {}
@@ -35,7 +36,10 @@ final class ExportReviewCompleted extends Notification implements ShouldQueue
                     StreamingProvider::YouTube => 'YouTube',
                 },
                 'successful' => $this->status === ExportReviewStatus::Ready,
-                'url' => route('bank.index', ['review' => $this->reviewId]),
+                'url' => route('export-reviews.show', [
+                    'playlist' => $this->playlistId,
+                    'exportReview' => $this->reviewId,
+                ]),
             ]);
     }
 }

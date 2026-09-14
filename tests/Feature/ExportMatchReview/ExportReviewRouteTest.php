@@ -3,6 +3,7 @@
 namespace Tests\Feature\ExportMatchReview;
 
 use App\Actions\ExportReviews\FingerprintPlaylist;
+use App\Enums\ExportDestinationType;
 use App\Enums\ExportReviewStatus;
 use App\Enums\StreamingProvider;
 use App\Models\ExportReview;
@@ -153,6 +154,47 @@ class ExportReviewRouteTest extends TestCase
             ->assertSessionHasErrors('destination');
 
         $this->assertDatabaseCount('export_reviews', 0);
+    }
+
+    public function test_bank_loads_only_latest_actionable_reviews_for_current_targets(): void
+    {
+        $playlist = $this->playlist();
+        $create = fn (array $attributes): ExportReview => ExportReview::factory()
+            ->for($playlist->user)
+            ->for($playlist)
+            ->create($attributes);
+
+        $create(['status' => ExportReviewStatus::Ready, 'target_account_id' => 'managed-spotify']);
+        $spotifyActive = $create(['status' => ExportReviewStatus::Ready, 'target_account_id' => 'managed-spotify']);
+        $create(['status' => ExportReviewStatus::Failed, 'target_account_id' => 'managed-spotify']);
+        $spotifyRetryable = $create(['status' => ExportReviewStatus::Failed, 'target_account_id' => 'managed-spotify']);
+        $youtubeActive = $create([
+            'target_provider' => StreamingProvider::YouTube,
+            'target_market' => null,
+            'status' => ExportReviewStatus::Processing,
+            'target_account_id' => 'managed-youtube',
+        ]);
+        $youtubeRetryable = $create([
+            'target_provider' => StreamingProvider::YouTube,
+            'target_market' => null,
+            'status' => ExportReviewStatus::Ready,
+            'expires_at' => now()->subSecond(),
+            'target_account_id' => 'managed-youtube',
+        ]);
+        $create([
+            'destination_type' => ExportDestinationType::Managed,
+            'status' => ExportReviewStatus::Ready,
+            'target_account_id' => 'obsolete-owner',
+        ]);
+
+        $response = $this->actingAs($playlist->user)->get(route('bank.index'))->assertOk();
+        $renderedPlaylist = $response->original->getData()['playlists']->firstWhere('id', $playlist->id);
+
+        $this->assertEqualsCanonicalizing(
+            [$spotifyActive->id, $spotifyRetryable->id, $youtubeActive->id, $youtubeRetryable->id],
+            $renderedPlaylist->exportReviews->modelKeys(),
+        );
+        $this->assertCount(4, $renderedPlaylist->exportReviews);
     }
 
     private function review(ExportReviewStatus $status = ExportReviewStatus::Ready): ExportReview

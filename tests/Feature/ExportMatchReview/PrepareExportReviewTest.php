@@ -13,17 +13,23 @@ use App\Integrations\ExportMatching\Providers\SpotifyCatalogSearch;
 use App\Integrations\ExportMatching\Providers\YouTubeCatalogSearch;
 use App\Integrations\ExportMatching\YouTubeSearchBudget;
 use App\Jobs\PrepareExportReview;
+use App\Jobs\SendExportReviewCompletedNotification;
 use App\Models\ExportReview;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Notifications\ExportReviewCompleted;
+use Illuminate\Contracts\Notifications\Dispatcher;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class PrepareExportReviewTest extends TestCase
@@ -49,6 +55,93 @@ class PrepareExportReviewTest extends TestCase
     {
         Carbon::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_job_runtime_contract_prevents_overlapping_review_work(): void
+    {
+        $job = new PrepareExportReview(123);
+        $middleware = $job->middleware();
+
+        $this->assertSame(450, $job->timeout);
+        $this->assertTrue($job->failOnTimeout);
+        $this->assertCount(1, $middleware);
+        $this->assertInstanceOf(WithoutOverlapping::class, $middleware[0]);
+        $this->assertSame('export-review:123', $middleware[0]->key);
+        $this->assertSame(510, $middleware[0]->expiresAfter);
+        $this->assertNull($middleware[0]->releaseAfter);
+    }
+
+    public function test_notification_job_is_unique_per_review_and_marks_only_successful_delivery(): void
+    {
+        Carbon::setTestNow('2026-09-14 12:00:00');
+        $review = $this->review(1);
+        $review->update([
+            'status' => ExportReviewStatus::Ready,
+            'completed_at' => now()->addMinute(),
+        ]);
+        Carbon::setTestNow('2026-09-14 12:01:00');
+        $job = new SendExportReviewCompletedNotification($review->id);
+
+        $this->assertInstanceOf(ShouldBeUnique::class, $job);
+        $this->assertSame((string) $review->id, $job->uniqueId());
+
+        $job->handle();
+        $job->handle();
+
+        Notification::assertSentToTimes($review->user, ExportReviewCompleted::class, 1);
+        $this->assertNotNull($review->fresh()->notification_sent_at);
+    }
+
+    public function test_notification_failure_leaves_the_delivery_marker_open_for_retry(): void
+    {
+        Carbon::setTestNow('2026-09-14 12:00:00');
+        $review = $this->review(1);
+        $review->update([
+            'status' => ExportReviewStatus::Ready,
+            'completed_at' => now()->addMinute(),
+        ]);
+        Carbon::setTestNow('2026-09-14 12:01:00');
+        $this->mock(Dispatcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('sendNow')->once()->andThrow(new RuntimeException('mail transport failed'));
+        });
+
+        try {
+            (new SendExportReviewCompletedNotification($review->id))->handle();
+            $this->fail('A failed notification transport must fail the job for retry.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('mail transport failed', $exception->getMessage());
+        }
+
+        $this->assertNull($review->fresh()->notification_sent_at);
+    }
+
+    public function test_catalog_cache_is_isolated_by_target_owner(): void
+    {
+        Queue::fake([PrepareExportReview::class]);
+        $playlist = $this->playlist(1);
+        $start = app(StartExportReview::class);
+        $first = $start->handle(
+            $playlist->user,
+            $playlist,
+            $this->destination(StreamingProvider::YouTube, 'managed-owner-a'),
+        );
+        $second = $start->handle(
+            $playlist->user,
+            $playlist,
+            $this->destination(StreamingProvider::YouTube, 'managed-owner-b'),
+        );
+        Http::fakeSequence()
+            ->push($this->youtubeSearchPayload())
+            ->push($this->youtubeMetadataPayload())
+            ->push($this->youtubeSearchPayload())
+            ->push($this->youtubeMetadataPayload());
+
+        $this->runJob($first);
+        $this->runJob($second);
+
+        Http::assertSentCount(4);
+        $this->assertSame(ExportReviewStatus::Ready, $first->fresh()->status);
+        $this->assertSame(ExportReviewStatus::Ready, $second->fresh()->status);
     }
 
     public function test_start_is_idempotent_for_the_same_locked_snapshot_and_dispatches_after_commit_once(): void
@@ -212,6 +305,19 @@ class PrepareExportReviewTest extends TestCase
         $this->runJob($review);
 
         Notification::assertSentToTimes($review->user, ExportReviewCompleted::class, 1);
+        Notification::assertSentTo(
+            $review->user,
+            ExportReviewCompleted::class,
+            function (ExportReviewCompleted $notification) use ($review): bool {
+                $mail = $notification->toMail($review->user);
+
+                return $notification->playlistId === (int) $review->playlist_id
+                    && ($mail->viewData['url'] ?? null) === route('export-reviews.show', [
+                        'playlist' => $review->playlist_id,
+                        'exportReview' => $review->getKey(),
+                    ]);
+            },
+        );
         $this->assertNotNull($review->fresh()->notification_sent_at);
     }
 
@@ -244,7 +350,7 @@ class PrepareExportReviewTest extends TestCase
 
     private function review(int $items, ?ResolvedExportDestination $destination = null): ExportReview
     {
-        Queue::fake();
+        Queue::fake([PrepareExportReview::class]);
         $playlist = $this->playlist($items);
 
         return app(StartExportReview::class)->handle($playlist->user, $playlist, $destination ?? $this->destination());
@@ -267,15 +373,32 @@ class PrepareExportReviewTest extends TestCase
         return $playlist->load(['user', 'items']);
     }
 
-    private function destination(StreamingProvider $provider = StreamingProvider::Spotify): ResolvedExportDestination
-    {
+    private function destination(
+        StreamingProvider $provider = StreamingProvider::Spotify,
+        string $accountId = 'managed-canary',
+    ): ResolvedExportDestination {
         return new ResolvedExportDestination(
             $provider,
             ExportDestinationType::Managed,
             null,
-            'managed-canary',
+            $accountId,
             $provider === StreamingProvider::Spotify ? 'GB' : null,
         );
+    }
+
+    private function youtubeSearchPayload(): array
+    {
+        return ['items' => [['id' => ['videoId' => 'youtube-canary']]]];
+    }
+
+    private function youtubeMetadataPayload(): array
+    {
+        return ['items' => [[
+            'id' => 'youtube-canary',
+            'snippet' => ['title' => 'Canary Song 0', 'channelTitle' => 'Canary Artist'],
+            'contentDetails' => ['duration' => 'PT3M'],
+            'status' => ['privacyStatus' => 'public', 'uploadStatus' => 'processed', 'embeddable' => true],
+        ]]];
     }
 
     private function spotifyPayload(string $suffix): array

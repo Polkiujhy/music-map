@@ -12,6 +12,36 @@ use PHPUnit\Framework\TestCase;
 
 class MatchClassifierTest extends TestCase
 {
+    public function test_source_cache_fingerprint_normalizes_matching_fields(): void
+    {
+        $first = new SourceTrack(
+            0,
+            'source-a',
+            '  A Song! ',
+            ['Second Artist', 'First Artist'],
+            ' An Album ',
+            180000,
+            'GB-ABC-123',
+            true,
+        );
+        $equivalent = new SourceTrack(
+            12,
+            'different-source-id',
+            'a song',
+            ['first artist', 'SECOND-ARTIST'],
+            'an album',
+            180000,
+            'gb abc 123',
+            true,
+        );
+
+        $this->assertSame($first->fingerprint(), $equivalent->fingerprint());
+        $this->assertNotSame(
+            $first->fingerprint(),
+            new SourceTrack(0, null, 'A different song', [], null, 180000, null, true)->fingerprint(),
+        );
+    }
+
     public function test_spotify_exact_isrc_is_a_confident_match(): void
     {
         $result = (new SpotifyMatchClassifier)->classify(
