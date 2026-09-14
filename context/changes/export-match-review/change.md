@@ -1,7 +1,7 @@
 ---
 change_id: export-match-review
 title: Kontrola dopasowania przed eksportem
-status: implementing
+status: implemented
 created: 2026-09-14
 updated: 2026-09-14
 archived_at: null

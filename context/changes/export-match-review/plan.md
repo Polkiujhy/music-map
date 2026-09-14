@@ -663,13 +663,13 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [x] 4.1 Targetowane testy S-05 przechodzą
-- [x] 4.2 Regresje playlist i integracji streamingowych przechodzą
-- [x] 4.3 Pełny zestaw Composer przechodzi
-- [x] 4.4 Laravel Pint przechodzi bez zmian
-- [x] 4.5 Produkcyjny frontend buduje się
-- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą
-- [x] 4.7 Pełna macierz PostgreSQL przechodzi bez live providerów
+- [x] 4.1 Targetowane testy S-05 przechodzą — d29954f
+- [x] 4.2 Regresje playlist i integracji streamingowych przechodzą — d29954f
+- [x] 4.3 Pełny zestaw Composer przechodzi — d29954f
+- [x] 4.4 Laravel Pint przechodzi bez zmian — d29954f
+- [x] 4.5 Produkcyjny frontend buduje się — d29954f
+- [x] 4.6 Kontrakt źródła i audyty zależności przechodzą — d29954f
+- [x] 4.7 Pełna macierz PostgreSQL przechodzi bez live providerów — d29954f
 
 #### Manual
 
