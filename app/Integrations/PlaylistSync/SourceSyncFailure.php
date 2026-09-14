@@ -13,4 +13,5 @@ enum SourceSyncFailure: string
     case OverLimit = 'over-limit';
     case OwnerMismatch = 'owner-mismatch';
     case ReconnectRequired = 'reconnect-required';
+    case ExternalDrift = 'external-drift';
 }

@@ -39,6 +39,10 @@ app/Actions/PlaylistSync/DeterminePlaylistSyncDirection.php
 app/Actions/PlaylistSync/FingerprintSourcePlaylist.php
 app/Actions/PlaylistSync/ConfirmPlaylistSynchronization.php
 app/Actions/PlaylistSync/PreparePlaylistSynchronization.php
+app/Actions/PlaylistSync/ApplySourcePlaylistToBank.php
+app/Actions/PlaylistSync/CompletePlaylistSyncRun.php
+app/Actions/PlaylistSync/FailPlaylistSyncRun.php
+app/Actions/PlaylistSync/RunPlaylistSynchronization.php
 app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
@@ -84,10 +88,16 @@ app/Integrations/PlaylistImport/Providers/SpotifyPlaylistReader.php
 app/Integrations/PlaylistImport/Providers/YouTubePlaylistReader.php
 app/Integrations/PlaylistSync/Data/SourcePlaylistSnapshot.php
 app/Integrations/PlaylistSync/Contracts/SourcePlaylistReader.php
+app/Integrations/PlaylistSync/Contracts/SourcePlaylistWriter.php
 app/Integrations/PlaylistSync/Providers/SpotifySourcePlaylistReader.php
+app/Integrations/PlaylistSync/Providers/SpotifySourcePlaylistWriter.php
 app/Integrations/PlaylistSync/Providers/YouTubeSourcePlaylistReader.php
+app/Integrations/PlaylistSync/Providers/YouTubeSourcePlaylistWriter.php
 app/Integrations/PlaylistSync/SourcePlaylistReaderRegistry.php
+app/Integrations/PlaylistSync/SourcePlaylistWriterRegistry.php
 app/Integrations/PlaylistSync/SourceSyncFailure.php
+app/Integrations/PlaylistSync/YouTube/PlanYouTubePlaylistMutations.php
+app/Integrations/PlaylistSync/YouTube/YouTubePlaylistMutation.php
 app/Integrations/StreamingAccounts/Actions/LinkStreamingAccount.php
 app/Integrations/StreamingAccounts/Actions/MarkStreamingAccountReconnectRequired.php
 app/Integrations/StreamingAccounts/Actions/DisconnectStreamingAccount.php
@@ -262,6 +272,8 @@ tests/Feature/Playlists/YouTubeMetadataLifecycleTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationMigrationTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationModelTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationActivationTest.php
+tests/Feature/PlaylistSync/RunPlaylistSynchronizationPostgresTest.php
+tests/Feature/PlaylistSync/RunPlaylistSynchronizationTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
@@ -316,6 +328,9 @@ tests/Unit/PlaylistSync/DeterminePlaylistSyncDirectionTest.php
 tests/Unit/PlaylistSync/FingerprintSourcePlaylistTest.php
 tests/Unit/Integrations/PlaylistSync/SpotifySourcePlaylistReaderTest.php
 tests/Unit/Integrations/PlaylistSync/YouTubeSourcePlaylistReaderTest.php
+tests/Unit/Integrations/PlaylistSync/PlanYouTubePlaylistMutationsTest.php
+tests/Unit/Integrations/PlaylistSync/SpotifySourcePlaylistWriterTest.php
+tests/Unit/Integrations/PlaylistSync/YouTubeSourcePlaylistWriterTest.php
 tests/Unit/SourceContractTest.php
 vite.config.js'
 

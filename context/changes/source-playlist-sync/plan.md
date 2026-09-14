@@ -542,11 +542,11 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [x] 2.1 Readery OAuth potwierdzają właściciela, limit i stabilne błędy
-- [x] 2.2 Spotify wymaga zakresów zapisu publicznego i prywatnego oraz reconnect
-- [x] 2.3 Prepare i confirm chronią autoryzację, własność i aktualność preview
-- [x] 2.4 Aktywacja przed wykonaniem nie zapisuje do dostawcy ani admission
-- [x] 2.5 Pełne composer test, Pint i build przechodzą
+- [x] 2.1 Readery OAuth potwierdzają właściciela, limit i stabilne błędy — ddb0b5e
+- [x] 2.2 Spotify wymaga zakresów zapisu publicznego i prywatnego oraz reconnect — ddb0b5e
+- [x] 2.3 Prepare i confirm chronią autoryzację, własność i aktualność preview — ddb0b5e
+- [x] 2.4 Aktywacja przed wykonaniem nie zapisuje do dostawcy ani admission — ddb0b5e
+- [x] 2.5 Pełne composer test, Pint i build przechodzą — ddb0b5e
 
 #### Manual
 
@@ -557,12 +557,12 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [ ] 3.1 Koordynator realizuje no-op, pull, push i source-wins bez HTTP w transakcji
-- [ ] 3.2 Spotify wykonuje pojedynczy replace i kontrolny odczyt
-- [ ] 3.3 YouTube generuje minimalny deterministyczny diff dla przypadków granicznych
-- [ ] 3.4 Celowe przerwania YouTube wznawiają się bez podwójnych mutacji
-- [ ] 3.5 PostgreSQL potwierdza rewalidację i pojedynczy aktywny run
-- [ ] 3.6 Pełne composer test, Pint i build przechodzą
+- [x] 3.1 Koordynator realizuje no-op, pull, push i source-wins bez HTTP w transakcji
+- [x] 3.2 Spotify wykonuje pojedynczy replace i kontrolny odczyt
+- [x] 3.3 YouTube generuje minimalny deterministyczny diff dla przypadków granicznych
+- [x] 3.4 Celowe przerwania YouTube wznawiają się bez podwójnych mutacji
+- [x] 3.5 PostgreSQL potwierdza rewalidację i pojedynczy aktywny run
+- [x] 3.6 Pełne composer test, Pint i build przechodzą
 
 #### Manual
 
