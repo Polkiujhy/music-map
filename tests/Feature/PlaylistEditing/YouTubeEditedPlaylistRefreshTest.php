@@ -50,7 +50,9 @@ class YouTubeEditedPlaylistRefreshTest extends TestCase
                 ['occurrence-source-only', 'new-source-video', 'Source-only title'],
             ]));
 
+        $refreshStartedAt = now()->startOfSecond();
         $result = app(RefreshYouTubePlaylistMetadata::class)->handle($playlist->id);
+        $refreshFinishedAt = now()->endOfSecond();
 
         $this->assertInstanceOf(Playlist::class, $result);
         $playlist->refresh()->load('items');
@@ -70,9 +72,11 @@ class YouTubeEditedPlaylistRefreshTest extends TestCase
             $playlist->bank_content_edited_at->toDateTimeString(),
         );
         $this->assertSame('Fresh playlist name', $playlist->name);
-        $this->assertSame(
-            now()->toDateTimeString(),
-            $playlist->provider_metadata_refreshed_at->toDateTimeString(),
+        $this->assertTrue(
+            $playlist->provider_metadata_refreshed_at->betweenIncluded(
+                $refreshStartedAt,
+                $refreshFinishedAt,
+            ),
         );
     }
 
