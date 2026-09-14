@@ -229,16 +229,16 @@ Brak zmian schematu. `migrate:fresh` może być uruchamiane wyłącznie na jawni
 
 #### Automatyczne
 
-- [x] 1.1 Celowany kontrakt readera przechodzi
-- [x] 1.2 Intencje wadliwego HTTP 200 i spójnego zera są niezależnie nazwane
+- [x] 1.1 Celowany kontrakt readera przechodzi — 20f2c0f
+- [x] 1.2 Intencje wadliwego HTTP 200 i spójnego zera są niezależnie nazwane — 20f2c0f
 
 ### Faza 2: Atomowość reimportu po awarii transportu elementów
 
 #### Automatyczne
 
-- [ ] 2.1 Celowany test integracyjny importu przechodzi
-- [ ] 2.2 Pełny poprzedni snapshot i świeżość pozostają niezmienione
-- [ ] 2.3 Test używa zewnętrznej granicy HTTP bez mocków collaboratorów
+- [x] 2.1 Celowany test integracyjny importu przechodzi
+- [x] 2.2 Pełny poprzedni snapshot i świeżość pozostają niezmienione
+- [x] 2.3 Test używa zewnętrznej granicy HTTP bez mocków collaboratorów
 
 ### Faza 3: Zachowanie istniejącej bramy PostgreSQL
 
