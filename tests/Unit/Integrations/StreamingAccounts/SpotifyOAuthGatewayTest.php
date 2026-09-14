@@ -41,7 +41,7 @@ class SpotifyOAuthGatewayTest extends TestCase
         Http::fakeSequence()
             ->push(['access_token' => 'access-one', 'refresh_token' => 'refresh-one', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private'])
             ->push(['access_token' => 'access-two', 'scope' => 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-private'])
-            ->push(['account_id' => 'stable-account', 'display_name' => 'Canary']);
+            ->push(['id' => 'stable-account', 'display_name' => 'Canary', 'country' => 'gb']);
 
         $gateway = new SpotifyOAuthGateway;
         $exchange = $gateway->exchange('code-canary');
@@ -54,6 +54,7 @@ class SpotifyOAuthGatewayTest extends TestCase
         $this->assertNull($refresh->refreshToken);
         $this->assertInstanceOf(StreamingIdentity::class, $identity);
         $this->assertSame('stable-account', $identity->accountId);
+        $this->assertSame('GB', $identity->market);
         $this->assertNull($gateway->revoke('refresh-one'));
         Http::assertSentCount(3);
         Http::assertSent(fn (Request $request): bool => $request->url() === 'https://accounts.spotify.com/api/token'

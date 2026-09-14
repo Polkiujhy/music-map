@@ -24,6 +24,7 @@ class StreamingAccountFactory extends Factory
             'provider' => StreamingProvider::Spotify,
             'provider_account_id' => fake()->unique()->uuid(),
             'label' => fake()->userName(),
+            'market' => 'GB',
             'scopes' => ['streaming-account-canary'],
             'refresh_token' => 'canary-spotify-refresh-token',
             'reauthorization_due_at' => null,
@@ -43,6 +44,7 @@ class StreamingAccountFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'provider' => StreamingProvider::YouTube,
+            'market' => null,
             'refresh_token' => 'canary-youtube-refresh-token',
         ]);
     }

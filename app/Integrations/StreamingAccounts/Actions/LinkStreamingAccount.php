@@ -85,6 +85,9 @@ class LinkStreamingAccount
             }
 
             $account->label = $identity->label;
+            $account->market = $provider === StreamingProvider::Spotify && $identity->market !== null
+                ? strtoupper($identity->market)
+                : null;
             $account->scopes = $grant->scopes;
             $account->refresh_token = $grant->refreshToken;
             $account->reauthorization_due_at = null;

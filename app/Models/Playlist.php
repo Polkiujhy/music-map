@@ -54,6 +54,12 @@ class Playlist extends Model
         return $this->hasMany(PlaylistItem::class)->orderBy('position');
     }
 
+    /** @return HasMany<ExportReview, $this> */
+    public function exportReviews(): HasMany
+    {
+        return $this->hasMany(ExportReview::class);
+    }
+
     /**
      * @return array<string, string>
      */

@@ -35,6 +35,9 @@ app/Actions/Playlists/ReconcileEditedYouTubePlaylist.php
 app/Actions/Playlists/RefreshYouTubePlaylistMetadata.php
 app/Actions/Playlists/ReplaceImportedPlaylist.php
 app/Actions/Playlists/UpdateBankPlaylistItems.php
+app/Actions/ExportReviews/FingerprintPlaylist.php
+app/Actions/ExportReviews/ResolvedExportDestination.php
+app/Actions/ExportReviews/ResolveExportDestination.php
 app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
@@ -50,6 +53,10 @@ app/Http/Middleware/NormalizeAuthEmail.php
 app/Http/Requests/ImportPlaylistRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
+app/Enums/ExportDestinationType.php
+app/Enums/ExportMatchStatus.php
+app/Enums/ExportReviewDecision.php
+app/Enums/ExportReviewStatus.php
 app/Integrations/PlaylistImport/Data/PlaylistItemSnapshot.php
 app/Integrations/PlaylistImport/Data/PlaylistReference.php
 app/Integrations/PlaylistImport/Data/PlaylistSnapshot.php
@@ -92,6 +99,8 @@ app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Livewire/PlaylistEditor.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Models/AuthIdentity.php
+app/Models/ExportReview.php
+app/Models/ExportReviewItem.php
 app/Models/Playlist.php
 app/Models/PlaylistItem.php
 app/Models/StreamingAccount.php
@@ -127,6 +136,8 @@ context/foundation/shape-notes.md
 context/foundation/tech-stack.md
 database/.gitignore
 database/factories/PlaylistFactory.php
+database/factories/ExportReviewFactory.php
+database/factories/ExportReviewItemFactory.php
 database/factories/PlaylistItemFactory.php
 database/factories/StreamingAccountFactory.php
 database/factories/UserFactory.php
@@ -140,6 +151,9 @@ database/migrations/2026_09_13_010000_create_playlists_table.php
 database/migrations/2026_09_13_010100_create_playlist_items_table.php
 database/migrations/2026_09_13_010200_link_playlists_to_streaming_accounts.php
 database/migrations/2026_09_14_000000_add_bank_content_edited_at_to_playlists_table.php
+database/migrations/2026_09_14_000000_add_market_to_streaming_accounts_table.php
+database/migrations/2026_09_14_000100_create_export_reviews_table.php
+database/migrations/2026_09_14_000200_create_export_review_items_table.php
 database/seeders/DatabaseSeeder.php
 docker/entrypoints/fpm.sh
 docker/entrypoints/bootstrap-runtime.sh
@@ -175,6 +189,10 @@ storage/framework/testing/.gitignore
 storage/framework/views/.gitignore
 storage/logs/.gitignore
 tests/Feature/BankAccessTest.php
+tests/Feature/ExportMatchReview/ExportReviewContractTest.php
+tests/Feature/ExportMatchReview/ExportReviewMigrationTest.php
+tests/Feature/ExportMatchReview/FingerprintPlaylistTest.php
+tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
 tests/Feature/Playlists/PlaylistConcurrentImportTest.php
