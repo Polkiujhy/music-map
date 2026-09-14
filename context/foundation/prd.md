@@ -1,6 +1,6 @@
 ---
 project: "music-map"
-version: 1
+version: 2
 status: draft
 created: 2026-08-28
 context_type: greenfield
@@ -42,6 +42,7 @@ Główną personą jest autor pomysłu oraz jego znajomi: osoby aktywnie zarząd
 - Ręczne tworzenie nowej playlisty od zera w banku `music-map`.
 - Wizualna mapa muzyki i relacji między playlistami.
 - Ręczny wybór zamiennika dla niedostępnego lub błędnie dopasowanego utworu po przejściu do powiązanego artysty i jego utworów z zewnętrznego katalogu relacji artystów i popularności utworów.
+- Wykrywanie rozbieżności między powiązanymi playlistami, widok różnic i przywracanie zgodności przez ponowny eksport.
 
 ### Guardrails
 
@@ -104,7 +105,7 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 
 ### Spójność i cykl życia
 
-- FR-014: Po synchronizacji playlisty system porównuje ją z powiązanymi playlistami źródło–eksport. Jeżeli wykryje różnice po drugiej stronie, oznacza odpowiednią playlistę jako `Nieaktualna`, powiadamia użytkownika komunikatem wskazującym platformę zmiany i pozwala otworzyć widok różnic. Z widoku różnic użytkownik może ponowić eksport ze źródła; system aktualizuje powiązaną playlistę po zapisanym ID, a po sukcesie oznacza obie strony jako aktualne. Priority: must-have
+- FR-014: Po synchronizacji playlisty system porównuje ją z powiązanymi playlistami źródło–eksport. Jeżeli wykryje różnice po drugiej stronie, oznacza odpowiednią playlistę jako `Nieaktualna`, powiadamia użytkownika komunikatem wskazującym platformę zmiany i pozwala otworzyć widok różnic. Z widoku różnic użytkownik może ponowić eksport ze źródła; system aktualizuje powiązaną playlistę po zapisanym ID, a po sukcesie oznacza obie strony jako aktualne. Priority: nice-to-have
   > Sokrates: Rozważono, że samo pokazanie różnic nie przywraca zgodności. Rozwiązanie: użytkownik ponawia eksport do nieaktualnej playlisty, która jest aktualizowana po zapisanym ID; po sukcesie obie strony są aktualne.
 - FR-015: Zalogowany użytkownik może usunąć konto `music-map` po zobaczeniu listy skutków i wyraźnym potwierdzeniu. Operacja usuwa jego bank playlist, relacje, historię synchronizacji, dane umożliwiające dostęp do powiązanych usług i playlisty zarządzane na koncie technicznym `music-map`, ale pozostawia playlisty utworzone na jego powiązanych kontach platform streamingowych. Priority: must-have
   > Sokrates: Rozważono ryzyko usunięcia playlist należących do użytkownika albo pozostawienia jego danych na koncie technicznym. Rozwiązanie: `music-map` usuwa własne dane i zarządzane kopie oraz unieważnia integracje, ale pozostawia playlisty na kontach użytkownika.
@@ -120,12 +121,12 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 
 ## Business Logic
 
-`music-map` traktuje każdą playlistę platformową jako osobny byt z jednym nadrzędnym źródłem, wykrywa różnice między powiązanymi kopiami i przywraca ich zgodność przez ponowny eksport do playlisty wskazanej zapisanym ID.
+`music-map` traktuje każdą playlistę platformową jako osobny byt z jednym nadrzędnym źródłem. Przyszła funkcja odłożona poza bieżący MVP może wykrywać różnice między powiązanymi kopiami i przywracać ich zgodność przez ponowny eksport do playlisty wskazanej zapisanym ID.
 
 - BR-001 — Zmiany zewnętrzne playlisty źródłowej są pobierane automatycznie tylko przy włączonej synchronizacji. Przy wyłączonej synchronizacji wymagają użycia przycisku; bez akcji użytkownika `music-map` je ignoruje.
 - BR-002 — W konflikcie między zmianami w banku `music-map` a zmianami na platformie źródłowej danej playlisty nadrzędna jest wersja tej platformy, która aktualizuje kopię przechowywaną w banku.
 - BR-003 — Każda playlista ma jedno nadrzędne źródło i własne ID nadane przez platformę. Playlisty utworzone na różnych platformach są osobnymi bytami połączonymi relacją źródło–eksport, nawet gdy zawierają identyczny zestaw utworów; relacja służy do nawigacji i porównywania różnic.
-- BR-004 — Nieaktualna playlista powiązana odzyskuje zgodność przez ponowny eksport z jej źródła i aktualizację po zapisanym ID, bez tworzenia nowej playlisty i bez osobnego scalania.
+- BR-004 — Po wdrożeniu przyszłej funkcji nieaktualna playlista powiązana odzyskuje zgodność przez ponowny eksport z jej źródła i aktualizację po zapisanym ID, bez tworzenia nowej playlisty i bez osobnego scalania.
 - BR-005 — Usunięcie konta `music-map` nie usuwa playlist należących do użytkownika na powiązanych platformach streamingowych. Usuwa natomiast dane aplikacji, dane umożliwiające dostęp do powiązanych usług oraz playlisty utworzone dla niego na koncie technicznym `music-map`, po uprzednim pokazaniu skutków i uzyskaniu wyraźnego potwierdzenia.
 
 ## Access Control
@@ -137,6 +138,7 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 - Ręczne tworzenie playlist od zera.
 - Wizualna mapa autorów i ich utworów.
 - Zamienniki oparte na zewnętrznym katalogu relacji artystów i popularności utworów.
+- Automatyczne wykrywanie i naprawa rozbieżności między powiązanymi kopiami playlist w bieżącym MVP.
 - Obsługa innych platform muzycznych niż dwie objęte zakresem MVP.
 - Gwarantowana obsługa playlist zawierających więcej niż 20 utworów.
 - Udostępnianie banku playlist innym użytkownikom i rozbudowane role.
