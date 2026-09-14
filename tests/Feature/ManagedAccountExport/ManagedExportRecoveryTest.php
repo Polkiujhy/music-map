@@ -89,6 +89,8 @@ class ManagedExportRecoveryTest extends TestCase
 
     public function test_stale_processing_waits_for_full_worker_lease_before_republication(): void
     {
+        $this->freezeSecond();
+
         $operation = $this->operation(ExportOperationStatus::Processing, [
             'heartbeat_at' => now()->subSeconds(509),
         ]);
@@ -96,7 +98,7 @@ class ManagedExportRecoveryTest extends TestCase
         $this->artisan('managed-exports:recover')->assertSuccessful();
         Queue::assertNothingPushed();
 
-        $this->travel(2)->seconds();
+        $this->travel(1)->seconds();
         $this->artisan('managed-exports:recover')->assertSuccessful();
         Queue::assertPushed(RunManagedExport::class, 1);
     }
