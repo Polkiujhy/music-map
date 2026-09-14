@@ -17,6 +17,7 @@ class PlaylistEditor extends Component
     public string $playlistId;
 
     /** @var list<int> */
+    #[Locked]
     public array $orderedItemIds = [];
 
     /** @var array<int, array{id: int, title: ?string, creators: list<string>, album: ?string, catalog_id: ?string, is_available: bool}> */

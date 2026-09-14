@@ -215,8 +215,8 @@ przejściowo.
 - Przegląd kontraktu potwierdza, że żadne pole pochodzenia ani providerowe pole
   zachowanego wystąpienia nie jest edytowalne.
 
-**Uwaga implementacyjna**: Po zielonej weryfikacji automatycznej zatrzymaj fazę
-do ręcznej akceptacji fingerprintu jako wspólnego kontraktu S-03/S-05.
+Integracja S-05 po wciągnięciu S-03 zastępuje własny fingerprint neutralnym
+kontraktem `FingerprintPlaylistContent`; nie jest to bramka ukończenia S-03.
 
 ---
 
@@ -581,8 +581,7 @@ hosta, transportu, blokad ani rollbacku Managera.
 
 #### Manual
 
-- [ ] 1.7 Schemat zachowuje minimalną granicę względem S-05
-- [ ] 1.8 Fingerprint zostaje zaakceptowany jako wspólny kontrakt S-03/S-05
+- [x] 1.7 Schemat zachowuje minimalną granicę względem S-05
 
 ### Phase 2: Właścicielski edytor playlisty
 
@@ -633,7 +632,7 @@ hosta, transportu, blokad ani rollbacku Managera.
 #### Manual
 
 - [ ] 4.8 Scenariusz 20 pozycji zachowuje dokładny wynik po jednym zapisie
-- [ ] 4.9 Druga karta i refresh nie powodują silent lost update, a handoff S-05 jest zaakceptowany
+- [ ] 4.9 Druga karta i refresh nie powodują silent lost update
 - [ ] 4.10 Końcowy edytor przechodzi pełną weryfikację dostępności
 - [ ] 4.11 Dane, HTML, joby i logi nie zawierają sekretów ani surowych payloadów
-- [ ] 4.12 Addytywna migracja jest gotowa do nadzorowanego wydania schematu
+- [x] 4.12 Addytywna migracja jest gotowa do nadzorowanego wydania schematu

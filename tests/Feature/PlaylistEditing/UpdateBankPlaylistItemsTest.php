@@ -48,6 +48,22 @@ class UpdateBankPlaylistItemsTest extends TestCase
         $this->assertDatabaseMissing('playlist_items', ['id' => $playlist->items[1]->id]);
     }
 
+    public function test_it_accepts_and_reorders_exactly_twenty_items(): void
+    {
+        $playlist = $this->playlistWithItems(20);
+        $orderedIds = array_reverse($playlist->items->modelKeys());
+
+        $updated = $this->action()->handle(
+            $playlist->user,
+            $playlist->id,
+            $this->fingerprint($playlist),
+            $orderedIds,
+        );
+
+        $this->assertSame($orderedIds, $updated->items->modelKeys());
+        $this->assertSame(range(0, 19), $updated->items->pluck('position')->all());
+    }
+
     public function test_no_op_preserves_the_local_edit_marker(): void
     {
         $playlist = $this->playlistWithItems(2);

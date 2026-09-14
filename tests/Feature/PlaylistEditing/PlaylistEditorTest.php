@@ -7,6 +7,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -32,6 +33,18 @@ class PlaylistEditorTest extends TestCase
             ->assertSee('Placeholder — niedostępna')
             ->assertSee('aria-label="Przenieś pozycję 1 w górę"', false)
             ->assertSee('aria-label="Przenieś pozycję 3 w dół"', false);
+    }
+
+    public function test_the_client_cannot_replace_the_ordered_item_ids(): void
+    {
+        $playlist = $this->playlistWithItems([[], []]);
+        $this->actingAs($playlist->user);
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::test(PlaylistEditor::class, [
+            'playlistId' => (string) $playlist->id,
+        ])->set('orderedItemIds', ['bad']);
     }
 
     public function test_moves_respect_boundaries_and_only_change_the_draft(): void
