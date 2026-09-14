@@ -90,7 +90,7 @@ final class ExportReviewPanel extends Component
 
             $item->forceFill(['decision' => $validated['decision']])->save();
             $this->decisions[$itemId] = $validated['decision'];
-            $this->resetValidation();
+            $this->resetValidation("decisions.{$itemId}");
         });
     }
 
