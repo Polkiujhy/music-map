@@ -602,11 +602,11 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [x] 6.1 Macierz SQLite przechodzi bez stray requests i z dokładną liczbą wywołań
-- [x] 6.2 PostgreSQL potwierdza blokady, idempotencję oraz cleanup
-- [x] 6.3 Każde przerwanie YouTube kończy się desired state lub source-wins bez drugiego admission
-- [x] 6.4 Konfiguracja i dokumentacja zawierają tylko publiczny kontrakt aplikacji
-- [x] 6.5 Pełne composer test, Pint i build przechodzą na czystym środowisku
+- [x] 6.1 Macierz SQLite przechodzi bez stray requests i z dokładną liczbą wywołań — 564b35d
+- [x] 6.2 PostgreSQL potwierdza blokady, idempotencję oraz cleanup — 564b35d
+- [x] 6.3 Każde przerwanie YouTube kończy się desired state lub source-wins bez drugiego admission — 564b35d
+- [x] 6.4 Konfiguracja i dokumentacja zawierają tylko publiczny kontrakt aplikacji — 564b35d
+- [x] 6.5 Pełne composer test, Pint i build przechodzą na czystym środowisku — 564b35d
 
 #### Manual
 
