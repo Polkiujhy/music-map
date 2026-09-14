@@ -24,6 +24,7 @@ final readonly class RetryExportOperation
                 || $locked->failure_code === null
                 || in_array($locked->failure_code, [
                     ExportOperationFailure::TargetDeleted,
+                    ExportOperationFailure::UnsupportedDuplicate,
                     ExportOperationFailure::RecoveryAbandoned,
                 ], true)) {
                 throw ValidationException::withMessages(['operation' => 'Tej operacji nie można ponowić.']);

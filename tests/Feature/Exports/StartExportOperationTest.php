@@ -3,17 +3,21 @@
 namespace Tests\Feature\Exports;
 
 use App\Actions\ExportReviews\ConfirmExportReview;
+use App\Actions\Exports\StartExportOperation;
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewStatus;
+use App\Integrations\ExportMatching\Data\ConfirmedExportManifest;
 use App\Jobs\ExecuteExportOperation;
 use App\Models\ExportReview;
 use App\Models\ExportReviewItem;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 class StartExportOperationTest extends TestCase
@@ -86,6 +90,39 @@ class StartExportOperationTest extends TestCase
         app(ConfirmExportReview::class)->handle($firstReview->user, $secondReview, []);
     }
 
+    public function test_wrong_owner_cannot_start_an_operation(): void
+    {
+        Queue::fake();
+        $review = $this->readyReview();
+        $review->forceFill([
+            'status' => ExportReviewStatus::Confirmed,
+            'confirmed_at' => now(),
+        ])->save();
+
+        $this->expectException(NotFoundHttpException::class);
+        app(StartExportOperation::class)->handle(
+            User::factory()->create(),
+            $review,
+            $this->manifest($review),
+        );
+    }
+
+    public function test_non_confirmed_review_cannot_start_an_operation(): void
+    {
+        Queue::fake();
+        $review = $this->readyReview();
+
+        try {
+            app(StartExportOperation::class)->handle($review->user, $review, $this->manifest($review));
+            $this->fail('A non-confirmed review must not start an operation.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('review', $exception->errors());
+        }
+
+        $this->assertDatabaseCount('export_operations', 0);
+        Queue::assertNothingPushed();
+    }
+
     private function readyReview(): ExportReview
     {
         $playlist = Playlist::factory()->create(['name' => 'Frozen name', 'description' => 'Frozen description']);
@@ -114,5 +151,21 @@ class StartExportOperationTest extends TestCase
         ]);
 
         return $review->load('user');
+    }
+
+    private function manifest(ExportReview $review): ConfirmedExportManifest
+    {
+        return new ConfirmedExportManifest(
+            $review->id,
+            $review->playlist_id,
+            $review->target_provider,
+            $review->destination_type,
+            $review->target_account_id,
+            $review->target_market,
+            $review->source_fingerprint,
+            $review->playlist->name,
+            $review->playlist->description,
+            [],
+        );
     }
 }

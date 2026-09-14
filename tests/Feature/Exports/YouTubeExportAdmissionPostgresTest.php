@@ -285,7 +285,7 @@ final readonly class PostgresManagedExportBrokerFake implements ManagedExportAcc
         return new ManagedExportAccess(
             $provider,
             'synthetic-managed-access',
-            new DateTimeImmutable('+5 minutes'),
+            new DateTimeImmutable('+10 minutes'),
             $operationId,
         );
     }

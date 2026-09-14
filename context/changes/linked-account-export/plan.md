@@ -549,6 +549,13 @@ bez mutacji. `README.md` dokumentuje przyjęty kontrakt konsumencki dopiero po
 jego publikacji. Adapter nie wywołuje probe i nie opisuje implementacji
 Managera.
 
+Korekta po przeglądzie implementacji: odpowiedź sukcesu capability
+`music-map.managed-export.v1` jest dopuszczana do adaptera tylko wtedy, gdy
+`expires_at` pozostaje co najmniej 390 sekund w przyszłości: 360 sekund budżetu
+provider I/O i 30 sekund marginesu bezpieczeństwa. Krótsza ważność kończy
+preflight jako retryable `temporary-failure`, bez przekazania tokenu do adaptera
+i bez mutacji providera.
+
 #### 2. Worker i orkiestrator
 
 **Pliki**:
@@ -853,6 +860,11 @@ szczegółów transportu, montowania, locków czy lifecycle Managera.
 
 ### Kryteria sukcesu
 
+**Korekta po przeglądzie implementacji**: dowód PostgreSQL 5.1 jest ręczną
+kontrolą powdrożeniową wykonywaną na izolowanej, jednorazowej bazie zgodnej z
+wdrożonym schematem. Testów współbieżności nie wolno uruchamiać na produkcyjnych
+danych.
+
 #### Weryfikacja automatyczna
 
 - Testy PostgreSQL przechodzą na disposable database:
@@ -1058,13 +1070,13 @@ wykonuje automatycznego destrukcyjnego rollbacku danych eksportu.
 
 #### Automated
 
-- [x] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL — 716484b
 - [x] 5.2 Pełny PHPUnit suite przechodzi — 716484b
 - [x] 5.3 Pint i produkcyjny frontend build przechodzą — 716484b
 - [x] 5.4 Source contract przechodzi dla worktree i tracked candidate — 716484b
 
 #### Manual
 
+- [ ] 5.1 Testy operacji i consumer admission przechodzą na PostgreSQL
 - [ ] 5.5 Linked i managed Spotify przechodzą create, update, recovery i kontrolę widoczności
 - [ ] 5.6 Linked i managed YouTube przechodzą create, update, recovery i kontrolę widoczności
 - [ ] 5.7 Partial retry, relink, target deletion, quota i powiadomienie spełniają kontrakt

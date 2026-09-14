@@ -53,7 +53,7 @@ final class YouTubePlaylistWriter implements PlaylistWriter
                 'id' => $playlist->targetId,
             ]);
             if (! $metadata->successful()) {
-                return PlaylistWriteResult::failed($this->failure($metadata, true));
+                return PlaylistWriteResult::failed($this->failure($metadata));
             }
         } catch (Throwable) {
             return PlaylistWriteResult::failed(PlaylistWriteFailure::TemporaryFailure);
@@ -75,7 +75,6 @@ final class YouTubePlaylistWriter implements PlaylistWriter
         $revision = $item['etag'] ?? null;
         if (($item['id'] ?? null) !== $playlist->targetId
             || ($item['snippet']['channelId'] ?? null) !== $playlist->targetAccountId
-            || ($item['snippet']['description'] ?? null) !== $playlist->markedDescription()
             || ($item['status']['privacyStatus'] ?? null) !== 'unlisted'
             || ($revision !== null && (! is_string($revision) || $revision === '' || strlen($revision) > 255))) {
             return PlaylistWriteResult::failed(PlaylistWriteFailure::InvalidResponse);
@@ -431,7 +430,7 @@ final class YouTubePlaylistWriter implements PlaylistWriter
         }
 
         if (! $response->successful()) {
-            return $this->failure($response, true);
+            return $this->failure($response);
         }
 
         $payload = $response->json();
@@ -509,7 +508,7 @@ final class YouTubePlaylistWriter implements PlaylistWriter
             return PlaylistWriteFailure::TemporaryFailure;
         }
 
-        return $response->successful() ? $response : $this->failure($response, true);
+        return $response->successful() ? $response : $this->failure($response);
     }
 
     private function validDefinition(ExportPlaylistDefinition $playlist, bool $requiresTarget): bool
@@ -566,7 +565,7 @@ final class YouTubePlaylistWriter implements PlaylistWriter
             : $failure;
     }
 
-    private function failure(Response $response, bool $targetRequest = false): PlaylistWriteFailure
+    private function failure(Response $response): PlaylistWriteFailure
     {
         $reason = $response->json('error.errors.0.reason');
         if (in_array($reason, ['quotaExceeded', 'dailyLimitExceeded'], true)) {
@@ -579,7 +578,9 @@ final class YouTubePlaylistWriter implements PlaylistWriter
         return match ($response->status()) {
             401 => PlaylistWriteFailure::ReconnectRequired,
             403 => PlaylistWriteFailure::AccessDenied,
-            404 => $targetRequest ? PlaylistWriteFailure::TargetDeleted : PlaylistWriteFailure::InvalidResponse,
+            404 => $reason === 'playlistNotFound'
+                ? PlaylistWriteFailure::TargetDeleted
+                : PlaylistWriteFailure::InvalidResponse,
             default => $response->serverError()
                 ? PlaylistWriteFailure::TemporaryFailure
                 : PlaylistWriteFailure::InvalidResponse,

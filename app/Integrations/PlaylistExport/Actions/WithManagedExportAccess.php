@@ -9,11 +9,25 @@ use App\Integrations\PlaylistExport\Contracts\WithExportAccess;
 use App\Integrations\PlaylistExport\PlaylistWriteFailure;
 use App\Models\ExportOperation;
 use Closure;
+use DateTimeImmutable;
 use Throwable;
 
-final readonly class WithManagedExportAccess implements WithExportAccess
+final class WithManagedExportAccess implements WithExportAccess
 {
-    public function __construct(private ManagedExportAccessBroker $broker) {}
+    public const IO_BUDGET_SECONDS = 360;
+
+    public const EXPIRY_SAFETY_MARGIN_SECONDS = 30;
+
+    public const MINIMUM_REMAINING_LIFETIME_SECONDS = self::IO_BUDGET_SECONDS + self::EXPIRY_SAFETY_MARGIN_SECONDS;
+
+    private readonly Closure $clock;
+
+    public function __construct(
+        private readonly ManagedExportAccessBroker $broker,
+        ?Closure $clock = null,
+    ) {
+        $this->clock = $clock ?? static fn (): DateTimeImmutable => new DateTimeImmutable;
+    }
 
     public function handle(ExportOperation $operation, Closure $callback): ?PlaylistWriteFailure
     {
@@ -36,6 +50,11 @@ final readonly class WithManagedExportAccess implements WithExportAccess
         if ($access->provider !== $operation->target_provider->value
             || $access->operationId !== $operation->operation_id) {
             return PlaylistWriteFailure::InvalidResponse;
+        }
+
+        $minimumExpiry = ($this->clock)()->modify('+'.self::MINIMUM_REMAINING_LIFETIME_SECONDS.' seconds');
+        if ($access->expiresAt < $minimumExpiry) {
+            return PlaylistWriteFailure::TemporaryFailure;
         }
 
         return $callback($access->accessToken, new AllowManagedExportMutation);

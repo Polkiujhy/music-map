@@ -138,6 +138,7 @@ final class ExportOperationPanel extends Component
             && $operation->failure_code !== null
             && ! in_array($operation->failure_code, [
                 ExportOperationFailure::TargetDeleted,
+                ExportOperationFailure::UnsupportedDuplicate,
                 ExportOperationFailure::RecoveryAbandoned,
             ], true);
     }
@@ -151,6 +152,7 @@ final class ExportOperationPanel extends Component
     {
         return in_array($this->operation()->failure_code, [
             ExportOperationFailure::TargetDeleted,
+            ExportOperationFailure::UnsupportedDuplicate,
             ExportOperationFailure::RecoveryAbandoned,
         ], true);
     }

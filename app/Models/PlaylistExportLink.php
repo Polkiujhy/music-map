@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 #[Fillable(['provider', 'destination_type', 'target_account_id', 'active_key', 'retired_at'])]
@@ -67,6 +68,12 @@ class PlaylistExportLink extends Model
     public function exportOperations(): HasMany
     {
         return $this->hasMany(ExportOperation::class);
+    }
+
+    /** @return HasOne<ExportOperation, $this> */
+    public function latestOperation(): HasOne
+    {
+        return $this->hasOne(ExportOperation::class)->latestOfMany();
     }
 
     /** @return array<string, string> */

@@ -25,6 +25,7 @@ use App\Models\ExportOperation;
 use App\Models\ExportReviewItem;
 use App\Models\PlaylistExportLink;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -58,7 +59,13 @@ final readonly class RunExportOperation
                 $operation,
                 fn (#[\SensitiveParameter] string $accessToken, ExportMutationGuard $guard): ?PlaylistWriteFailure => $this->execute($operation, $accessToken, $guard),
             );
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::error('export_operation_unexpected_exception', [
+                'operation_id' => $operation->operation_id,
+                'exception_class' => $exception::class,
+                'exception_location' => basename($exception->getFile()).':'.$exception->getLine(),
+            ]);
+
             $operation->refresh();
             if ($operation->status === ExportOperationStatus::Transferred
                 || ($operation->status === ExportOperationStatus::Failed && $operation->active_key === null)) {
@@ -128,7 +135,7 @@ final readonly class RunExportOperation
         $admitted = false;
 
         if ($definition->targetId !== null) {
-            $inspection = $writer->inspect($accessToken, $this->definition($operation, true));
+            $inspection = $writer->inspect($accessToken, $this->definition($operation));
             if (! $inspection->succeeded()) {
                 if ($inspection->failure === PlaylistWriteFailure::TargetDeleted) {
                     $this->targets->retireDeletedTarget($operation);
@@ -197,21 +204,19 @@ final readonly class RunExportOperation
         return null;
     }
 
-    private function definition(ExportOperation $operation, bool $persistedMetadata = false): ExportPlaylistDefinition
+    private function definition(ExportOperation $operation): ExportPlaylistDefinition
     {
         $items = $operation->exportReview->items
             ->filter(fn (ExportReviewItem $item): bool => $item->match_status !== ExportMatchStatus::Unavailable
                 && ($item->decision ?? ExportReviewDecision::Keep) === ExportReviewDecision::Keep)
             ->values();
 
-        $target = $operation->playlistExportLink?->targetPlaylist;
-
         return new ExportPlaylistDefinition(
             $operation->target_provider,
             $operation->target_account_id,
             $operation->playlistExportLink?->targetPlaylist?->source_playlist_id,
-            $persistedMetadata ? ($target?->name ?? '') : ($operation->playlist_name ?? ''),
-            $persistedMetadata ? ($target?->description ?? '') : ($operation->playlist_description ?? ''),
+            $operation->playlist_name ?? '',
+            $operation->playlist_description ?? '',
             '[music-map-export:'.$this->markerOperationId($operation).']',
             $operation->target_provider === StreamingProvider::Spotify ? 'private' : 'unlisted',
             $operation->target_provider === StreamingProvider::Spotify

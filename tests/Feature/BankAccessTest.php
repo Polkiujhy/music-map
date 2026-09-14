@@ -126,6 +126,22 @@ class BankAccessTest extends TestCase
             'destination_type' => ExportDestinationType::Linked,
             'target_account_id' => 'spotify-account',
         ]);
+        $oldReview = ExportReview::factory()->for($source)->create([
+            'user_id' => $owner->id,
+            'target_account_id' => 'spotify-account',
+            'destination_type' => ExportDestinationType::Linked,
+        ]);
+        $oldOperation = ExportOperation::factory()->create([
+            'export_review_id' => $oldReview->id,
+            'user_id' => $owner->id,
+            'source_playlist_id' => $source->id,
+            'playlist_export_link_id' => $link->id,
+            'target_account_id' => 'spotify-account',
+            'destination_type' => ExportDestinationType::Linked,
+            'status' => ExportOperationStatus::Failed,
+            'active_key' => null,
+            'completed_at' => now()->subMinute(),
+        ]);
         $review = ExportReview::factory()->for($source)->create([
             'user_id' => $owner->id,
             'target_account_id' => 'spotify-account',
@@ -152,6 +168,7 @@ class BankAccessTest extends TestCase
             ->assertSee('Przeniesiona — na Twoim koncie')
             ->assertSee('https://open.spotify.com/playlist/'.$providerId, false)
             ->assertSee(route('export-operations.show', [$source, $operation->operation_id]), false)
+            ->assertDontSee(route('export-operations.show', [$source, $oldOperation->operation_id]), false)
             ->assertDontSee('javascript:alert', false);
 
         $this->assertSame(1, substr_count($this->actingAs($owner)->get(route('bank.index'))->getContent(), 'Przeglądaj i edytuj'));
@@ -162,6 +179,24 @@ class BankAccessTest extends TestCase
         config(['services.platform_access.spotify.technical.account_id' => 'managed-spotify']);
         $owner = User::factory()->create();
         $source = Playlist::factory()->for($owner)->create();
+        $oldReview = ExportReview::factory()->for($source)->create([
+            'user_id' => $owner->id,
+            'target_provider' => StreamingProvider::Spotify,
+            'destination_type' => ExportDestinationType::Managed,
+            'target_account_id' => 'managed-spotify',
+        ]);
+        $oldOperation = ExportOperation::factory()->create([
+            'export_review_id' => $oldReview->id,
+            'user_id' => $owner->id,
+            'source_playlist_id' => $source->id,
+            'target_provider' => StreamingProvider::Spotify,
+            'destination_type' => ExportDestinationType::Managed,
+            'target_account_id' => 'managed-spotify',
+            'status' => ExportOperationStatus::Transferred,
+            'active_key' => null,
+            'started_at' => now()->subMinute(),
+            'completed_at' => now()->subSeconds(30),
+        ]);
         $review = ExportReview::factory()->for($source)->create([
             'user_id' => $owner->id,
             'target_provider' => StreamingProvider::Spotify,
@@ -184,8 +219,37 @@ class BankAccessTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Otwórz aktywny eksport')
-            ->assertSee(route('export-operations.show', [$source, $operation->operation_id]), false);
+            ->assertSee(route('export-operations.show', [$source, $operation->operation_id]), false)
+            ->assertDontSee(route('export-operations.show', [$source, $oldOperation->operation_id]), false);
 
         $this->assertSame(1, substr_count($response->getContent(), 'Otwórz aktywny eksport'));
+    }
+
+    public function test_bank_paginates_source_playlists_twenty_per_page(): void
+    {
+        $owner = User::factory()->create();
+        Playlist::factory()->for($owner)->create([
+            'name' => 'Oldest playlist on page two',
+            'source_playlist_id' => 'oldest-page-two',
+            'imported_at' => now()->subDay(),
+        ]);
+        foreach (range(1, 20) as $index) {
+            Playlist::factory()->for($owner)->create([
+                'name' => "Recent playlist {$index}",
+                'source_playlist_id' => "recent-page-one-{$index}",
+                'imported_at' => now()->addSeconds($index),
+            ]);
+        }
+
+        $this->actingAs($owner)
+            ->get(route('bank.index'))
+            ->assertOk()
+            ->assertSee('Recent playlist 20')
+            ->assertDontSee('Oldest playlist on page two');
+
+        $this->actingAs($owner)
+            ->get(route('bank.index', ['page' => 2]))
+            ->assertOk()
+            ->assertSee('Oldest playlist on page two');
     }
 }

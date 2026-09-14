@@ -239,7 +239,6 @@ final class SpotifyPlaylistWriter implements PlaylistWriter
     ): PlaylistWriteResult {
         $id = $metadata->json('id');
         $owner = $metadata->json('owner.id');
-        $description = $metadata->json('description');
         $public = $metadata->json('public');
         $collaborative = $metadata->json('collaborative');
         $revision = $metadata->json('snapshot_id');
@@ -248,7 +247,7 @@ final class SpotifyPlaylistWriter implements PlaylistWriter
         $total = is_array($payload) ? ($payload['total'] ?? null) : null;
 
         if ($id !== $playlist->targetId || $owner !== $playlist->targetAccountId
-            || $description !== $playlist->markedDescription() || $public !== false || $collaborative !== false
+            || $public !== false || $collaborative !== false
             || ($revision !== null && (! is_string($revision) || $revision === '' || strlen($revision) > 255))
             || ! is_array($items) || ! array_is_list($items) || count($items) > 20
             || ! is_int($total) || $total !== count($items) || ($payload['next'] ?? null) !== null) {

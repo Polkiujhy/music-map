@@ -136,6 +136,43 @@ class ExportOperationPanelTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_unsupported_duplicate_offers_a_new_review_instead_of_retry(): void
+    {
+        $operation = $this->operation([
+            'status' => ExportOperationStatus::Failed,
+            'failure_code' => ExportOperationFailure::UnsupportedDuplicate,
+            'active_key' => null,
+            'completed_at' => now(),
+        ]);
+        $this->actingAs($operation->user);
+
+        Livewire::test(ExportOperationPanel::class, ['exportOperation' => $operation])
+            ->assertDontSee('Ponów tę samą operację')
+            ->assertSee('Przygotuj nowy przegląd');
+    }
+
+    public function test_reload_preserves_terminal_state_without_polling_or_duplicate_action(): void
+    {
+        $operation = $this->operation([
+            'status' => ExportOperationStatus::Failed,
+            'failure_code' => ExportOperationFailure::TargetDeleted,
+            'active_key' => null,
+            'completed_at' => now(),
+        ]);
+        $this->actingAs($operation->user);
+
+        foreach ([1, 2] as $load) {
+            Livewire::test(ExportOperationPanel::class, ['exportOperation' => $operation->fresh()])
+                ->assertSet('isPolling', false)
+                ->assertDontSee('wire:poll.3s="poll"', false)
+                ->assertDontSee('Ponów tę samą operację')
+                ->assertSee('Przygotuj nowy przegląd');
+        }
+
+        $this->assertSame(ExportOperationStatus::Failed, $operation->fresh()->status);
+        $this->assertDatabaseCount('export_operations', 1);
+    }
+
     /** @param array<string, mixed> $overrides */
     private function operation(array $overrides = []): ExportOperation
     {

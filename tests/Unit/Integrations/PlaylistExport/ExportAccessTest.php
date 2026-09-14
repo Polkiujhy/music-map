@@ -133,6 +133,54 @@ class ExportAccessTest extends TestCase
             (new WithManagedExportAccess($broker))->handle($operation, fn (): null => null),
         );
     }
+
+    public function test_managed_access_rejects_a_token_below_the_operation_budget_and_safety_margin(): void
+    {
+        $now = new DateTimeImmutable('2026-09-14T12:00:00+00:00');
+        $operation = ExportOperation::factory()->create([
+            'destination_type' => ExportDestinationType::Managed,
+        ]);
+        $broker = new ExportAccessManagedBrokerFake(
+            expiresAt: $now->modify('+389 seconds'),
+        );
+        $callbackCalled = false;
+
+        $failure = (new WithManagedExportAccess($broker, static fn (): DateTimeImmutable => $now))->handle(
+            $operation,
+            function () use (&$callbackCalled): null {
+                $callbackCalled = true;
+
+                return null;
+            },
+        );
+
+        $this->assertSame(PlaylistWriteFailure::TemporaryFailure, $failure);
+        $this->assertFalse($callbackCalled);
+    }
+
+    public function test_managed_access_accepts_a_token_at_the_minimum_validity_boundary(): void
+    {
+        $now = new DateTimeImmutable('2026-09-14T12:00:00+00:00');
+        $operation = ExportOperation::factory()->create([
+            'destination_type' => ExportDestinationType::Managed,
+        ]);
+        $broker = new ExportAccessManagedBrokerFake(
+            expiresAt: $now->modify('+390 seconds'),
+        );
+        $callbackCalled = false;
+
+        $failure = (new WithManagedExportAccess($broker, static fn (): DateTimeImmutable => $now))->handle(
+            $operation,
+            function () use (&$callbackCalled): null {
+                $callbackCalled = true;
+
+                return null;
+            },
+        );
+
+        $this->assertNull($failure);
+        $this->assertTrue($callbackCalled);
+    }
 }
 
 final readonly class ExportAccessStreamingFake implements WithStreamingAccess
@@ -159,7 +207,10 @@ final class ExportAccessManagedBrokerFake implements ManagedExportAccessBroker
     /** @var null|array{string, string} */
     public ?array $request = null;
 
-    public function __construct(private readonly ?\Throwable $failure = null) {}
+    public function __construct(
+        private readonly ?\Throwable $failure = null,
+        private readonly ?DateTimeImmutable $expiresAt = null,
+    ) {}
 
     public function acquire(string $provider, string $operationId): ManagedExportAccess
     {
@@ -171,7 +222,7 @@ final class ExportAccessManagedBrokerFake implements ManagedExportAccessBroker
         return new ManagedExportAccess(
             $provider,
             'managed-ephemeral',
-            new DateTimeImmutable('+5 minutes'),
+            $this->expiresAt ?? new DateTimeImmutable('+10 minutes'),
             $operationId,
         );
     }

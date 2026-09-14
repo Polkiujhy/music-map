@@ -152,6 +152,57 @@ class YouTubePlaylistWriterTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_playlist_not_found_retires_the_target_during_item_inspection(): void
+    {
+        Http::fake(['*' => Http::response([
+            'error' => ['errors' => [['reason' => 'playlistNotFound']]],
+        ], 404)]);
+
+        $result = $this->writer()->replace(
+            'token-canary',
+            $this->definition(self::PLAYLIST_ID),
+            $this->guard(),
+        );
+
+        $this->assertSame(PlaylistWriteFailure::TargetDeleted, $result->failure);
+        Http::assertSentCount(1);
+    }
+
+    public function test_video_not_found_does_not_retire_the_target_during_insert(): void
+    {
+        Http::fakeSequence()
+            ->push($this->itemPage([]))
+            ->push(['etag' => 'revision'])
+            ->push(['error' => ['errors' => [['reason' => 'videoNotFound']]]], 404);
+
+        $result = $this->writer()->replace(
+            'token-canary',
+            $this->definition(self::PLAYLIST_ID),
+            $this->guard(),
+        );
+
+        $this->assertSame(PlaylistWriteFailure::InvalidResponse, $result->failure);
+        Http::assertSentCount(3);
+    }
+
+    public function test_playlist_item_not_found_does_not_retire_the_target_during_delete(): void
+    {
+        [$video] = $this->videoIds(1);
+        Http::fakeSequence()
+            ->push($this->itemPage([$video]))
+            ->push(['etag' => 'revision'])
+            ->push(['error' => ['errors' => [['reason' => 'playlistItemNotFound']]]], 404);
+
+        $result = $this->writer()->replace(
+            'token-canary',
+            $this->definition(self::PLAYLIST_ID, []),
+            $this->guard(),
+        );
+
+        $this->assertSame(PlaylistWriteFailure::InvalidResponse, $result->failure);
+        Http::assertSentCount(3);
+    }
+
     public function test_it_inspects_an_owned_unlisted_playlist_and_ignores_provider_links(): void
     {
         [$a] = $this->videoIds(1);

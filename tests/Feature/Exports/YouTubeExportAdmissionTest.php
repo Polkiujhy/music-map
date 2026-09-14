@@ -9,6 +9,7 @@ use App\Enums\ExportOperationFailure;
 use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewDecision;
 use App\Enums\ExportReviewStatus;
+use App\Enums\PlaylistRole;
 use App\Enums\StreamingProvider;
 use App\Integrations\ManagedExport\Contracts\ManagedExportAccessBroker;
 use App\Integrations\ManagedExport\Data\ManagedExportAccess;
@@ -21,6 +22,8 @@ use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
 use App\Models\ExportOperation;
 use App\Models\ExportReview;
 use App\Models\ExportReviewItem;
+use App\Models\Playlist;
+use App\Models\PlaylistExportLink;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -175,15 +178,44 @@ class YouTubeExportAdmissionTest extends TestCase
             'target_catalog_id' => 'abcdefghijk',
             'target_catalog_uri' => 'youtube:video:abcdefghijk',
         ]);
-        Http::fake();
+        $target = Playlist::factory()->for($operation->user)->create([
+            'role' => PlaylistRole::ExportTarget,
+            'source_provider' => StreamingProvider::YouTube,
+            'source_playlist_id' => 'PLabcdefghijklm',
+            'source_account_id' => $operation->target_account_id,
+        ]);
+        $link = PlaylistExportLink::factory()->create([
+            'user_id' => $operation->user_id,
+            'source_playlist_id' => $operation->source_playlist_id,
+            'target_playlist_id' => $target->id,
+            'provider' => StreamingProvider::YouTube,
+            'destination_type' => ExportDestinationType::Managed,
+            'target_account_id' => $operation->target_account_id,
+        ]);
+        $operation->playlistExportLink()->associate($link);
+        $operation->save();
+        Http::fakeSequence()
+            ->push(['items' => [[
+                'id' => 'PLabcdefghijklm',
+                'etag' => 'inspect-revision',
+                'snippet' => [
+                    'channelId' => 'managed-channel',
+                    'description' => 'Provider metadata may have changed',
+                ],
+                'status' => ['privacyStatus' => 'unlisted'],
+            ]]])
+            ->push(['items' => [], 'pageInfo' => ['totalResults' => 0]]);
 
         app(RunExportOperation::class)->handle($operation->operation_id);
 
         $operation->refresh();
         $this->assertSame(ExportOperationStatus::Failed, $operation->status);
         $this->assertSame(ExportOperationFailure::UnsupportedDuplicate, $operation->failure_code);
+        $this->assertNull($operation->active_key);
         $this->assertNull($operation->provider_mutation_started_at);
-        Http::assertNothingSent();
+        $this->assertNotNull($link->fresh()->active_key);
+        $this->assertNull($link->fresh()->retired_at);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() !== 'GET');
     }
 
     private function operation(StreamingProvider $provider): ExportOperation
@@ -220,7 +252,7 @@ final readonly class AdmissionManagedBrokerFake implements ManagedExportAccessBr
 {
     public function acquire(string $provider, string $operationId): ManagedExportAccess
     {
-        return new ManagedExportAccess($provider, 'managed-access', new DateTimeImmutable('+5 minutes'), $operationId);
+        return new ManagedExportAccess($provider, 'managed-access', new DateTimeImmutable('+10 minutes'), $operationId);
     }
 }
 

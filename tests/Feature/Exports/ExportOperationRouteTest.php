@@ -96,6 +96,25 @@ class ExportOperationRouteTest extends TestCase
         );
     }
 
+    public function test_double_retry_dispatches_the_operation_only_once(): void
+    {
+        Queue::fake([ExecuteExportOperation::class]);
+        $operation = $this->operation([
+            'status' => ExportOperationStatus::Incomplete,
+            'failure_code' => ExportOperationFailure::TemporaryFailure,
+            'provider_mutation_started_at' => now()->subMinute(),
+            'completed_at' => now(),
+        ]);
+        $url = route('export-operations.retry', [$operation->source_playlist_id, $operation->operation_id]);
+        $this->actingAs($operation->user);
+
+        $this->post($url)->assertRedirect($this->url($operation));
+        $this->post($url)->assertSessionHasErrors('operation');
+
+        $this->assertSame(ExportOperationStatus::Queued, $operation->fresh()->status);
+        Queue::assertPushed(ExecuteExportOperation::class, 1);
+    }
+
     public function test_retry_endpoint_is_throttled_and_never_exposes_a_foreign_operation(): void
     {
         Queue::fake();
@@ -119,6 +138,23 @@ class ExportOperationRouteTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->post(route('export-operations.retry', [$operation->source_playlist_id, $operation->operation_id]))
             ->assertNotFound();
+    }
+
+    public function test_unsupported_duplicate_cannot_retry_even_with_a_stale_active_key(): void
+    {
+        Queue::fake();
+        $operation = $this->operation([
+            'status' => ExportOperationStatus::Failed,
+            'failure_code' => ExportOperationFailure::UnsupportedDuplicate,
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($operation->user)
+            ->post(route('export-operations.retry', [$operation->source_playlist_id, $operation->operation_id]))
+            ->assertSessionHasErrors('operation');
+
+        $this->assertSame(ExportOperationStatus::Failed, $operation->fresh()->status);
+        Queue::assertNothingPushed();
     }
 
     public function test_abandon_recovery_requires_confirmation_and_releases_the_active_key(): void

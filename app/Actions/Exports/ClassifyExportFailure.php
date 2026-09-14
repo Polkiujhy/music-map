@@ -25,6 +25,9 @@ final readonly class ClassifyExportFailure
                     ? ExportOperationStatus::Failed
                     : ExportOperationStatus::Incomplete,
                 'failure_code' => $code,
+                'active_key' => $code === ExportOperationFailure::UnsupportedDuplicate
+                    ? null
+                    : $locked->active_key,
                 'completed_at' => now(),
             ])->save();
         });

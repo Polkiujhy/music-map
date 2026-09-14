@@ -26,14 +26,11 @@ class BankController extends Controller
             ->with([
                 'exportLinks' => fn ($query) => $query->latest('id'),
                 'exportLinks.targetPlaylist',
+                'exportLinks.latestOperation',
+                'activeExportOperations',
             ])
             ->latest('imported_at')
-            ->get();
-
-        $operations = $request->user()->exportOperations()
-            ->whereIn('source_playlist_id', $playlists->modelKeys())
-            ->latest('id')
-            ->get();
+            ->paginate(20);
 
         $accounts = $request->user()->streamingAccounts()->get()->keyBy(
             fn ($account) => $account->provider->value,
@@ -54,10 +51,6 @@ class BankController extends Controller
         }
 
         foreach ($playlists as $playlist) {
-            $playlist->setRelation(
-                'exportOperations',
-                new EloquentCollection($operations->where('source_playlist_id', $playlist->getKey())->values()->all()),
-            );
             $playlist->setRelation(
                 'exportReviews',
                 $reviews->where('playlist_id', $playlist->getKey())->sortByDesc('id')->values(),

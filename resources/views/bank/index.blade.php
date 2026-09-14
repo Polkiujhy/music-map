@@ -95,8 +95,8 @@
                             </div>
 
                             @php
-                                $unlinkedActiveOperations = $playlist->exportOperations->filter(fn ($operation) =>
-                                    $operation->active_key !== null && $operation->playlist_export_link_id === null
+                                $unlinkedActiveOperations = $playlist->activeExportOperations->filter(fn ($operation) =>
+                                    $operation->playlist_export_link_id === null
                                 );
                             @endphp
                             @if ($unlinkedActiveOperations->isNotEmpty())
@@ -121,7 +121,7 @@
                                         @foreach ($playlist->exportLinks as $link)
                                             @php
                                                 $target = $link->targetPlaylist;
-                                                $latestOperation = $playlist->exportOperations->first(fn ($operation) => (int) $operation->playlist_export_link_id === (int) $link->getKey());
+                                                $latestOperation = $link->latestOperation;
                                                 $targetUrl = $target === null
                                                     ? null
                                                     : \App\Integrations\PlaylistExport\ProviderPlaylistUrl::fromId($link->provider, $target->source_playlist_id);
@@ -194,7 +194,7 @@
                                                         || $review->status === \App\Enums\ExportReviewStatus::Expired
                                                         || $review->expires_at->isPast())
                                                 );
-                                                $activeOperation = $playlist->exportOperations->first(fn ($operation) =>
+                                                $activeOperation = $playlist->activeExportOperations->first(fn ($operation) =>
                                                     $operation->target_provider === $provider
                                                     && $operation->destination_type === $destinationType
                                                     && $operation->target_account_id === $targetAccountId
@@ -244,6 +244,9 @@
                             @endif
                         </article>
                     @endforeach
+                </div>
+                <div class="mt-8">
+                    {{ $playlists->links() }}
                 </div>
             </section>
         @endif

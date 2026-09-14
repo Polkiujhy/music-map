@@ -33,7 +33,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use RuntimeException;
 use Tests\TestCase;
 
 class ExecuteExportOperationTest extends TestCase
@@ -184,6 +186,69 @@ class ExecuteExportOperationTest extends TestCase
         $this->assertSame(2, $account->fresh()->credential_version);
     }
 
+    public function test_spotify_retry_converges_after_manual_metadata_drift_and_partial_replacement(): void
+    {
+        $state = $this->fakeSpotify();
+        $this->app->instance(ManagedExportAccessBroker::class, new OperationManagedBrokerFake);
+        $first = $this->operation(StreamingProvider::Spotify, ExportDestinationType::Managed);
+        app(RunExportOperation::class)->handle($first->operation_id);
+        $state->description = 'Manually edited description';
+
+        $second = $this->operation(
+            StreamingProvider::Spotify,
+            ExportDestinationType::Managed,
+            $first->sourcePlaylist,
+            'spotify:track:ZYXWVUTSRQPONMLKJIHGFE',
+            'Updated frozen name',
+        );
+        $state->failNextItemMutation = true;
+
+        try {
+            app(RunExportOperation::class)->handle($second->operation_id);
+            $this->fail('A temporary item failure must request a safe retry.');
+        } catch (RuntimeException) {
+            $this->assertSame(ExportOperationStatus::Incomplete, $second->fresh()->status);
+        }
+
+        app(RunExportOperation::class)->handle($second->operation_id);
+
+        $this->assertSame(ExportOperationStatus::Transferred, $second->fresh()->status);
+        $this->assertSame(['spotify:track:ZYXWVUTSRQPONMLKJIHGFE'], $state->items);
+        $this->assertStringContainsString($first->operation_id, $state->description);
+    }
+
+    public function test_youtube_retry_converges_after_manual_metadata_drift_and_partial_replacement(): void
+    {
+        $state = $this->fakeYouTube('managed-channel');
+        $this->app->instance(ManagedExportAccessBroker::class, new OperationManagedBrokerFake);
+        $this->app->instance(AdmitYouTubeWrite::class, new OperationAdmissionFake);
+        $first = $this->operation(StreamingProvider::YouTube, ExportDestinationType::Managed);
+        app(RunExportOperation::class)->handle($first->operation_id);
+        $state->description = 'Manually edited description';
+
+        $second = $this->operation(
+            StreamingProvider::YouTube,
+            ExportDestinationType::Managed,
+            $first->sourcePlaylist,
+            'zyxwvutsrqp',
+            'Updated frozen name',
+        );
+        $state->failNextItemMutation = true;
+
+        try {
+            app(RunExportOperation::class)->handle($second->operation_id);
+            $this->fail('A temporary item failure must request a safe retry.');
+        } catch (RuntimeException) {
+            $this->assertSame(ExportOperationStatus::Incomplete, $second->fresh()->status);
+        }
+
+        app(RunExportOperation::class)->handle($second->operation_id);
+
+        $this->assertSame(ExportOperationStatus::Transferred, $second->fresh()->status);
+        $this->assertSame(['zyxwvutsrqp'], $state->items);
+        $this->assertStringContainsString($first->operation_id, $state->description);
+    }
+
     public function test_unlink_between_youtube_mutations_blocks_every_later_write_and_leaves_incomplete(): void
     {
         $account = StreamingAccount::factory()->youtube()->create([
@@ -290,7 +355,42 @@ class ExecuteExportOperationTest extends TestCase
         Queue::assertPushed(ExecuteExportOperation::class, fn ($job): bool => $job->operationId === $after->operation_id);
     }
 
-    /** @return object{items: list<string>, name: string, description: string, marker: string, targetDeleted: bool} */
+    public function test_unexpected_worker_exception_is_reported_without_its_secret_message(): void
+    {
+        $secret = 'managed-token-that-must-not-be-logged';
+        $operation = $this->operation(StreamingProvider::YouTube, ExportDestinationType::Managed);
+        $this->app->instance(ManagedExportAccessBroker::class, new OperationManagedBrokerFake);
+        $this->app->instance(AdmitYouTubeWrite::class, new ThrowingOperationAdmissionFake($secret));
+        Log::spy();
+
+        try {
+            app(RunExportOperation::class)->handle($operation->operation_id);
+            $this->fail('An unexpected failure must request a safe retry.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringNotContainsString($secret, $exception->getMessage());
+        }
+
+        $operation->refresh();
+        $this->assertSame(ExportOperationStatus::Failed, $operation->status);
+        $this->assertSame(ExportOperationFailure::TemporaryFailure, $operation->failure_code);
+        Log::shouldHaveReceived('error')
+            ->once()
+            ->withArgs(function (string $message, array $context) use ($operation, $secret): bool {
+                $this->assertSame('export_operation_unexpected_exception', $message);
+                $this->assertSame([
+                    'operation_id',
+                    'exception_class',
+                    'exception_location',
+                ], array_keys($context));
+                $this->assertSame($operation->operation_id, $context['operation_id']);
+                $this->assertSame(RuntimeException::class, $context['exception_class']);
+                $this->assertStringNotContainsString($secret, json_encode($context, JSON_THROW_ON_ERROR));
+
+                return true;
+            });
+    }
+
+    /** @return object{items: list<string>, name: string, description: string, marker: string, targetDeleted: bool, failNextItemMutation: bool} */
     private function fakeSpotify(string $targetAccountId = 'managed-spotify'): object
     {
         $state = (object) [
@@ -299,10 +399,13 @@ class ExecuteExportOperationTest extends TestCase
             'description' => '',
             'marker' => '',
             'targetDeleted' => false,
+            'failNextItemMutation' => false,
         ];
         Http::fake(function (Request $request) use ($state, $targetAccountId) {
             if ($state->targetDeleted) {
-                return Http::response([], 404);
+                return Http::response([
+                    'error' => ['errors' => [['reason' => 'playlistNotFound']]],
+                ], 404);
             }
 
             $data = $request->data();
@@ -336,6 +439,11 @@ class ExecuteExportOperationTest extends TestCase
                 return Http::response([], 200);
             }
             if ($request->method() === 'PUT' && str_contains($request->url(), '/playlists/ABCDEFGHIJKLMNOPQRSTUV/items')) {
+                if ($state->failNextItemMutation) {
+                    $state->failNextItemMutation = false;
+
+                    return Http::response([], 503);
+                }
                 $state->items = $data['uris'];
 
                 return Http::response(['snapshot_id' => 'replace-revision'], 200);
@@ -347,7 +455,7 @@ class ExecuteExportOperationTest extends TestCase
         return $state;
     }
 
-    /** @return object{items: list<string>, name: string, description: string, occurrence: int} */
+    /** @return object{items: list<string>, name: string, description: string, occurrence: int, failNextItemMutation: bool} */
     private function fakeYouTube(string $targetAccountId): object
     {
         $state = (object) [
@@ -355,6 +463,7 @@ class ExecuteExportOperationTest extends TestCase
             'name' => '',
             'description' => '',
             'occurrence' => 0,
+            'failNextItemMutation' => false,
         ];
         Http::fake(function (Request $request) use ($state, $targetAccountId) {
             $data = $request->data();
@@ -398,11 +507,21 @@ class ExecuteExportOperationTest extends TestCase
                 return Http::response(['etag' => 'update-revision'], 200);
             }
             if ($request->method() === 'DELETE' && str_contains($request->url(), '/playlistItems?')) {
+                if ($state->failNextItemMutation) {
+                    $state->failNextItemMutation = false;
+
+                    return Http::response([], 503);
+                }
                 $state->items = [];
 
                 return Http::response([], 204);
             }
             if ($request->method() === 'POST' && str_contains($request->url(), '/playlistItems?')) {
+                if ($state->failNextItemMutation) {
+                    $state->failNextItemMutation = false;
+
+                    return Http::response([], 503);
+                }
                 $state->items[] = $data['snippet']['resourceId']['videoId'];
                 $state->occurrence++;
 
@@ -465,7 +584,7 @@ final readonly class OperationManagedBrokerFake implements ManagedExportAccessBr
 {
     public function acquire(string $provider, string $operationId): ManagedExportAccess
     {
-        return new ManagedExportAccess($provider, 'managed-access', new DateTimeImmutable('+5 minutes'), $operationId);
+        return new ManagedExportAccess($provider, 'managed-access', new DateTimeImmutable('+10 minutes'), $operationId);
     }
 }
 
@@ -503,5 +622,15 @@ final class OperationAdmissionFake implements AdmitYouTubeWrite
         $reset = new DateTimeImmutable($day.' 00:00:00', new DateTimeZone('America/Los_Angeles'));
 
         return YouTubeWriteAdmissionResult::admittedNew($this->calls, $day, $reset->modify('+1 day'));
+    }
+}
+
+final readonly class ThrowingOperationAdmissionFake implements AdmitYouTubeWrite
+{
+    public function __construct(private string $secret) {}
+
+    public function admit(YouTubeWriteOperationType $operationType, string $operationId): YouTubeWriteAdmissionResult
+    {
+        throw new RuntimeException($this->secret);
     }
 }

@@ -82,6 +82,14 @@ class Playlist extends Model
         return $this->hasMany(ExportOperation::class, 'source_playlist_id');
     }
 
+    /** @return HasMany<ExportOperation, $this> */
+    public function activeExportOperations(): HasMany
+    {
+        return $this->hasMany(ExportOperation::class, 'source_playlist_id')
+            ->whereNotNull('active_key')
+            ->latest('id');
+    }
+
     /** @param Builder<Playlist> $query */
     public function scopeSourceOnly(Builder $query): void
     {
