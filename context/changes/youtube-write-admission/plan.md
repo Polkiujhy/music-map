@@ -536,9 +536,9 @@ zmiany i nowej decyzji produktowej.
 
 #### Automated
 
-- [x] 1.1 Kontrakt typów i wyniku przechodzi
-- [x] 1.2 Manifest źródła obejmuje każdy nowy stabilny plik
-- [x] 1.3 Formatowanie kontraktu przechodzi
+- [x] 1.1 Kontrakt typów i wyniku przechodzi — f1c1b14
+- [x] 1.2 Manifest źródła obejmuje każdy nowy stabilny plik — f1c1b14
+- [x] 1.3 Formatowanie kontraktu przechodzi — f1c1b14
 
 #### Manual
 
@@ -549,10 +549,10 @@ zmiany i nowej decyzji produktowej.
 
 #### Automated
 
-- [ ] 2.1 Addytywna migracja, ograniczenia i bezpieczny rollback przechodzą
-- [ ] 2.2 Sekwencyjna macierz limitu, retry, konfiguracji, czasu i awarii przechodzi
-- [ ] 2.3 Manifest źródła po dodaniu implementacji przechodzi
-- [ ] 2.4 Regresje PHP nie występują
+- [x] 2.1 Addytywna migracja, ograniczenia i bezpieczny rollback przechodzą
+- [x] 2.2 Sekwencyjna macierz limitu, retry, konfiguracji, czasu i awarii przechodzi
+- [x] 2.3 Manifest źródła po dodaniu implementacji przechodzi
+- [x] 2.4 Regresje PHP nie występują
 
 #### Manual
 
