@@ -43,17 +43,21 @@ class BankAccessTest extends TestCase
             ->assertSee('Ada Właścicielka')
             ->assertSee('ada@example.com')
             ->assertSee('Widoczne tylko dla Ciebie')
-            ->assertSee('Import playlist uruchomimy w kolejnym etapie')
+            ->assertSee('Importuj playlistę')
             ->assertDontSee($otherUser->name)
             ->assertDontSee($otherUser->email);
     }
 
-    public function test_bank_has_only_the_logout_form_and_no_import_control(): void
+    public function test_bank_has_logout_and_explicit_consent_import_controls(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('bank.index'))
             ->assertOk()
             ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('action="'.route('playlists.import').'"', false)
+            ->assertSee('name="policy_consent"', false)
+            ->assertSee(route('legal.terms'), false)
+            ->assertSee(route('legal.privacy'), false)
             ->assertDontSee('type="file"', false)
             ->assertDontSee('disabled', false);
     }

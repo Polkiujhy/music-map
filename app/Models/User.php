@@ -39,6 +39,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the playlists in the user's private bank.
+     *
+     * @return HasMany<Playlist, $this>
+     */
+    public function playlists(): HasMany
+    {
+        return $this->hasMany(Playlist::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

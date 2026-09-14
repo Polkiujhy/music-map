@@ -43,7 +43,7 @@ milestone_status: open
 | ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
 | F-01 | `platform-access-readiness` | (fundament) aplikacja udostępnia publiczny probe v1, przez który Manager weryfikuje dostęp technicznych i testowych kont Spotify oraz YouTube | publiczny kontrakt `music-map.platform-access.v1`, aktywne projekty deweloperskie, poświadczenia i dedykowane konta Spotify oraz YouTube | FR-004, FR-006, FR-009, FR-010, NFR-003, NFR-006 | done |
 | S-01 | `private-account-and-bank` | utworzyć konto, zalogować się i wejść do własnego pustego banku playlist | — | FR-001, FR-002 | done |
-| S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01 | FR-002, FR-004, NFR-001, NFR-005 | proposed |
+| S-02 | `playlist-link-import` | zaimportować playlistę z linku do prywatnego banku albo zobaczyć przyczynę odmowy | F-01, S-01, S-04 | FR-002, FR-004, NFR-001, NFR-005 | in-progress |
 | S-03 | `bank-playlist-editing` | przeglądać i edytować zawartość playlisty zapisanej w banku | S-02 | FR-002, FR-005 | proposed |
 | S-04 | `streaming-account-linking` | powiązać lub odłączyć konto Spotify albo YouTube bez pozostawienia aktywnej synchronizacji | F-01, S-01 | FR-006, NFR-003 | done |
 | S-05 | `export-match-review` | wybrać dozwolony cel, sprawdzić dopasowania i świadomie zatwierdzić eksport | F-01, S-02 | US-01, FR-007, FR-008, NFR-001, NFR-002 | proposed |
@@ -59,8 +59,8 @@ Pomoc nawigacyjna — grupuje elementy, które współdzielą łańcuch wymagań
 
 | Strumień | Temat | Łańcuch | Uwaga |
 | ------ | ------------------ | ------------------------------ | --------------------------------------------------------- |
-| A | Prywatny bank i synchronizacja | `S-01` → `S-02` → `S-03` → `S-08` → `S-09` | Prowadzi najszybciej do S-02; w S-09 łączy się ze Strumieniem B. |
-| B | Dostęp do platform i własność eksportu | `F-01` → `S-04` → `S-07` → `S-10` | Najpierw usuwa główne ryzyko zewnętrzne; w S-10 łączy się ze Strumieniem C. |
+| A | Prywatny bank i synchronizacja | `S-01` → `S-02` → `S-03` → `S-08` → `S-09` | S-02 jest zaimplementowane; dalszy ciąg prowadzi przez edycję i synchronizację, a w S-09 łączy się ze Strumieniem B. |
+| B | Dostęp do platform i własność eksportu | `F-01` → `S-04` → `S-07` → `S-10` | F-01 i S-04 usunęły główne ryzyko dostępu; w S-10 strumień łączy się ze Strumieniem C. |
 | C | Kontrola i eksport zarządzany | `S-05` → `S-06` | W S-05 łączy bank ze Strumienia A z dostępem ze Strumienia B i prowadzi do wybranego eksportu na konto techniczne. |
 
 ## Baza
@@ -108,12 +108,12 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Wynik:** zalogowany użytkownik może zaimportować publiczną playlistę YouTube z linku albo playlistę Spotify należącą do powiązanego konta lub z nim współdzieloną, a przy odmowie zobaczyć przyczynę i możliwe rozwiązanie.
 - **Change ID:** `playlist-link-import`
 - **Odniesienia do PRD:** FR-002, FR-004, NFR-001, NFR-005.
-- **Wymagania wstępne:** F-01, S-01.
+- **Wymagania wstępne:** F-01, S-01, S-04.
 - **Równolegle z:** —
-- **Blokery:** dostęp odczytowy udostępniony aplikacji przez Spotify i YouTube.
+- **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** link udostępniania nie gwarantuje dostępu do zawartości, więc odmowa platformy musi być pełnoprawnym, czytelnym wynikiem zamiast błędu technicznego.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-03: Edycja playlisty w banku
 
@@ -121,7 +121,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Change ID:** `bank-playlist-editing`
 - **Odniesienia do PRD:** FR-002, FR-005.
 - **Wymagania wstępne:** S-02.
-- **Równolegle z:** S-04.
+- **Równolegle z:** S-05.
 - **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** edycja nie może zatrzeć nadrzędnego źródła ani identyfikatora platformy, bo późniejsza synchronizacja używa ich do aktualizacji właściwej playlisty.
@@ -133,8 +133,8 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Change ID:** `streaming-account-linking`
 - **Odniesienia do PRD:** FR-006, NFR-003.
 - **Wymagania wstępne:** F-01, S-01.
-- **Równolegle z:** S-03.
-- **Blokery:** zgody i zakresy dostępu udostępnione przez Spotify oraz YouTube.
+- **Równolegle z:** —
+- **Blokery:** —
 - **Niewiadome:** —
 - **Ryzyko:** zbyt szerokie zakresy lub pozostawienie aktywnych tokenów po odłączeniu narusza wymóg poufności i blokuje bezpieczny eksport na konto użytkownika.
 - **Status:** done
@@ -145,7 +145,7 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 - **Change ID:** `export-match-review`
 - **Odniesienia do PRD:** US-01, FR-007, FR-008, NFR-001, NFR-002.
 - **Wymagania wstępne:** F-01, S-02.
-- **Równolegle z:** S-03, S-04.
+- **Równolegle z:** S-03.
 - **Blokery:** dostęp do katalogów utworów Spotify i YouTube.
 - **Niewiadome:** —
 - **Ryzyko:** błędne rozróżnienie utworu brakującego od źle dopasowanego mogłoby skłonić użytkownika do zatwierdzenia innej zawartości niż pokazana.
@@ -215,17 +215,17 @@ Co już jest na miejscu w bazie kodu na dzień `2026-09-11` (automatycznie zbada
 
 | ID mapy drogowej | Change ID | Sugerowany tytuł zadania | Gotowe do `/10x-plan` | Uwagi |
 | ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
-| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | yes | Zakończono i zarchiwizowano. |
-| S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | yes | Uruchom `/10x-plan private-account-and-bank`. |
-| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | yes | F-01 i S-01 zakończone. |
+| F-01 | `platform-access-readiness` | Zweryfikuj dostęp aplikacji i kont technicznych do platform | no | Zakończono i zarchiwizowano. |
+| S-01 | `private-account-and-bank` | Udostępnij prywatne konto i pusty bank playlist | no | Zakończono i zarchiwizowano. |
+| S-02 | `playlist-link-import` | Importuj playlistę z linku do prywatnego banku | no | Implementacja zakończona po integracji z S-04; zmiana oczekuje na archiwizację. |
 | S-03 | `bank-playlist-editing` | Pozwól edytować playlistę w banku | no | Czeka na S-02. |
-| S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | yes | F-01 i S-01 zakończone. |
+| S-04 | `streaming-account-linking` | Powiąż i odłącz konta streamingowe | no | Zakończono i zarchiwizowano. |
 | S-05 | `export-match-review` | Pokaż dopasowania i potwierdzenie eksportu | no | Czeka na S-02. |
 | S-06 | `managed-account-export` | Eksportuj na konto techniczne music-map | no | Czeka na S-05. |
-| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | Czeka na S-04 i S-05. |
-| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | Czeka na S-03 i S-04. |
+| S-07 | `linked-account-export` | Eksportuj na powiązane konto użytkownika | no | S-04 zakończone; czeka na S-05. |
+| S-08 | `source-playlist-sync` | Synchronizuj playlistę źródłową z bankiem | no | S-04 zakończone; czeka na S-03. |
 | S-09 | `playlist-drift-recovery` | Wykrywaj i naprawiaj rozbieżności playlist | no | Czeka na S-07 i S-08. |
-| S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | Czeka na S-04, S-06 i S-07. |
+| S-10 | `safe-account-deletion` | Usuń konto zgodnie z własnością zasobów | no | S-04 zakończone; czeka na S-06 i S-07. |
 
 ## Otwarte pytania dotyczące mapy drogowej
 
