@@ -572,12 +572,12 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [x] 4.1 Joby są unikalne, odporne na overlap i mają właściwą klasyfikację retry
-- [x] 4.2 YouTube admission nalicza wyłącznie pierwszą rzeczywistą operację push
-- [x] 4.3 Scheduler i login spełniają progi czterech godzin i piętnastu minut
-- [x] 4.4 Unlink wyłącza sync, a historyczny refresh YouTube go pomija
-- [x] 4.5 Retencja zachowuje aktywne runy i usuwa wyłącznie zakończone
-- [x] 4.6 Pełne composer test, Pint i build przechodzą
+- [x] 4.1 Joby są unikalne, odporne na overlap i mają właściwą klasyfikację retry — bd0e623
+- [x] 4.2 YouTube admission nalicza wyłącznie pierwszą rzeczywistą operację push — bd0e623
+- [x] 4.3 Scheduler i login spełniają progi czterech godzin i piętnastu minut — bd0e623
+- [x] 4.4 Unlink wyłącza sync, a historyczny refresh YouTube go pomija — bd0e623
+- [x] 4.5 Retencja zachowuje aktywne runy i usuwa wyłącznie zakończone — bd0e623
+- [x] 4.6 Pełne composer test, Pint i build przechodzą — bd0e623
 
 #### Manual
 
@@ -587,10 +587,10 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [ ] 5.1 UI pokrywa preview, confirm, manual dispatch, auto toggle i stany uwagi
-- [ ] 5.2 Autoryzacja izoluje status i operacje synchronizacji między użytkownikami
-- [ ] 5.3 Semantyczne kontrolki i komunikaty nie ujawniają technicznych danych
-- [ ] 5.4 Pełne composer test, Pint i build przechodzą
+- [x] 5.1 UI pokrywa preview, confirm, manual dispatch, auto toggle i stany uwagi
+- [x] 5.2 Autoryzacja izoluje status i operacje synchronizacji między użytkownikami
+- [x] 5.3 Semantyczne kontrolki i komunikaty nie ujawniają technicznych danych
+- [x] 5.4 Pełne composer test, Pint i build przechodzą
 
 #### Manual
 

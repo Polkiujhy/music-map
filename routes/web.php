@@ -84,6 +84,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/bank/playlists/{playlist}/synchronization/confirm', [PlaylistSynchronizationController::class, 'confirm'])
         ->whereNumber('playlist')
         ->name('playlist-synchronizations.confirm');
+    Route::get('/bank/playlists/{playlist}/synchronization', [PlaylistSynchronizationController::class, 'show'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.show');
+    Route::post('/bank/playlists/{playlist}/synchronization/run', [PlaylistSynchronizationController::class, 'run'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.run');
+    Route::patch('/bank/playlists/{playlist}/synchronization', [PlaylistSynchronizationController::class, 'update'])
+        ->whereNumber('playlist')
+        ->name('playlist-synchronizations.update');
     Route::post('/bank/playlists/{playlist}/export-reviews', [PlaylistExportReviewController::class, 'store'])
         ->middleware('throttle:export-review-start')
         ->name('export-reviews.store');

@@ -69,6 +69,7 @@ app/Http/Requests/ConfirmExportReviewRequest.php
 app/Http/Requests/ImportPlaylistRequest.php
 app/Http/Requests/StartExportReviewRequest.php
 app/Http/Requests/ConfirmPlaylistSynchronizationRequest.php
+app/Http/Requests/UpdatePlaylistSynchronizationRequest.php
 app/Http/Responses/NeutralPasswordResetLinkResponse.php
 app/Enums/StreamingProvider.php
 app/Enums/ExportDestinationType.php
@@ -286,6 +287,7 @@ tests/Feature/PlaylistSync/PlaylistSynchronizationLifecycleTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationSchedulingTest.php
 tests/Feature/PlaylistSync/YouTubeSourceSyncAdmissionPostgresTest.php
 tests/Feature/PlaylistSync/YouTubeSourceSyncAdmissionTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationUiTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php
