@@ -2,6 +2,7 @@
 
 namespace App\Actions\ExportReviews;
 
+use App\Actions\ManagedAccountExport\StartConfirmedManagedExport;
 use App\Actions\Playlists\FingerprintPlaylistContent;
 use App\Enums\ExportMatchStatus;
 use App\Enums\ExportReviewDecision;
@@ -18,6 +19,7 @@ final readonly class ConfirmExportReview
     public function __construct(
         private FingerprintPlaylistContent $fingerprint,
         private ResolveExportDestination $destinations,
+        private StartConfirmedManagedExport $startManagedExport,
     ) {}
 
     /**
@@ -37,7 +39,10 @@ final readonly class ConfirmExportReview
             }
 
             if ($locked->status === ExportReviewStatus::Confirmed) {
-                return ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+                $manifest = ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+                $this->startManagedExport->handle($locked, $manifest);
+
+                return $manifest;
             }
 
             if ($locked->status !== ExportReviewStatus::Ready) {
@@ -131,7 +136,10 @@ final readonly class ConfirmExportReview
                 'confirmed_at' => now(),
             ])->save();
 
-            return ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+            $manifest = ConfirmedExportManifest::fromConfirmedReview($locked->load('items'));
+            $this->startManagedExport->handle($locked, $manifest);
+
+            return $manifest;
         });
 
         if ($result instanceof ValidationException) {

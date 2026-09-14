@@ -15,6 +15,8 @@ class PlaylistEditingController extends Controller
             ->whereKey($playlist)
             ->firstOrFail();
 
+        abort_if($playlist->isManagedTarget(), 404);
+
         return view('playlists.edit', ['playlist' => $playlist]);
     }
 }

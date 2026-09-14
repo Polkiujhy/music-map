@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Jobs\RefreshYouTubePlaylistMetadata;
 use App\Models\Playlist;
@@ -21,6 +22,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
         $expireBefore = now()->subDays(30);
 
         Playlist::query()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)
             ->where('provider_metadata_refreshed_at', '<=', $expireBefore)
             ->where(function ($query): void {
@@ -39,6 +41,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
             });
 
         Playlist::query()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)
             ->where('provider_metadata_refreshed_at', '>', $expireBefore)
             ->where('provider_metadata_refreshed_at', '<=', $refreshBefore)
@@ -55,6 +58,7 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
         DB::transaction(function () use ($playlistId, $expireBefore): void {
             $playlist = Playlist::query()
                 ->whereKey($playlistId)
+                ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', StreamingProvider::YouTube->value)
                 ->lockForUpdate()
                 ->first();

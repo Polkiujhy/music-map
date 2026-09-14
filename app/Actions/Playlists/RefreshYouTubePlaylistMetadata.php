@@ -2,6 +2,7 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\Data\PlaylistReference;
 use App\Integrations\PlaylistImport\ImportFailureCode;
@@ -19,6 +20,7 @@ final readonly class RefreshYouTubePlaylistMetadata
     {
         $playlist = Playlist::query()
             ->whereKey($playlistId)
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', StreamingProvider::YouTube->value)
             ->with('user')
             ->first();

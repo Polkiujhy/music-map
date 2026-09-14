@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use Database\Factories\PlaylistFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -9,8 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
+    'origin',
     'source_provider',
     'streaming_account_id',
     'source_playlist_id',
@@ -60,12 +63,30 @@ class Playlist extends Model
         return $this->hasMany(ExportReview::class);
     }
 
+    /** @return HasMany<PlaylistExport, $this> */
+    public function managedExports(): HasMany
+    {
+        return $this->hasMany(PlaylistExport::class, 'source_playlist_id');
+    }
+
+    /** @return HasOne<PlaylistExport, $this> */
+    public function managedExportTarget(): HasOne
+    {
+        return $this->hasOne(PlaylistExport::class, 'target_playlist_id');
+    }
+
+    public function isManagedTarget(): bool
+    {
+        return $this->origin === PlaylistOrigin::ManagedTarget;
+    }
+
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
+            'origin' => PlaylistOrigin::class,
             'source_provider' => StreamingProvider::class,
             'provider_metadata_refreshed_at' => 'immutable_datetime',
             'imported_at' => 'immutable_datetime',

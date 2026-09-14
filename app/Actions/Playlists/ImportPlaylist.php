@@ -2,6 +2,7 @@
 
 namespace App\Actions\Playlists;
 
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\PlaylistImport\ImportFailureCode;
 use App\Integrations\PlaylistImport\ImportResult;
@@ -35,6 +36,7 @@ final readonly class ImportPlaylist
         }
 
         $existingPlaylist = $user->playlists()
+            ->where('origin', PlaylistOrigin::Imported->value)
             ->where('source_provider', $reference->provider->value)
             ->where('source_playlist_id', $reference->providerPlaylistId)
             ->first();
@@ -45,6 +47,14 @@ final readonly class ImportPlaylist
                 $reference->provider,
                 $correlationId,
             );
+        }
+
+        if ($user->playlists()
+            ->where('origin', PlaylistOrigin::ManagedTarget->value)
+            ->where('source_provider', $reference->provider->value)
+            ->where('source_playlist_id', $reference->providerPlaylistId)
+            ->exists()) {
+            return $this->failure(ImportFailureCode::InvalidResponse, $reference->provider, $correlationId);
         }
 
         $streamingAccountId = null;
@@ -107,6 +117,7 @@ final readonly class ImportPlaylist
             $localEditsConfirmed,
         ) {
             $currentPlaylist = $user->playlists()
+                ->where('origin', PlaylistOrigin::Imported->value)
                 ->where('source_provider', $snapshot->provider->value)
                 ->where('source_playlist_id', $snapshot->providerPlaylistId)
                 ->lockForUpdate()

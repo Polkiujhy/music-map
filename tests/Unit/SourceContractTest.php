@@ -36,7 +36,10 @@ class SourceContractTest extends TestCase
             $requiredPaths,
             static fn (string $path): bool => str_starts_with($path, '.github/workflows/'),
         ));
-        $workflowFiles = glob($repository.'/.github/workflows/*.{yml,yaml}', GLOB_BRACE);
+        $workflowFiles = array_merge(
+            glob($repository.'/.github/workflows/*.yml') ?: [],
+            glob($repository.'/.github/workflows/*.yaml') ?: [],
+        );
 
         $this->assertIsArray($workflowFiles);
 
@@ -78,6 +81,25 @@ class SourceContractTest extends TestCase
             'PHP source path is missing from required_paths: app/UnmanifestedSourceContractProbe.php',
             $output,
         );
+    }
+
+    public function test_postgresql_ci_rebuilds_schema_and_runs_the_full_suite_on_the_same_candidate(): void
+    {
+        $repository = dirname(__DIR__, 2);
+        $workflow = file_get_contents($repository.'/.github/workflows/ci.yml');
+
+        $this->assertIsString($workflow);
+        $this->assertStringContainsString('postgres-smoke:', $workflow);
+        $this->assertStringContainsString('extensions: pdo_pgsql, pcntl', $workflow);
+        $this->assertStringContainsString('php artisan migrate:fresh --force --no-interaction', $workflow);
+        $this->assertStringContainsString('php artisan test', $workflow);
+        $this->assertStringNotContainsString(
+            'php artisan test tests/',
+            $workflow,
+        );
+        $this->assertStringNotContainsString('TECHNICAL_REFRESH_TOKEN', $workflow);
+        $this->assertStringNotContainsString('SPOTIFY_CLIENT_SECRET', $workflow);
+        $this->assertStringNotContainsString('YOUTUBE_CLIENT_SECRET', $workflow);
     }
 
     /** @return list<string> */
