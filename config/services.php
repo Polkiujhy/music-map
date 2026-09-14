@@ -60,6 +60,17 @@ return [
         ],
     ],
 
+    'export_matching' => [
+        'spotify' => [
+            'client_id' => env('SPOTIFY_CLIENT_ID'),
+            'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+        ],
+        'youtube' => [
+            'api_key' => env('YOUTUBE_API_KEY'),
+            'daily_search_limit' => (int) env('YOUTUBE_EXPORT_SEARCH_DAILY_LIMIT', 100),
+        ],
+    ],
+
     'platform_access' => [
         'spotify' => [
             'technical' => [

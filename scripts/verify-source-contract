@@ -38,6 +38,7 @@ app/Actions/Playlists/UpdateBankPlaylistItems.php
 app/Actions/ExportReviews/FingerprintPlaylist.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
+app/Actions/ExportReviews/StartExportReview.php
 app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
@@ -97,6 +98,19 @@ app/Integrations/PlatformAccess/TechnicalConfiguration.php
 app/Integrations/PlatformAccess/TesterSession.php
 app/Integrations/PlatformAccess/YouTubeProbe.php
 app/Livewire/PlaylistEditor.php
+app/Integrations/ExportMatching/Contracts/CatalogSearch.php
+app/Integrations/ExportMatching/Data/CatalogCandidate.php
+app/Integrations/ExportMatching/Data/MatchResult.php
+app/Integrations/ExportMatching/Data/SourceTrack.php
+app/Integrations/ExportMatching/MatchNormalizer.php
+app/Integrations/ExportMatching/MatchingFailure.php
+app/Integrations/ExportMatching/Providers/SpotifyCatalogSearch.php
+app/Integrations/ExportMatching/Providers/YouTubeCatalogSearch.php
+app/Integrations/ExportMatching/SpotifyClientCredentials.php
+app/Integrations/ExportMatching/SpotifyMatchClassifier.php
+app/Integrations/ExportMatching/YouTubeMatchClassifier.php
+app/Integrations/ExportMatching/YouTubeSearchBudget.php
+app/Jobs/PrepareExportReview.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
 app/Models/AuthIdentity.php
 app/Models/ExportReview.php
@@ -105,7 +119,9 @@ app/Models/Playlist.php
 app/Models/PlaylistItem.php
 app/Models/StreamingAccount.php
 app/Models/User.php
+app/Notifications/ExportReviewCompleted.php
 app/Providers/AppServiceProvider.php
+app/Providers/ExportMatchingServiceProvider.php
 app/Providers/FortifyServiceProvider.php
 app/Providers/PlaylistImportServiceProvider.php
 app/Providers/StreamingAccountsServiceProvider.php
@@ -192,6 +208,7 @@ tests/Feature/BankAccessTest.php
 tests/Feature/ExportMatchReview/ExportReviewContractTest.php
 tests/Feature/ExportMatchReview/ExportReviewMigrationTest.php
 tests/Feature/ExportMatchReview/FingerprintPlaylistTest.php
+tests/Feature/ExportMatchReview/PrepareExportReviewTest.php
 tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
@@ -224,6 +241,9 @@ tests/Feature/Auth/SessionSecurityTest.php
 tests/TestCase.php
 tests/Unit/DependabotConfigurationTest.php
 tests/Unit/ExampleTest.php
+tests/Unit/Integrations/ExportMatching/CatalogClientTest.php
+tests/Unit/Integrations/ExportMatching/MatchClassifierTest.php
+tests/Unit/Integrations/ExportMatching/YouTubeSearchBudgetTest.php
 tests/Unit/Integrations/PlaylistImport/PlaylistDataTest.php
 tests/Unit/Integrations/PlaylistImport/PlaylistShareUrlParserTest.php
 tests/Unit/Integrations/PlaylistImport/SpotifyPlaylistReaderTest.php

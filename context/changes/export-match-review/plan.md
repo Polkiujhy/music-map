@@ -615,11 +615,11 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [x] 1.1 Migracje i rollback przechodzą na SQLite wraz z relacjami i semantyką usuwania
-- [x] 1.2 Modele, enumy i fabryki zachowują zamknięty kontrakt właścicielski
-- [x] 1.3 Fingerprint wykrywa każdą zmianę uporządkowanej zawartości
-- [x] 1.4 Destination resolver pokrywa właściciela, market i zakazaną parę źródłową
-- [x] 1.5 Regresje S-02 i S-04 pozostają zielone
+- [x] 1.1 Migracje i rollback przechodzą na SQLite wraz z relacjami i semantyką usuwania — c44310d
+- [x] 1.2 Modele, enumy i fabryki zachowują zamknięty kontrakt właścicielski — c44310d
+- [x] 1.3 Fingerprint wykrywa każdą zmianę uporządkowanej zawartości — c44310d
+- [x] 1.4 Destination resolver pokrywa właściciela, market i zakazaną parę źródłową — c44310d
+- [x] 1.5 Regresje S-02 i S-04 pozostają zielone — c44310d
 
 #### Manual
 
@@ -630,12 +630,12 @@ nie implementuje jej mechaniki.
 
 #### Automated
 
-- [ ] 2.1 Klienci katalogowi przechodzą pełną macierz fake HTTP bez wycieków
-- [ ] 2.2 Klasyfikatory rozróżniają matched, suspicious i unavailable
-- [ ] 2.3 Budżet YouTube atomowo rezerwuje cache missy i deduplikuje zapytania
-- [ ] 2.4 Job publikuje wyłącznie kompletny wynik i bezpiecznie obsługuje retry
-- [ ] 2.5 Powiadomienie po 60 sekundach jest pojedyncze i idempotentne
-- [ ] 2.6 Testy i CI nie wykonują rzeczywistych requestów providerów
+- [x] 2.1 Klienci katalogowi przechodzą pełną macierz fake HTTP bez wycieków
+- [x] 2.2 Klasyfikatory rozróżniają matched, suspicious i unavailable
+- [x] 2.3 Budżet YouTube atomowo rezerwuje cache missy i deduplikuje zapytania
+- [x] 2.4 Job publikuje wyłącznie kompletny wynik i bezpiecznie obsługuje retry
+- [x] 2.5 Powiadomienie po 60 sekundach jest pojedyncze i idempotentne
+- [x] 2.6 Testy i CI nie wykonują rzeczywistych requestów providerów
 
 #### Manual
 
