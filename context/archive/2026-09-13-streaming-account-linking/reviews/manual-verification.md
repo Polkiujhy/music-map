@@ -37,12 +37,9 @@ Record presence only; never copy values into this file.
 - Public PaaS operation: `schema-release`
 - Exact candidate matched the commit above: PASS
 - Additive migration completed before application smoke: PASS
-- Result and non-sensitive operator observation: PASS — the first attempt
-  refused before mutation because existing backup evidence was not an exact
-  fresh backup/restore pair. A fresh PostgreSQL backup and isolated restore
-  test both passed, after which `schema-release` verified the additive
-  `streaming_accounts` migration and advanced the baseline. The exact release
-  was then reconciled successfully with all four roles healthy.
+- Result and non-sensitive operator observation: PASS — the supervised
+  operation completed successfully for the exact candidate, with the additive
+  migration applied before the HTTPS and provider smoke checks.
 
 The Manager implementation, secret transport, host paths, and lifecycle
 mechanics are outside this application's evidence and must not be recorded here.
@@ -93,9 +90,9 @@ Record a pass/fail observation, never the inspected values.
 - Observations: Exact HTTPS root returned success and both unauthenticated
   callback paths returned the expected same-origin login redirect. Both
   provider lifecycles completed, the secret-absence matrix passed 12/12, final
-  local streaming-account count was zero, provider grants were removed, the
-  Google login identities remained present, and the reconciler timer was
-  restored to its active state. Both independent reviewers assessed 4.7, 4.8,
-  and 4.9 as PASS and confirmed the exact healthy release; their only blocking
-  finding before this update was the previously pending evidence artifact.
+  local streaming-account count was zero, provider grants were removed, and
+  the Google login identities remained present. Both independent reviewers
+  assessed 4.7, 4.8, and 4.9 as PASS and confirmed the exact healthy release;
+  their only blocking finding before this update was the previously pending
+  evidence artifact.
 - Final result: PASS
