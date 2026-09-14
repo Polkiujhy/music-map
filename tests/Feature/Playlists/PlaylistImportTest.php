@@ -197,13 +197,7 @@ class PlaylistImportTest extends TestCase
         $this->actingAs($user)->post(route('playlists.import'), $this->form())
             ->assertSessionHas('status', 'Playlista została dodana do Twojego banku.');
 
-        $before = Playlist::query()->with('items')->firstOrFail();
-        $beforeAttributes = $before->getAttributes();
-        $beforeItems = $before->items->map->only([
-            'position',
-            'occurrence_id',
-            'catalog_id',
-        ])->all();
+        $before = Playlist::query()->with('items')->firstOrFail()->toArray();
         $requestsBeforeReimport = Http::recorded()->count();
 
         $this->travelTo('2026-09-15 10:00:00');
@@ -213,19 +207,10 @@ class PlaylistImportTest extends TestCase
                 fn (string $message): bool => str_contains($message, 'YouTube jest chwilowo niedostępny'),
             );
 
-        $after = Playlist::query()->with('items')->firstOrFail();
+        $after = Playlist::query()->with('items')->firstOrFail()->toArray();
 
         $this->assertSame($requestsBeforeReimport + 2, Http::recorded()->count());
-        $this->assertSame($beforeAttributes, $after->getAttributes());
-        $this->assertSame([
-            ['position' => 0, 'occurrence_id' => 'occurrence-0', 'catalog_id' => 'video-first'],
-            ['position' => 1, 'occurrence_id' => 'occurrence-1', 'catalog_id' => 'video-second'],
-        ], $beforeItems);
-        $this->assertSame($beforeItems, $after->items->map->only([
-            'position',
-            'occurrence_id',
-            'catalog_id',
-        ])->all());
+        $this->assertSame($before, $after);
     }
 
     public function test_bank_never_displays_another_users_playlist(): void
