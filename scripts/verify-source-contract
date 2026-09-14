@@ -132,6 +132,10 @@ app/Integrations/PlatformAccess/SpotifyProbe.php
 app/Integrations/PlatformAccess/TechnicalConfiguration.php
 app/Integrations/PlatformAccess/TesterSession.php
 app/Integrations/PlatformAccess/YouTubeProbe.php
+app/Integrations/ManagedExport/Contracts/ManagedExportAccessBroker.php
+app/Integrations/ManagedExport/Data/ManagedExportAccess.php
+app/Integrations/ManagedExport/ManagedExportAccessException.php
+app/Integrations/ManagedExport/UnixManagedExportAccessBroker.php
 app/Livewire/PlaylistEditor.php
 app/Integrations/ExportMatching/Contracts/CatalogSearch.php
 app/Integrations/ExportMatching/Data/CatalogCandidate.php
@@ -272,6 +276,7 @@ tests/Feature/ExportMatchReview/PrepareExportReviewTest.php
 tests/Feature/ExportMatchReview/ResolveExportDestinationTest.php
 tests/Feature/Console/ProbePlatformAccessTest.php
 tests/Feature/LandingPageTest.php
+tests/Feature/ManagedExport/ManagedExportBrokerBindingTest.php
 tests/Feature/Playlists/PlaylistConcurrentImportTest.php
 tests/Feature/Playlists/PlaylistMigrationTest.php
 tests/Feature/Playlists/PlaylistImportTest.php
@@ -329,6 +334,7 @@ tests/Unit/Integrations/PlatformAccess/ProviderFailureMapperTest.php
 tests/Unit/Integrations/PlatformAccess/RefreshTokenRotationSinkTest.php
 tests/Unit/Integrations/PlatformAccess/SpotifyProbeTest.php
 tests/Unit/Integrations/PlatformAccess/YouTubeProbeTest.php
+tests/Unit/Integrations/ManagedExport/UnixManagedExportAccessBrokerTest.php
 tests/Unit/Integrations/StreamingAccounts/SpotifyOAuthGatewayTest.php
 tests/Unit/Integrations/StreamingAccounts/WithStreamingAccessTest.php
 tests/Unit/Integrations/StreamingAccounts/YouTubeOAuthGatewayTest.php
@@ -350,6 +356,9 @@ tests/Unit/Integrations/PlaylistSync/PlanYouTubePlaylistMutationsTest.php
 tests/Unit/Integrations/PlaylistSync/SpotifySourcePlaylistWriterTest.php
 tests/Unit/Integrations/PlaylistSync/YouTubeSourcePlaylistWriterTest.php
 tests/Unit/SourceContractTest.php
+tests/Fixtures/music-map-managed-export-failure.json
+tests/Fixtures/music-map-managed-export-request.json
+tests/Fixtures/music-map-managed-export-success.json
 vite.config.js'
 
 printf '%s\n' "$required_paths" | while IFS= read -r path; do
