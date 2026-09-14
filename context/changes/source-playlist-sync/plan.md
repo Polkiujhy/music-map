@@ -557,12 +557,12 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [x] 3.1 Koordynator realizuje no-op, pull, push i source-wins bez HTTP w transakcji
-- [x] 3.2 Spotify wykonuje pojedynczy replace i kontrolny odczyt
-- [x] 3.3 YouTube generuje minimalny deterministyczny diff dla przypadków granicznych
-- [x] 3.4 Celowe przerwania YouTube wznawiają się bez podwójnych mutacji
-- [x] 3.5 PostgreSQL potwierdza rewalidację i pojedynczy aktywny run
-- [x] 3.6 Pełne composer test, Pint i build przechodzą
+- [x] 3.1 Koordynator realizuje no-op, pull, push i source-wins bez HTTP w transakcji — c0146d5
+- [x] 3.2 Spotify wykonuje pojedynczy replace i kontrolny odczyt — c0146d5
+- [x] 3.3 YouTube generuje minimalny deterministyczny diff dla przypadków granicznych — c0146d5
+- [x] 3.4 Celowe przerwania YouTube wznawiają się bez podwójnych mutacji — c0146d5
+- [x] 3.5 PostgreSQL potwierdza rewalidację i pojedynczy aktywny run — c0146d5
+- [x] 3.6 Pełne composer test, Pint i build przechodzą — c0146d5
 
 #### Manual
 
@@ -572,12 +572,12 @@ zatrzymuje dispatch i opróżnia lub oznacza aktywne runy.
 
 #### Automated
 
-- [ ] 4.1 Joby są unikalne, odporne na overlap i mają właściwą klasyfikację retry
-- [ ] 4.2 YouTube admission nalicza wyłącznie pierwszą rzeczywistą operację push
-- [ ] 4.3 Scheduler i login spełniają progi czterech godzin i piętnastu minut
-- [ ] 4.4 Unlink wyłącza sync, a historyczny refresh YouTube go pomija
-- [ ] 4.5 Retencja zachowuje aktywne runy i usuwa wyłącznie zakończone
-- [ ] 4.6 Pełne composer test, Pint i build przechodzą
+- [x] 4.1 Joby są unikalne, odporne na overlap i mają właściwą klasyfikację retry
+- [x] 4.2 YouTube admission nalicza wyłącznie pierwszą rzeczywistą operację push
+- [x] 4.3 Scheduler i login spełniają progi czterech godzin i piętnastu minut
+- [x] 4.4 Unlink wyłącza sync, a historyczny refresh YouTube go pomija
+- [x] 4.5 Retencja zachowuje aktywne runy i usuwa wyłącznie zakończone
+- [x] 4.6 Pełne composer test, Pint i build przechodzą
 
 #### Manual
 

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\PlaylistSyncStatus;
 use App\Enums\StreamingProvider;
 use App\Jobs\RefreshYouTubePlaylistMetadata;
 use App\Models\Playlist;
@@ -22,6 +23,11 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
 
         Playlist::query()
             ->where('source_provider', StreamingProvider::YouTube->value)
+            ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                PlaylistSyncStatus::PendingConfirmation->value,
+                PlaylistSyncStatus::Enabled->value,
+                PlaylistSyncStatus::Attention->value,
+            ]))
             ->where('provider_metadata_refreshed_at', '<=', $expireBefore)
             ->where(function ($query): void {
                 $query
@@ -40,6 +46,11 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
 
         Playlist::query()
             ->where('source_provider', StreamingProvider::YouTube->value)
+            ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                PlaylistSyncStatus::PendingConfirmation->value,
+                PlaylistSyncStatus::Enabled->value,
+                PlaylistSyncStatus::Attention->value,
+            ]))
             ->where('provider_metadata_refreshed_at', '>', $expireBefore)
             ->where('provider_metadata_refreshed_at', '<=', $refreshBefore)
             ->orderBy('id')
@@ -56,6 +67,11 @@ class RefreshStaleYouTubePlaylistMetadata extends Command
             $playlist = Playlist::query()
                 ->whereKey($playlistId)
                 ->where('source_provider', StreamingProvider::YouTube->value)
+                ->whereDoesntHave('synchronization', fn ($query) => $query->whereIn('status', [
+                    PlaylistSyncStatus::PendingConfirmation->value,
+                    PlaylistSyncStatus::Enabled->value,
+                    PlaylistSyncStatus::Attention->value,
+                ]))
                 ->lockForUpdate()
                 ->first();
 

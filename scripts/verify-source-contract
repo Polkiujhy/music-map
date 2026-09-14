@@ -43,11 +43,15 @@ app/Actions/PlaylistSync/ApplySourcePlaylistToBank.php
 app/Actions/PlaylistSync/CompletePlaylistSyncRun.php
 app/Actions/PlaylistSync/FailPlaylistSyncRun.php
 app/Actions/PlaylistSync/RunPlaylistSynchronization.php
+app/Actions/PlaylistSync/DisableAccountPlaylistSynchronizations.php
+app/Actions/PlaylistSync/DispatchPlaylistSynchronization.php
 app/Actions/ExportReviews/ConfirmExportReview.php
 app/Actions/ExportReviews/ResolvedExportDestination.php
 app/Actions/ExportReviews/ResolveExportDestination.php
 app/Actions/ExportReviews/StartExportReview.php
 app/Console/Commands/RefreshStaleYouTubePlaylistMetadata.php
+app/Console/Commands/DispatchDuePlaylistSynchronizations.php
+app/Console/Commands/PrunePlaylistSyncRuns.php
 app/Console/Commands/ProbePlatformAccess.php
 app/Exceptions/Auth/IdentityConflictException.php
 app/Http/Controllers/Auth/GoogleAuthController.php
@@ -149,6 +153,8 @@ app/Integrations/YouTubeWriteAdmission/YouTubeWriteOperationType.php
 app/Jobs/PrepareExportReview.php
 app/Jobs/SendExportReviewCompletedNotification.php
 app/Jobs/RefreshYouTubePlaylistMetadata.php
+app/Jobs/RunPlaylistSynchronization.php
+app/Listeners/DispatchDuePlaylistSynchronizationsAfterLogin.php
 app/Livewire/ExportReviewPanel.php
 app/Models/AuthIdentity.php
 app/Models/ExportReview.php
@@ -185,6 +191,7 @@ config/fortify.php
 config/logging.php
 config/mail.php
 config/queue.php
+config/playlist-sync.php
 config/services.php
 config/session.php
 context/archive/README.md
@@ -274,6 +281,11 @@ tests/Feature/PlaylistSync/PlaylistSynchronizationModelTest.php
 tests/Feature/PlaylistSync/PlaylistSynchronizationActivationTest.php
 tests/Feature/PlaylistSync/RunPlaylistSynchronizationPostgresTest.php
 tests/Feature/PlaylistSync/RunPlaylistSynchronizationTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationJobTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationLifecycleTest.php
+tests/Feature/PlaylistSync/PlaylistSynchronizationSchedulingTest.php
+tests/Feature/PlaylistSync/YouTubeSourceSyncAdmissionPostgresTest.php
+tests/Feature/PlaylistSync/YouTubeSourceSyncAdmissionTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsTest.php
 tests/Feature/PlaylistEditing/UpdateBankPlaylistItemsPostgresTest.php
 tests/Feature/PlaylistEditing/PlaylistEditingAuthorizationTest.php

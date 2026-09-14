@@ -27,6 +27,7 @@ final readonly class ConfirmPlaylistSynchronization
         private WithStreamingAccess $withStreamingAccess,
         private FingerprintPlaylistContent $bankFingerprint,
         private FingerprintSourcePlaylist $sourceFingerprint,
+        private DispatchPlaylistSynchronization $dispatch,
     ) {}
 
     public function handle(User $user, Playlist $playlist, string $previewToken): PlaylistSyncRun
@@ -114,6 +115,7 @@ final readonly class ConfirmPlaylistSynchronization
         });
 
         Cache::forget(PreparePlaylistSynchronization::cacheKey($previewToken));
+        $this->dispatch->dispatchRun($run);
 
         return $run;
     }

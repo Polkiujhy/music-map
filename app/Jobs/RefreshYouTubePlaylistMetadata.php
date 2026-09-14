@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Actions\Playlists\RefreshYouTubePlaylistMetadata as RefreshMetadata;
+use App\Enums\PlaylistSyncStatus;
 use App\Integrations\PlaylistImport\ImportFailureCode;
+use App\Models\Playlist;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -28,6 +30,19 @@ class RefreshYouTubePlaylistMetadata implements ShouldBeUnique, ShouldQueue
 
     public function handle(RefreshMetadata $refresh): void
     {
+        $ownedBySynchronization = Playlist::query()
+            ->whereKey($this->playlistId)
+            ->whereHas('synchronization', fn ($query) => $query->whereIn('status', [
+                PlaylistSyncStatus::PendingConfirmation->value,
+                PlaylistSyncStatus::Enabled->value,
+                PlaylistSyncStatus::Attention->value,
+            ]))
+            ->exists();
+
+        if ($ownedBySynchronization) {
+            return;
+        }
+
         $result = $refresh->handle($this->playlistId);
 
         if (! $result instanceof ImportFailureCode) {

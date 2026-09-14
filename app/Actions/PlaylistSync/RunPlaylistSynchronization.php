@@ -10,6 +10,7 @@ use App\Integrations\PlaylistSync\SourcePlaylistWriterRegistry;
 use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
+use App\Integrations\StreamingAccounts\StreamingAccessFailure;
 use App\Models\Playlist;
 use App\Models\PlaylistSyncRun;
 use App\Models\StreamingAccount;
@@ -29,11 +30,11 @@ final readonly class RunPlaylistSynchronization
         private FailPlaylistSyncRun $fail,
     ) {}
 
-    public function handle(int $runId): void
+    public function handle(int $runId): ?SourceSyncFailure
     {
         $identity = PlaylistSyncRun::query()->whereKey($runId)->with('synchronization.playlist')->first();
         if (! $identity instanceof PlaylistSyncRun) {
-            return;
+            return null;
         }
         $sync = $identity->synchronization;
         $playlist = $sync->playlist;
@@ -43,7 +44,7 @@ final readonly class RunPlaylistSynchronization
         if (! $account instanceof StreamingAccount || ! $owner instanceof User || $reader === null) {
             $this->fail->handle($runId, 'missing-access');
 
-            return;
+            return null;
         }
 
         $outcome = null;
@@ -154,15 +155,42 @@ final readonly class RunPlaylistSynchronization
         );
 
         if ($outcome === true) {
-            return;
+            return null;
         }
         if (! $accessResult->successful) {
-            $this->fail->handle($runId, $accessResult->failure?->value ?? 'access-failed');
+            $failure = match ($accessResult->failure) {
+                StreamingAccessFailure::RateLimited => SourceSyncFailure::RateLimited,
+                StreamingAccessFailure::TemporarilyUnavailable => SourceSyncFailure::ProviderUnavailable,
+                StreamingAccessFailure::ReconnectRequired,
+                StreamingAccessFailure::MissingScope,
+                StreamingAccessFailure::StaleCredential => SourceSyncFailure::ReconnectRequired,
+                StreamingAccessFailure::QuotaExceeded => SourceSyncFailure::OverLimit,
+                null => null,
+            };
+
+            return $this->finishFailure($runId, $failure ?? 'access-failed');
         } elseif ($outcome instanceof SourceSyncFailure || ! is_array($outcome)) {
-            $this->fail->handle($runId, $outcome instanceof SourceSyncFailure ? $outcome : 'invalid-run-state');
+            return $this->finishFailure(
+                $runId,
+                $outcome instanceof SourceSyncFailure ? $outcome : 'invalid-run-state',
+            );
         } else {
             $this->complete->handle($runId, $outcome[0], $outcome[1]);
         }
+
+        return null;
+    }
+
+    private function finishFailure(int $runId, SourceSyncFailure|string $failure): ?SourceSyncFailure
+    {
+        if ($failure instanceof SourceSyncFailure
+            && in_array($failure, [SourceSyncFailure::RateLimited, SourceSyncFailure::ProviderUnavailable], true)) {
+            return $failure;
+        }
+
+        $this->fail->handle($runId, $failure);
+
+        return $failure instanceof SourceSyncFailure ? $failure : null;
     }
 
     private function activationDirection(PlaylistSyncRun $run, string $bankFingerprint, string $sourceFingerprint): PlaylistSyncDirection

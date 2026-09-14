@@ -9,6 +9,9 @@ use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Integrations\PlaylistSync\YouTube\PlanYouTubePlaylistMutations;
 use App\Integrations\PlaylistSync\YouTube\YouTubePlaylistMutation;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
+use App\Integrations\YouTubeWriteAdmission\Contracts\AdmitYouTubeWrite;
+use App\Integrations\YouTubeWriteAdmission\YouTubeWriteAdmissionStatus;
+use App\Integrations\YouTubeWriteAdmission\YouTubeWriteOperationType;
 use App\Models\PlaylistSyncRun;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -21,6 +24,7 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
     public function __construct(
         private YouTubeSourcePlaylistReader $reader,
         private PlanYouTubePlaylistMutations $planner,
+        private ?AdmitYouTubeWrite $admission = null,
     ) {}
 
     public function provider(): StreamingProvider
@@ -51,6 +55,16 @@ final readonly class YouTubeSourcePlaylistWriter implements SourcePlaylistWriter
             );
             $index = (int) ($checkpoint['index'] ?? 0);
             $snapshot = $current;
+
+            if ($mutations !== [] && $this->admission !== null) {
+                $admission = $this->admission->admit(
+                    YouTubeWriteOperationType::SourceSync,
+                    $run->operation_id,
+                );
+                if ($admission->status === YouTubeWriteAdmissionStatus::LimitReached) {
+                    return SourceSyncFailure::OverLimit;
+                }
+            }
 
             while ($index < count($mutations)) {
                 $mutation = $mutations[$index];
