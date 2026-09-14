@@ -75,6 +75,13 @@ return [
         'daily_limit' => env('YOUTUBE_WRITE_DAILY_LIMIT', '5'),
     ],
 
+    'managed_export' => [
+        'socket' => env(
+            'MUSIC_MAP_MANAGED_EXPORT_SOCKET',
+            '/run/s-manager-music-map-managed-export/broker.sock',
+        ),
+    ],
+
     'platform_access' => [
         'spotify' => [
             'technical' => [
