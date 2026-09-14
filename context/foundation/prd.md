@@ -121,12 +121,12 @@ Zakres MVP ma zostać zrealizowany w ciągu trzech tygodni pracy po godzinach.
 
 ## Business Logic
 
-`music-map` traktuje każdą playlistę platformową jako osobny byt z jednym nadrzędnym źródłem, wykrywa różnice między powiązanymi kopiami i przywraca ich zgodność przez ponowny eksport do playlisty wskazanej zapisanym ID.
+`music-map` traktuje każdą playlistę platformową jako osobny byt z jednym nadrzędnym źródłem. Przyszła funkcja odłożona poza bieżący MVP może wykrywać różnice między powiązanymi kopiami i przywracać ich zgodność przez ponowny eksport do playlisty wskazanej zapisanym ID.
 
 - BR-001 — Zmiany zewnętrzne playlisty źródłowej są pobierane automatycznie tylko przy włączonej synchronizacji. Przy wyłączonej synchronizacji wymagają użycia przycisku; bez akcji użytkownika `music-map` je ignoruje.
 - BR-002 — W konflikcie między zmianami w banku `music-map` a zmianami na platformie źródłowej danej playlisty nadrzędna jest wersja tej platformy, która aktualizuje kopię przechowywaną w banku.
 - BR-003 — Każda playlista ma jedno nadrzędne źródło i własne ID nadane przez platformę. Playlisty utworzone na różnych platformach są osobnymi bytami połączonymi relacją źródło–eksport, nawet gdy zawierają identyczny zestaw utworów; relacja służy do nawigacji i porównywania różnic.
-- BR-004 — Nieaktualna playlista powiązana odzyskuje zgodność przez ponowny eksport z jej źródła i aktualizację po zapisanym ID, bez tworzenia nowej playlisty i bez osobnego scalania.
+- BR-004 — Po wdrożeniu przyszłej funkcji nieaktualna playlista powiązana odzyskuje zgodność przez ponowny eksport z jej źródła i aktualizację po zapisanym ID, bez tworzenia nowej playlisty i bez osobnego scalania.
 - BR-005 — Usunięcie konta `music-map` nie usuwa playlist należących do użytkownika na powiązanych platformach streamingowych. Usuwa natomiast dane aplikacji, dane umożliwiające dostęp do powiązanych usług oraz playlisty utworzone dla niego na koncie technicznym `music-map`, po uprzednim pokazaniu skutków i uzyskaniu wyraźnego potwierdzenia.
 
 ## Access Control
