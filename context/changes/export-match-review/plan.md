@@ -660,9 +660,9 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [x] 3.7 Responsywny ekran jednoznacznie pokazuje cel, właściciela i skutki decyzji
-- [x] 3.8 Przepływ jest dostępny klawiaturą, przy 200% zoom i dla czytnika ekranu
-- [x] 3.9 Odświeżenie, Back i dwie karty nie duplikują ani nie gubią operacji
+- [x] 3.7 Responsywny ekran jednoznacznie pokazuje cel, właściciela i skutki decyzji — 25462f5
+- [x] 3.8 Przepływ jest dostępny klawiaturą, przy 200% zoom i dla czytnika ekranu — 25462f5
+- [x] 3.9 Odświeżenie, Back i dwie karty nie duplikują ani nie gubią operacji — 25462f5
 
 ### Phase 4: Odporność, regresja i wydanie
 
@@ -678,7 +678,7 @@ nie implementuje jej mechaniki.
 
 #### Manual
 
-- [x] 4.8 Lokalny fake E2E kończy się frozen manifestem zgodnym z przeglądem
-- [x] 4.9 Copy, progi czasu i pojedynczy e-mail są zaakceptowane
-- [x] 4.10 Baza, cache, HTML i logi nie zawierają sekretów ani provider payloadów
-- [x] 4.11 Addytywny zestaw migracji jest gotowy do nadzorowanego wydania schematu
+- [x] 4.8 Lokalny fake E2E kończy się frozen manifestem zgodnym z przeglądem — 25462f5
+- [x] 4.9 Copy, progi czasu i pojedynczy e-mail są zaakceptowane — 25462f5
+- [x] 4.10 Baza, cache, HTML i logi nie zawierają sekretów ani provider payloadów — 25462f5
+- [x] 4.11 Addytywny zestaw migracji jest gotowy do nadzorowanego wydania schematu — 25462f5
