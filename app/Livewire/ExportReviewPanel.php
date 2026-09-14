@@ -90,6 +90,33 @@ final class ExportReviewPanel extends Component
 
             $item->forceFill(['decision' => $validated['decision']])->save();
             $this->decisions[$itemId] = $validated['decision'];
+            $this->resetValidation();
+        });
+    }
+
+    public function keepAll(): void
+    {
+        DB::transaction(function (): void {
+            $review = Auth::user()?->exportReviews()
+                ->whereKey($this->reviewId)
+                ->lockForUpdate()
+                ->firstOrFail() ?? abort(404);
+
+            if ($review->status !== ExportReviewStatus::Ready) {
+                $this->addError('review', 'Decyzje można zmieniać dopiero dla gotowego przeglądu.');
+
+                return;
+            }
+
+            foreach ($review->items()->lockForUpdate()->get() as $item) {
+                if ($item->match_status !== ExportMatchStatus::Matched) {
+                    $item->forceFill(['decision' => ExportReviewDecision::Keep])->save();
+                }
+
+                $this->decisions[(int) $item->getKey()] = ExportReviewDecision::Keep->value;
+            }
+
+            $this->resetValidation();
         });
     }
 

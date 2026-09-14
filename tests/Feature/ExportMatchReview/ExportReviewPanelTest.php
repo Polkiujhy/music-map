@@ -78,7 +78,7 @@ class ExportReviewPanelTest extends TestCase
             ->assertSee('Pozycja źródłowa jest niedostępna i nie została wyszukana w katalogu celu.')
             ->assertSee('Brak tytułu potrzebnego do wyszukania tej pozycji w katalogu celu.')
             ->assertSee('Nie znaleziono wiarygodnego odpowiednika w katalogu celu.')
-            ->assertSee('Poza manifestem')
+            ->assertSee('Poza eksportem')
             ->assertSeeHtml('wire:key="review-item-'.$firstDuplicate->id.'"')
             ->assertSeeHtml('wire:key="review-item-'.$secondDuplicate->id.'"')
             ->call('choose', $firstDuplicate->id, 'keep')
@@ -91,6 +91,30 @@ class ExportReviewPanelTest extends TestCase
         $this->assertSame(ExportReviewDecision::Keep, $firstDuplicate->fresh()->decision);
         $this->assertSame(ExportReviewDecision::Remove, $secondDuplicate->fresh()->decision);
         $this->assertSame(ExportReviewDecision::Keep, $unavailable->fresh()->decision);
+    }
+
+    public function test_keep_all_persists_every_problematic_decision_and_clears_validation_errors(): void
+    {
+        $review = $this->review();
+        $this->reviewItem($review, 0, ExportMatchStatus::Matched);
+
+        $problematic = collect(range(1, 19))->map(fn (int $position): ExportReviewItem => $this->reviewItem(
+            $review,
+            $position,
+            $position % 2 === 0 ? ExportMatchStatus::Suspicious : ExportMatchStatus::Unavailable,
+        ));
+
+        $component = Livewire::actingAs($review->user)
+            ->test(ExportReviewPanel::class, ['exportReview' => $review])
+            ->call('confirm')
+            ->assertHasErrors()
+            ->call('keepAll')
+            ->assertHasNoErrors();
+
+        foreach ($problematic as $item) {
+            $component->assertSet("decisions.{$item->id}", ExportReviewDecision::Keep->value);
+            $this->assertSame(ExportReviewDecision::Keep, $item->fresh()->decision);
+        }
     }
 
     public function test_confirmation_requires_a_decision_for_every_problematic_occurrence(): void
