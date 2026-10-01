@@ -127,3 +127,7 @@ Independent plan and safety reviewers confirmed that the existing F1–F5 remedi
 Fresh local verification: SQLite PHPUnit PASS, 781 tests (760 passed, 21 PostgreSQL-only skipped), 4546 assertions; Pint PASS; Vite build PASS; source contract `--worktree` PASS. The earlier PostgreSQL result above remains historical evidence and was not rerun today.
 
 S-11 and its three linked source changes remain open: 17 manual controls and the common acceptance/archive gate remain pending. Product publication does not complete live-provider acceptance. Progress rows and their historical suffixes are preserved.
+
+## Dependency gate correction — 2026-10-01
+
+PR #66 CI rejected the inherited `league/commonmark` 2.10.1 lock due to GHSA-97jj-33gv-5xf9 and GHSA-3q6v-r5mr-hxv8, published in the advisory database on 2026-09-30. The follow-up updates only that locked package to 2.10.3. Fresh SQLite verification again passed 760 tests with 21 PostgreSQL-only skips and 4546 assertions; Composer strict validation and locked audit passed with zero advisories.
