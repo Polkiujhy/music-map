@@ -41,7 +41,7 @@
             <div class="mt-8 rounded-2xl border border-ash-grey-800 bg-ash-grey-950/40 p-6">
                 <p class="font-semibold">{{ $this->statusLabel }}</p>
                 @if ($this->elapsedSeconds >= 60)
-                    <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Możesz bezpiecznie opuścić tę stronę. Po zakończeniu wyślemy jedną wiadomość e-mail.</p>
+                    <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Możesz bezpiecznie opuścić tę stronę. Po zakończeniu wyślemy powiadomienie e-mail.</p>
                 @elseif ($this->elapsedSeconds >= 30)
                     <p class="mt-2 text-sm leading-6 text-ash-grey-200/70">Przetwarzanie nadal trwa. Wynik pojawi się tutaj automatycznie.</p>
                 @else

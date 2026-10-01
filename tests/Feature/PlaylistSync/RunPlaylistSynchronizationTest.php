@@ -10,6 +10,7 @@ use App\Enums\PlaylistSyncOutcome;
 use App\Enums\PlaylistSyncStatus;
 use App\Enums\PlaylistSyncTrigger;
 use App\Enums\StreamingProvider;
+use App\Integrations\PlaylistSync\SourceSyncFailure;
 use App\Integrations\StreamingAccounts\Contracts\WithStreamingAccess;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessContext;
 use App\Integrations\StreamingAccounts\Data\StreamingAccessResult;
@@ -121,6 +122,75 @@ class RunPlaylistSynchronizationTest extends TestCase
         $this->assertSame('track-edited-during-push', $playlist->items()->value('catalog_id'));
         $this->assertSame('pending', $sync->runs()->latest('id')->value('state'));
         $this->assertSame(2, $sync->runs()->count());
+        Queue::assertPushed(RunPlaylistSynchronizationJob::class, 1);
+    }
+
+    public function test_spotify_retry_after_successful_put_keeps_the_frozen_push_and_preserves_later_bank_edits(): void
+    {
+        Queue::fake();
+        [$playlist, $sync, $run] = $this->scenario();
+        $playlist->items()->first()->update([
+            'catalog_id' => 'track-pushed',
+            'catalog_uri' => 'spotify:track:track-pushed',
+        ]);
+        PlaylistItem::factory()->for($playlist)->create([
+            'position' => 1,
+            'catalog_id' => null,
+            'catalog_uri' => null,
+            'is_available' => false,
+        ]);
+        $playlist->update(['bank_content_edited_at' => now()]);
+
+        $remoteTrack = 'track-a';
+        $revision = 'revision-a';
+        $putCount = 0;
+        $failConfirmation = true;
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) use (&$remoteTrack, &$revision, &$putCount, &$failConfirmation) {
+            if ($request->method() === 'PUT') {
+                $putCount++;
+                $remoteTrack = str_replace('spotify:track:', '', $request['uris'][0]);
+                $revision = 'revision-pushed';
+
+                return Http::response(['snapshot_id' => $revision]);
+            }
+
+            if (str_contains($request->url(), '/items')) {
+                return Http::response($this->items($remoteTrack));
+            }
+
+            if ($putCount === 1 && $failConfirmation) {
+                $failConfirmation = false;
+
+                return Http::response([], 503);
+            }
+
+            return Http::response($this->metadata($revision));
+        });
+
+        $first = $this->app->make(RunPlaylistSynchronization::class)->handle($run->id);
+
+        $this->assertSame(SourceSyncFailure::ProviderUnavailable, $first);
+        $this->assertSame('running', $run->refresh()->state);
+        $this->assertSame('spotify', $run->checkpoint['provider']);
+
+        $playlist->items()->where('position', 0)->update([
+            'catalog_id' => 'track-edited-during-retry',
+            'catalog_uri' => 'spotify:track:track-edited-during-retry',
+        ]);
+        $playlist->update(['bank_content_edited_at' => now()->addSecond()]);
+
+        $second = $this->app->make(RunPlaylistSynchronization::class)->handle($run->id);
+
+        $this->assertNull($second);
+        $this->assertSame(1, $putCount);
+        $this->assertSame('completed', $run->refresh()->state);
+        $this->assertSame(PlaylistSyncOutcome::Pushed, $sync->refresh()->last_outcome);
+        $this->assertSame(
+            ['track-edited-during-retry', null],
+            $playlist->refresh()->items()->orderBy('position')->pluck('catalog_id')->all(),
+        );
+        $this->assertSame('pending', $sync->runs()->latest('id')->value('state'));
         Queue::assertPushed(RunPlaylistSynchronizationJob::class, 1);
     }
 

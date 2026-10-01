@@ -17,6 +17,10 @@ use App\Models\ExportReviewItem;
 use App\Models\Playlist;
 use App\Models\PlaylistExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class ManagedExportMaterializationTest extends TestCase
@@ -73,6 +77,24 @@ class ManagedExportMaterializationTest extends TestCase
         $this->assertSame('Keep me', $import->fresh()->name);
         $this->assertSame(PlaylistOrigin::Imported, $import->fresh()->origin);
         $this->assertSame(ExportOperationStatus::Processing, $operation->fresh()->status);
+    }
+
+    public function test_unexpected_materialization_exception_logs_only_safe_diagnostic_context(): void
+    {
+        [$operation, $metadata, $snapshot] = $this->fixture();
+        Log::spy();
+        DB::shouldReceive('transaction')->once()->andThrow(new RuntimeException('sensitive provider response'));
+
+        $this->assertFalse(app(MaterializeManagedExportPlaylist::class)->handle($operation->id, 1, $metadata, $snapshot));
+
+        Log::shouldHaveReceived('warning')->once()->with(
+            'managed_export_materialization_failed',
+            Mockery::on(fn (array $context): bool => $context === [
+                'operation_id' => $operation->id,
+                'generation' => 1,
+                'exception_class' => RuntimeException::class,
+            ]),
+        );
     }
 
     /** @return array{ExportOperation, ManagedPlaylistMetadata, ManagedPlaylistSnapshot} */

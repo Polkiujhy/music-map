@@ -202,7 +202,6 @@ final readonly class RunManagedExport
             // Keep the durable locator and retry through the existing claim budget;
             // never turn this uncertainty into permission to create another copy.
             $freshYouTubeTarget = $current->playlistExport->target_provider === StreamingProvider::YouTube
-                && $current->playlistExport->target_playlist_id === null
                 && $current->playlistExport->targetAttempts->contains(
                     fn (PlaylistExportTargetAttempt $attempt): bool => $attempt->generation === $current->playlistExport->target_generation
                         && $attempt->provider_playlist_id !== null

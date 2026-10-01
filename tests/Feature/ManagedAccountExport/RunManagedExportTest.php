@@ -5,6 +5,7 @@ namespace Tests\Feature\ManagedAccountExport;
 use App\Actions\ManagedAccountExport\RunManagedExport;
 use App\Enums\ExportOperationStatus;
 use App\Enums\ExportReviewStatus;
+use App\Enums\PlaylistOrigin;
 use App\Enums\StreamingProvider;
 use App\Integrations\ManagedAccountExport\Contracts\ManagedPlaylistGateway;
 use App\Integrations\ManagedAccountExport\Contracts\WithManagedAccountAccess;
@@ -262,6 +263,28 @@ class RunManagedExportTest extends TestCase
         $this->assertSame(['find', 'create', 'reconcile', 'inspect', 'reconcile'], $gateway->calls);
         $this->assertSame([$operation->id, $operation->id], $admission->operationIds);
         $this->assertSame($attempt->getAttributes(), $attempt->fresh()->getAttributes());
+    }
+
+    public function test_fresh_recreated_youtube_target_missing_retries_while_the_previous_local_target_remains_bound(): void
+    {
+        $operation = $this->operation(StreamingProvider::YouTube);
+        $previousTarget = Playlist::factory()->for($operation->user)->create([
+            'origin' => PlaylistOrigin::ManagedTarget,
+            'source_provider' => StreamingProvider::YouTube,
+            'source_playlist_id' => 'previous-target',
+            'source_account_id' => 'managed-owner',
+        ]);
+        $operation->playlistExport->update(['target_playlist_id' => $previousTarget->id]);
+        $gateway = new RecordingManagedPlaylistGateway(StreamingProvider::YouTube);
+        $gateway->reconcileFailure = new ManagedProviderFailure(ManagedExportFailureCode::TargetMissing);
+        $this->bindFakes($gateway, admission: new RecordingYouTubeAdmission(new ManagedExportEventLog));
+
+        $this->assertSame(60, app(RunManagedExport::class)->handle($operation->id));
+
+        $this->assertSame(ExportOperationStatus::Queued, $operation->fresh()->status);
+        $this->assertSame($previousTarget->id, $operation->playlistExport->fresh()->target_playlist_id);
+        $this->assertSame('provider-target', $operation->playlistExport->targetAttempts()->firstOrFail()->provider_playlist_id);
+        $this->assertSame(['find', 'create', 'reconcile'], $gateway->calls);
     }
 
     public function test_fresh_youtube_target_missing_exhausts_budget_without_recreate(): void
