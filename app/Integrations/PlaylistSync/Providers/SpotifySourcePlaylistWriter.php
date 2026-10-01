@@ -48,8 +48,32 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
         }
 
         $uris = array_column($writableItems, 'catalog_uri');
+        $desiredIdentifiers = $this->identifiers($writableItems);
 
         try {
+            if ($run !== null) {
+                $checkpoint = is_array($run->checkpoint) ? $run->checkpoint : null;
+                if ($checkpoint === null) {
+                    $checkpoint = [
+                        'provider' => StreamingProvider::Spotify->value,
+                        'phase' => 'write-started',
+                        'before' => $current->normalizedItemIdentifiers(),
+                        'desired' => $desiredIdentifiers,
+                    ];
+                    $run->update(['checkpoint' => $checkpoint]);
+                } elseif (! $this->validCheckpoint($checkpoint, $desiredIdentifiers)) {
+                    return SourceSyncFailure::InvalidResponse;
+                }
+
+                $currentIdentifiers = $current->normalizedItemIdentifiers();
+                if ($currentIdentifiers === $desiredIdentifiers) {
+                    return $current;
+                }
+                if ($currentIdentifiers !== $checkpoint['before']) {
+                    return SourceSyncFailure::ExternalDrift;
+                }
+            }
+
             if (($failure = $guard?->failure()) !== null) {
                 return $failure;
             }
@@ -82,6 +106,18 @@ final class SpotifySourcePlaylistWriter implements SourcePlaylistWriter
     private function identifiers(array $items): array
     {
         return array_map(static fn (array $item): string => (string) ($item['catalog_id'] ?? ''), $items);
+    }
+
+    /** @param array<string, mixed> $checkpoint
+     * @param  list<string>  $desiredIdentifiers
+     */
+    private function validCheckpoint(array $checkpoint, array $desiredIdentifiers): bool
+    {
+        return ($checkpoint['provider'] ?? null) === StreamingProvider::Spotify->value
+            && ($checkpoint['phase'] ?? null) === 'write-started'
+            && is_array($checkpoint['before'] ?? null)
+            && array_is_list($checkpoint['before'])
+            && ($checkpoint['desired'] ?? null) === $desiredIdentifiers;
     }
 
     private function failure(Response $response): SourceSyncFailure

@@ -10,6 +10,7 @@ use App\Integrations\ManagedAccountExport\Data\ManagedPlaylistSnapshot;
 use App\Models\ExportOperation;
 use App\Models\Playlist;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final readonly class MaterializeManagedExportPlaylist
@@ -146,7 +147,13 @@ final readonly class MaterializeManagedExportPlaylist
 
                 return true;
             });
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('managed_export_materialization_failed', [
+                'operation_id' => $operationId,
+                'generation' => $generation,
+                'exception_class' => $exception::class,
+            ]);
+
             return false;
         }
     }

@@ -89,3 +89,28 @@ Końcowe wyniki z 2026-09-14:
 PostgreSQL 15 uruchomiono w jednorazowym katalogu poza repo; sterownik pdo_pgsql
 załadowano tylko dla procesu testowego. Baza aplikacji i konfiguracja hosta pozostały
 bez zmian. CI osobno używa PostgreSQL 18; nie zastępujemy jego wyniku lokalnym testem.
+
+## Remediacja po przeglądzie implementacji — 2026-09-15
+
+Przegląd bazowego kandydata `5a70b19` zakończył się pięcioma ustaleniami, które
+naprawiono razem w lokalnym worktree:
+
+- Spotify zapisuje checkpoint przed PUT i przy retry rozpoznaje ukończony zapis,
+  bezpieczne ponowienie oraz zewnętrzny drift, nie odwracając Push w destrukcyjny Pull.
+- Grace period YouTube jest związany ze świeżym lokatorem bieżącej generacji także
+  po recreate, gdy poprzedni lokalny cel nadal jest związany z operacją.
+- UI nie obiecuje exactly-once e-maila, a błąd finalnej materializacji zapisuje
+  ograniczoną telemetrię bez wiadomości wyjątku, sekretów i danych providera.
+- Dodano regresje dla obu ścieżek retry oraz bezpiecznej telemetrii.
+
+Dowody dla lokalnego worktree (bez końcowego commit SHA):
+
+- regresje celowane: 28/28, 139 asercji;
+- pełny SQLite: 781 testów, 760 passed, 21 PostgreSQL-only skipped, 4546 asercji;
+- pełny PostgreSQL 18.6: zero błędów, 4720 asercji, łącznie z testami blokad i race;
+- Pint, produkcyjny build Vite/Tailwind, source contract i `git diff --check`: PASS.
+
+PostgreSQL działał w jednorazowym kontenerze, a suite w zapisywalnej tymczasowej
+kopii repo, żeby testy kontraktu mogły tworzyć własne sondy. Kontener i kopię
+usunięto po weryfikacji. Nie wykonano push, deploy, live provider writes ani
+mutacji PaaS. Raport: `reviews/impl-review.md`.

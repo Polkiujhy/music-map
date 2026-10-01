@@ -476,6 +476,7 @@ playlist. Cleanup dotyczy tylko zatwierdzonych danych testowych, nie S-10.
 - [x] 4.1 SQLite i PostgreSQL przechodzą na scalonym kodzie — 97e1086
 - [x] 4.2 Pint, build i source contract przechodzą — 97e1086
 - [x] 4.3 Wynik scalenia zapisany w lokalnych commitach i dokumentacji — e05bb5b
+- [x] 4.4 Ustalenia przeglądu implementacji naprawione i zweryfikowane na SQLite oraz PostgreSQL
 
 ### Phase 5: Wspólna akceptacja S-06, S-07 i S-08
 
