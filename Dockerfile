@@ -44,7 +44,7 @@ RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
         file=5.47-r2 \
         g++=15.2.0-r5 \
         gcc=15.2.0-r5 \
-        musl-dev=1.2.6-r2 \
+        musl-dev=1.2.6-r3 \
         make=4.4.1-r4 \
         pkgconf=2.5.1-r0 \
         re2c=4.5.1-r0 \
