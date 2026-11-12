@@ -186,7 +186,7 @@ YAML,
         $this->assertStringContainsString('needs: [application, postgres-smoke, source-security]', $workflow);
         $this->assertSame(4, substr_count($workflow, $mainPushCondition));
         $this->assertStringContainsString(
-            'uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3',
+            'uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4',
             $workflow,
         );
         $this->assertStringContainsString('username: ${{ github.actor }}', $workflow);

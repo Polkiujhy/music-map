@@ -5,7 +5,6 @@ namespace Tests\Feature\PlaylistEditing;
 use App\Livewire\PlaylistEditor;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -163,9 +162,7 @@ class PlaylistEditorTest extends TestCase
         $component = Livewire::test(PlaylistEditor::class, ['playlistId' => (string) $playlist->id]);
         $playlist->delete();
 
-        $this->expectException(ModelNotFoundException::class);
-
-        $component->call('save');
+        $component->call('save')->assertStatus(404);
     }
 
     /**
