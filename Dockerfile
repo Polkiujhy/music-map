@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-ARG PHP_IMAGE=php:8.4-fpm-alpine@sha256:49734670eccf414af884c2a0c2e558401e228615f8028f1c9fca30a0d4fb1bc2
+ARG PHP_IMAGE=php:8.4.27-fpm-alpine3.24@sha256:a58708a9676c18f3f3dab3b9b49e39044d7d2b239543122094314dffb0ae05a7
 ARG NODE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 ARG COMPOSER_IMAGE=composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
@@ -36,7 +36,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN printf '%s\n' "$SOURCE_SHA" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision=$SOURCE_SHA
 
-RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
+RUN apk add --no-cache libpq=18.7-r0 unzip=6.0-r16 \
     && apk add --no-cache --virtual .php-build-deps \
         autoconf=2.73-r0 \
         dpkg-dev=1.23.7-r0 \
@@ -48,7 +48,7 @@ RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
         make=4.4.1-r4 \
         pkgconf=2.5.1-r0 \
         re2c=4.5.1-r0 \
-        postgresql18-dev=18.6-r0 \
+        postgresql18-dev=18.7-r0 \
     && docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" opcache pcntl pdo_pgsql \
     && apk del .php-build-deps
 
