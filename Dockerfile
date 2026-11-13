@@ -36,7 +36,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN printf '%s\n' "$SOURCE_SHA" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision=$SOURCE_SHA
 
-RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
+RUN apk add --no-cache libpq=18.7-r0 unzip=6.0-r16 \
     && apk add --no-cache --virtual .php-build-deps \
         autoconf=2.73-r0 \
         dpkg-dev=1.23.7-r0 \
@@ -48,7 +48,7 @@ RUN apk add --no-cache libpq=18.6-r0 unzip=6.0-r16 \
         make=4.4.1-r4 \
         pkgconf=2.5.1-r0 \
         re2c=4.5.1-r0 \
-        postgresql18-dev=18.6-r0 \
+        postgresql18-dev=18.7-r0 \
     && docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" opcache pcntl pdo_pgsql \
     && apk del .php-build-deps
 

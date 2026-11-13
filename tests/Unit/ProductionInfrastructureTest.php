@@ -6,6 +6,17 @@ use PHPUnit\Framework\TestCase;
 
 class ProductionInfrastructureTest extends TestCase
 {
+    public function test_php_runtime_base_includes_the_critical_security_fixes(): void
+    {
+        $this->assertSame(1, preg_match(
+            '/^ARG PHP_IMAGE=php:(8\.4\.\d+)-fpm-alpine[^@\n]*@sha256:[a-f0-9]{64}$/m',
+            $this->projectFile('Dockerfile'),
+            $image,
+        ));
+        $this->assertTrue(version_compare($image[1], '8.4.27', '>='),
+            'PHP 8.4.27 is required for CVE-2026-109618 and CVE-2026-109619.');
+    }
+
     public function test_production_environment_example_fails_closed(): void
     {
         $environment = $this->projectFile('.env.example');
@@ -123,8 +134,8 @@ YAML,
         $this->assertSame(4, substr_count($dockerfile, 'HEALTHCHECK '));
         $this->assertSame(2, substr_count($dockerfile, 'SHELL ["/bin/ash", "-eo", "pipefail", "-c"]'));
         $this->assertStringNotContainsString('$PHPIZE_DEPS', $dockerfile);
-        $this->assertStringContainsString('libpq=18.6-r0 unzip=6.0-r16', $dockerfile);
-        $this->assertStringContainsString('postgresql18-dev=18.6-r0', $dockerfile);
+        $this->assertStringContainsString('libpq=18.7-r0 unzip=6.0-r16', $dockerfile);
+        $this->assertStringContainsString('postgresql18-dev=18.7-r0', $dockerfile);
         $this->assertMatchesRegularExpression(
             '/rm -f bootstrap\/cache\/\*\.php \\\\\n\s+&& composer dump-autoload/',
             $dockerfile,
