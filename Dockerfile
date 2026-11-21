@@ -3,7 +3,7 @@
 ARG PHP_IMAGE=php:8.4.27-fpm-alpine3.24@sha256:a58708a9676c18f3f3dab3b9b49e39044d7d2b239543122094314dffb0ae05a7
 ARG NODE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 ARG COMPOSER_IMAGE=composer:2@sha256:d8f6343d3fae98107426bc49163ccad46ef85aabd4a27d80a74401fab4aba332
-ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.29-alpine@sha256:0c79d56aee561a1d81c63f00eee5fb5fe29279560cdc55e91425133104c7fbe6
+ARG NGINX_IMAGE=nginx:1.30.7-alpine-slim@sha256:8c950211a641ec5b23f265450517001f6bcca533666120ebe36cb4cff3d00a55
 ARG SOURCE_SHA
 
 FROM ${COMPOSER_IMAGE} AS composer-bin
@@ -130,6 +130,7 @@ FROM ${NGINX_IMAGE} AS nginx
 ARG SOURCE_SHA
 USER root
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/entrypoints/nginx.sh /usr/local/bin/music-map-nginx
 COPY --from=php-base --chown=101:101 /var/www/html/public /usr/share/nginx/html
